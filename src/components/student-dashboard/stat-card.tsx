@@ -51,11 +51,11 @@ const colorClasses = {
 export function StatCard({ title, value, unit, Icon, progress, trendText, color }: StatCardProps) {
   return (
     <Card className={cn(
-      "bg-card rounded-2xl p-3 sm:p-4 border border-border relative overflow-hidden group transition min-w-[140px] sm:min-w-[160px]",
+      "bg-card rounded-2xl p-3 sm:p-4 border border-border relative overflow-hidden group transition",
       colorClasses[color].border
       )}>
       <div className="absolute -right-2 -top-2 p-3 opacity-10 group-hover:opacity-20 transition-opacity duration-300">
-        <Icon className={cn("text-6xl sm:text-7xl", colorClasses[color].icon)} />
+        <Icon className={cn("text-5xl sm:text-7xl", colorClasses[color].icon)} />
       </div>
       <p className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-1 truncate">{title}</p>
       <div className="flex items-end gap-1 sm:gap-2">

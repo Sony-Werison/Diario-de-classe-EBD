@@ -30,45 +30,54 @@ export function StudentRow({ student, onToggleCheck, trackedItems }: StudentRowP
   const { id, name, checks, dailyScore, age, completionPercent, checkedItemsCount, totalTrackedItems } = student;
   
   return (
-    <div className="bg-slate-800 p-3 flex items-center border-b border-slate-700/50 transition-colors hover:bg-slate-700/50 group min-w-[640px]">
-      <div className="w-2/5 md:w-1/3 flex items-center gap-3 pl-2">
-        <Avatar className="h-8 w-8 text-xs">
-          <AvatarFallback className="bg-slate-700 font-bold text-slate-300 border-slate-600">
-            {age !== null ? age : '?'}
-          </AvatarFallback>
-        </Avatar>
-        <div>
-          <p className="text-sm font-semibold text-slate-200 group-hover:text-white transition-colors">{name}</p>
-          <div className="flex gap-1.5 mt-0.5">
-            {checks.verse && trackedItems.verse && <Crown size={12} className="text-yellow-400 animate-pulse" />}
-            {checks.behavior && trackedItems.behavior && <ThumbsUp size={12} className="text-green-400" />}
-          </div>
-        </div>
-      </div>
-      
-      <div className="flex-1 flex justify-center gap-2 sm:gap-4">
-        {(Object.keys(checkConfig) as CheckType[]).map(type => {
-          if (!trackedItems[type]) return null;
-          const CheckIcon = checkConfig[type].Icon;
-          return (
-            <button
-              key={type}
-              onClick={() => onToggleCheck(id, type)}
-              className={cn(
-                "w-10 h-10 rounded-lg flex items-center justify-center transition-all duration-200 border",
-                checks[type] ? checkConfig[type].activeClass : checkConfig[type].inactiveClass,
-                !checks.presence && type !== 'presence' ? 'opacity-50 cursor-not-allowed' : 'hover:border-slate-500',
-              )}
-              aria-label={`Marcar ${type} para ${name}`}
-              disabled={!checks.presence && type !== 'presence'}
-            >
-              <CheckIcon size={20} />
-            </button>
-          )
-        })}
-      </div>
+    <div className="bg-slate-800 p-3 flex flex-col sm:flex-row sm:items-center border-b border-slate-700/50 transition-colors hover:bg-slate-700/50 group">
+        <div className="flex items-center w-full">
+            <div className="w-2/5 md:w-1/3 flex items-center gap-3 pl-2">
+                <Avatar className="h-8 w-8 text-xs">
+                <AvatarFallback className="bg-slate-700 font-bold text-slate-300 border-slate-600">
+                    {age !== null ? age : '?'}
+                </AvatarFallback>
+                </Avatar>
+                <div>
+                <p className="text-sm font-semibold text-slate-200 group-hover:text-white transition-colors">{name}</p>
+                <div className="flex gap-1.5 mt-0.5 sm:hidden">
+                    {checks.verse && trackedItems.verse && <Crown size={12} className="text-yellow-400 animate-pulse" />}
+                    {checks.behavior && trackedItems.behavior && <ThumbsUp size={12} className="text-green-400" />}
+                </div>
+                </div>
+            </div>
+            
+            <div className="flex-1 flex justify-end sm:justify-center gap-2 sm:gap-4">
+                {(Object.keys(checkConfig) as CheckType[]).map(type => {
+                if (!trackedItems[type]) return null;
+                const CheckIcon = checkConfig[type].Icon;
+                return (
+                    <button
+                    key={type}
+                    onClick={() => onToggleCheck(id, type)}
+                    className={cn(
+                        "w-10 h-10 rounded-lg flex items-center justify-center transition-all duration-200 border",
+                        checks[type] ? checkConfig[type].activeClass : checkConfig[type].inactiveClass,
+                        !checks.presence && type !== 'presence' ? 'opacity-50 cursor-not-allowed' : 'hover:border-slate-500',
+                    )}
+                    aria-label={`Marcar ${type} para ${name}`}
+                    disabled={!checks.presence && type !== 'presence'}
+                    >
+                    <CheckIcon size={20} />
+                    </button>
+                )
+                })}
+            </div>
 
-      <div className="w-1/4 pl-4 pr-2 flex flex-col justify-center">
+            <div className="w-1/4 pl-4 pr-2 flex-col justify-center hidden sm:flex">
+                 <div className="flex items-center gap-1.5 mt-0.5">
+                    {checks.verse && trackedItems.verse && <Crown size={12} className="text-yellow-400 animate-pulse" />}
+                    {checks.behavior && trackedItems.behavior && <ThumbsUp size={12} className="text-green-400" />}
+                </div>
+            </div>
+        </div>
+
+      <div className="w-full sm:w-1/4 mt-3 sm:mt-0 sm:pl-4 sm:pr-2 flex flex-col justify-center">
         <div className="flex justify-between text-xs mb-1">
           <span className={cn("font-bold", dailyScore > 0 ? "text-green-400" : "text-slate-400")}>
             {Math.round(completionPercent)}%
@@ -78,8 +87,6 @@ export function StudentRow({ student, onToggleCheck, trackedItems }: StudentRowP
         <Progress value={completionPercent} className="h-2 bg-slate-900 border border-slate-700" indicatorClassName={cn(completionPercent === 100 ? "bg-gradient-to-r from-yellow-400 to-yellow-600" : "bg-gradient-to-r from-blue-600 to-indigo-400")} />
       </div>
 
-      <div className="w-12 text-right">
-      </div>
     </div>
   );
 }
