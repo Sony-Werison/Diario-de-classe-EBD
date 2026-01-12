@@ -147,6 +147,12 @@ export function ClassSettings() {
     setIsClassDialogOpen(true);
   }
 
+  const openEditClassDialog = () => {
+    setEditingClass(currentClass);
+    setIsClassDialogOpen(true);
+  }
+
+
   return (
     <div className="p-4 sm:p-6 text-white">
       <header className="mb-6">
@@ -173,10 +179,16 @@ export function ClassSettings() {
             ))}
           </DropdownMenuContent>
         </DropdownMenu>
-        <Button onClick={openNewClassDialog} className="w-full sm:w-auto bg-primary hover:bg-primary/90">
-            <PlusCircle size={16} className="mr-2" />
-            Criar Nova Classe
-        </Button>
+        <div className="flex gap-2 w-full sm:w-auto">
+            <Button onClick={openNewClassDialog} className="w-full sm:w-auto bg-primary hover:bg-primary/90">
+                <PlusCircle size={16} className="mr-2" />
+                Criar Classe
+            </Button>
+            <Button variant="secondary" onClick={openEditClassDialog} className="w-full sm:w-auto">
+                <Edit size={16} className="mr-2" />
+                Editar Classe
+            </Button>
+        </div>
       </div>
 
 
