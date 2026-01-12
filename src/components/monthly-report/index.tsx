@@ -27,7 +27,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 
-import { Check, ChevronDown, ChevronLeft, ChevronRight, Download, Users, Dot, CheckCircle, Notebook, Pencil, BookOpen, Smile } from "lucide-react";
+import { Check, ChevronDown, ChevronLeft, ChevronRight, Download, Users, Dot, CheckCircle, Notebook, Pencil, BookOpen, Smile, X } from "lucide-react";
 import { initialClasses, ClassConfig, Student, CheckType } from "@/lib/data";
 import { cn } from "@/lib/utils";
 import { format, getDaysInMonth, startOfMonth, addMonths, subMonths, getDay, isSameDay } from "date-fns";
@@ -117,12 +117,18 @@ export function MonthlyReport() {
   const [currentMonth, setCurrentMonth] = useState(startOfMonth(new Date()));
   const [simulatedData, setSimulatedData] = useState<SimulatedStudentData[]>([]);
   const [isClient, setIsClient] = useState(false);
+  const [filter, setFilter] = useState<CheckType | "all">("all");
 
 
   const currentClass = useMemo(
     () => classes.find((c) => c.id === currentClassId) || classes[0],
     [classes, currentClassId]
   );
+  
+  const orderedVisibleItems: CheckType[] = useMemo(() => ['presence', 'material', 'task', 'verse', 'behavior'].filter(
+    item => currentClass.trackedItems[item as CheckType]
+  ) as CheckType[], [currentClass.trackedItems]);
+
 
   useEffect(() => {
     setIsClient(true);
@@ -140,7 +146,7 @@ export function MonthlyReport() {
 
   const handleExportPng = () => {
     if (!reportRef.current) return;
-    toPng(reportRef.current, { cacheBust: true, backgroundColor: '#1E293B' })
+    toPng(reportRef.current, { cacheBust: true, backgroundColor: '#1E293B', fontEmbedCSS: '@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap");' })
       .then((dataUrl) => {
         const link = document.createElement('a');
         link.download = `relatorio-${currentClass.name}-${format(currentMonth, 'MM-yyyy')}.png`;
@@ -168,12 +174,8 @@ export function MonthlyReport() {
     return studentData?.monthData.find(md => isSameDay(md.date, day));
   }
 
-  const orderedVisibleItems: CheckType[] = ['presence', 'material', 'task', 'verse', 'behavior'].filter(
-    item => currentClass.trackedItems[item as CheckType]
-  ) as CheckType[];
-
   return (
-    <div className="p-4 sm:p-6 text-white bg-background flex-1">
+    <div className="p-4 sm:p-6 text-white bg-background flex-1 flex flex-col">
       <header className="mb-6">
         <h1 className="text-2xl font-bold">Relatório Mensal</h1>
         <p className="text-slate-400">
@@ -212,7 +214,7 @@ export function MonthlyReport() {
                 ))}
             </DropdownMenuContent>
             </DropdownMenu>
-
+            
             <div className="flex items-center gap-2 bg-card border border-border px-2 py-1 rounded-md w-full sm:w-auto justify-between">
                 <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleMonthChange('prev')}>
                     <ChevronLeft size={16} />
@@ -224,6 +226,19 @@ export function MonthlyReport() {
                     <ChevronRight size={16} />
                 </Button>
             </div>
+
+            <Select value={filter} onValueChange={(value) => setFilter(value as any)}>
+              <SelectTrigger className="w-full sm:w-[180px] bg-card border-border">
+                <SelectValue placeholder="Filtrar critério" />
+              </SelectTrigger>
+              <SelectContent className="bg-card border-border text-white">
+                <SelectItem value="all">Todos os Critérios</SelectItem>
+                {orderedVisibleItems.map(item => (
+                  <SelectItem key={item} value={item}>{itemLabels[item]}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
         </div>
 
         <Button onClick={handleExportPng} className="bg-primary hover:bg-primary/90 w-full sm:w-auto">
@@ -232,16 +247,17 @@ export function MonthlyReport() {
         </Button>
       </div>
 
-        <Card className="bg-slate-800 border-slate-700" id="report-table">
-            <div ref={reportRef}>
+        <Card className="bg-slate-800 border-slate-700 flex-1 flex flex-col" id="report-table">
+            <div ref={reportRef} className="h-full flex flex-col">
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2 text-base">
                         <span>Resumo de {format(currentMonth, 'MMMM, yyyy', {locale: ptBR})} - {currentClass.name}</span>
                     </CardTitle>
                 </CardHeader>
-                <CardContent className="overflow-x-auto pb-6">
-                    <div className="border border-slate-700 rounded-lg overflow-hidden min-w-[800px]">
-                    <div className="grid bg-slate-900/50 font-bold text-xs uppercase text-slate-400" style={{gridTemplateColumns: `minmax(150px, 1.5fr) repeat(${sundaysInMonth.length}, 40px)`}}>
+                <CardContent className="overflow-auto pb-6 flex-1">
+                    <div className="border border-slate-700 rounded-lg min-w-[600px] h-full flex flex-col">
+                    
+                    <div className="sticky top-0 z-10 grid bg-slate-900/50 font-bold text-xs uppercase text-slate-400" style={{gridTemplateColumns: `minmax(150px, 1fr) repeat(${sundaysInMonth.length}, 40px)`}}>
                         <div className="p-3 border-r border-slate-700">Aluno</div>
                         {sundaysInMonth.map(day => (
                             <div key={day.toISOString()} className="p-3 text-center border-r border-slate-700 last:border-r-0">
@@ -249,9 +265,10 @@ export function MonthlyReport() {
                             </div>
                         ))}
                     </div>
-                    <div>
+
+                    <div className="flex-1">
                         {currentClass.students.map(student => (
-                            <div key={student.id} className="grid items-center border-b border-slate-700 last:border-b-0 text-sm hover:bg-slate-700/50" style={{gridTemplateColumns: `minmax(150px, 1.5fr) repeat(${sundaysInMonth.length}, 40px)`}}>
+                            <div key={student.id} className="grid items-center border-b border-slate-700 last:border-b-0 text-sm hover:bg-slate-700/50" style={{gridTemplateColumns: `minmax(150px, 1fr) repeat(${sundaysInMonth.length}, 40px)`}}>
                                 <div className="p-2 whitespace-nowrap overflow-hidden text-ellipsis border-r border-slate-700 font-medium text-slate-200">{student.name}</div>
                                 {sundaysInMonth.map(day => {
                                     const dayData = getStudentDataForDay(student.id, day);
@@ -261,16 +278,26 @@ export function MonthlyReport() {
                                         <TooltipProvider>
                                             <Tooltip>
                                                 <TooltipTrigger asChild>
-                                                    <span className="flex flex-col items-center justify-center gap-1">
-                                                        {orderedVisibleItems.map(item => (
-                                                            <div key={item}>
-                                                                {dayData.checks[item] ? (
-                                                                    <Check size={14} className={cn(itemColors[item])} />
-                                                                ) : (
-                                                                    <Dot size={16} className="text-slate-700" />
-                                                                )}
-                                                            </div>
-                                                        ))}
+                                                    <span className="flex flex-col items-center justify-center gap-0.5">
+                                                        {filter === 'all' ? (
+                                                            orderedVisibleItems.map(item => {
+                                                                const Icon = itemIcons[item];
+                                                                return (
+                                                                <div key={item}>
+                                                                    {dayData.checks[item] ? (
+                                                                        <Icon size={14} className={cn(itemColors[item])} />
+                                                                    ) : (
+                                                                        <Dot size={16} className="text-slate-700" />
+                                                                    )}
+                                                                </div>
+                                                            )})
+                                                        ) : (
+                                                            dayData.checks[filter] ? (
+                                                                <Check size={16} className="text-green-500" />
+                                                            ) : (
+                                                                <X size={16} className="text-red-500" />
+                                                            )
+                                                        )}
                                                     </span>
                                                 </TooltipTrigger>
                                                 <TooltipContent className="bg-slate-900 border-slate-700 text-white">
