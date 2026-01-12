@@ -7,7 +7,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
-import { LayoutGrid, Users, Trophy, LogOut, Settings } from "lucide-react";
+import { LayoutGrid, Users, Trophy, LogOut, Settings, CalendarCheck } from "lucide-react";
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
@@ -53,6 +53,7 @@ export function AppSidebar() {
     <aside className="w-20 bg-card border-r border-border flex flex-col items-center py-6 gap-4 shrink-0 hidden sm:flex">
       <NavLink href="/" icon={LayoutGrid} label="Painel" />
       <NavLink href="/rankings" icon={Trophy} label="Rankings" />
+      <NavLink href="/report" icon={CalendarCheck} label="Relatório Mensal" />
       <NavLink href="/settings" icon={Settings} label="Configurações" />
       <div className="mt-auto">
         <NavLink href="/logout" icon={LogOut} label="Sair" />
