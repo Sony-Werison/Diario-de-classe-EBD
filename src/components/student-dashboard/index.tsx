@@ -1,12 +1,12 @@
 "use client";
 
-import React, { useState, useMemo, useCallback, useEffect } from "react";
+import React, { useState, useMemo, useCallback } from "react";
 import { initialClasses, POINTS, Student, CheckType, ClassConfig } from "@/lib/data";
 import { AppHeader } from "./app-header";
 import { StatCard } from "./stat-card";
 import { StudentListHeader } from "./student-list-header";
 import { StudentRow } from "./student-row";
-import { CheckCircle, BookOpen, Pencil, Star, Users } from "lucide-react";
+import { CheckCircle, BookOpen, Pencil, Star, Users, Smile, Pen } from "lucide-react";
 
 const calculateAge = (birthDateString: string) => {
     if (!birthDateString) return null;
@@ -66,6 +66,8 @@ export function StudentDashboard() {
     presencePercent,
     versePercent,
     taskPercent,
+    behaviorPercent,
+    materialPercent,
     totalScore,
     studentsWithScores
   } = useMemo(() => {
@@ -73,12 +75,14 @@ export function StudentDashboard() {
     const totalStudents = students.length;
 
     if (totalStudents === 0) {
-      return { presencePercent: 0, versePercent: 0, taskPercent: 0, totalScore: 0, studentsWithScores: [] };
+      return { presencePercent: 0, versePercent: 0, taskPercent: 0, behaviorPercent: 0, materialPercent: 0, totalScore: 0, studentsWithScores: [] };
     }
 
     let presenceCount = 0;
     let verseCount = 0;
     let taskCount = 0;
+    let behaviorCount = 0;
+    let materialCount = 0;
     let totalScore = 0;
 
     const studentsWithScores = students.map(student => {
@@ -93,6 +97,8 @@ export function StudentDashboard() {
       if (student.checks.presence) presenceCount++;
       if (student.checks.verse) verseCount++;
       if (student.checks.task) taskCount++;
+      if (student.checks.behavior) behaviorCount++;
+      if (student.checks.material) materialCount++;
       totalScore += dailyScore;
       
       const currentXp = student.totalXp + dailyScore;
@@ -110,12 +116,25 @@ export function StudentDashboard() {
       presencePercent: totalStudents > 0 ? Math.round((presenceCount / totalStudents) * 100) : 0,
       versePercent: presentStudentsCount > 0 ? Math.round((verseCount / presentStudentsCount) * 100) : 0,
       taskPercent: presentStudentsCount > 0 ? Math.round((taskCount / presentStudentsCount) * 100) : 0,
+      behaviorPercent: presentStudentsCount > 0 ? Math.round((behaviorCount / presentStudentsCount) * 100) : 0,
+      materialPercent: presentStudentsCount > 0 ? Math.round((materialCount / presentStudentsCount) * 100) : 0,
       totalScore,
       studentsWithScores,
     };
   }, [currentClass]);
 
   const trackedItems = currentClass.trackedItems;
+
+  const getVisibleStatsCount = () => {
+    let count = 1; // totalScore is always visible
+    if(trackedItems.presence) count++;
+    if(trackedItems.verse) count++;
+    if(trackedItems.task) count++;
+    if(trackedItems.behavior) count++;
+    if(trackedItems.material) count++;
+    return count;
+  }
+  const visibleStatsCount = getVisibleStatsCount();
 
   return (
       <div className="flex flex-1 flex-col overflow-hidden">
@@ -128,7 +147,7 @@ export function StudentDashboard() {
             onClassChange={setCurrentClassId}
         />
         <main className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-6 bg-slate-900">
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6">
+          <div className={`grid grid-cols-2 lg:grid-cols-${Math.min(visibleStatsCount, 6)} gap-3 sm:gap-4 mb-6`}>
             {trackedItems.presence && <StatCard 
               title="Presença"
               value={`${presencePercent}%`}
@@ -151,13 +170,27 @@ export function StudentDashboard() {
               progress={taskPercent}
               color="purple"
             />}
+             {trackedItems.behavior && <StatCard 
+              title="Comportamento"
+              value={`${behaviorPercent}%`}
+              Icon={Smile}
+              progress={behaviorPercent}
+              color="emerald"
+            />}
+             {trackedItems.material && <StatCard 
+              title="Material"
+              value={`${materialPercent}%`}
+              Icon={Pen}
+              progress={materialPercent}
+              color="pink"
+            />}
             <StatCard 
-              title="Pontuação Total"
+              title="Pontos do Dia"
               value={totalScore.toString()}
               unit="pts"
               Icon={Star}
               progress={(totalScore / (currentClass.students.length * 100))}
-              color="emerald"
+              color="indigo"
             />
           </div>
 

@@ -3,7 +3,7 @@
 import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
-import { ArrowUp, LucideIcon } from "lucide-react";
+import { LucideIcon } from "lucide-react";
 
 interface StatCardProps {
   title: string;
@@ -12,7 +12,7 @@ interface StatCardProps {
   Icon: LucideIcon;
   progress: number;
   trendText?: string;
-  color: 'blue' | 'yellow' | 'purple' | 'emerald';
+  color: 'blue' | 'yellow' | 'purple' | 'emerald' | 'pink' | 'indigo';
 }
 
 const colorClasses = {
@@ -35,6 +35,16 @@ const colorClasses = {
     border: "hover:border-emerald-500",
     icon: "text-emerald-500",
     progress: "bg-emerald-500",
+  },
+  pink: {
+    border: "hover:border-pink-500",
+    icon: "text-pink-500",
+    progress: "bg-pink-500",
+  },
+  indigo: {
+    border: "hover:border-indigo-500",
+    icon: "text-indigo-500",
+    progress: "bg-indigo-500",
   }
 }
 
