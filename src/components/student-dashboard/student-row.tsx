@@ -7,7 +7,13 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { UserCheck, Book, BookHeart, Smile, Pen, Crown, ThumbsUp } from "lucide-react";
 
 interface StudentRowProps {
-  student: Student & { dailyScore: number; level: number; xpPercent: number, age: number | null };
+  student: Student & { 
+    dailyScore: number; 
+    age: number | null,
+    completionPercent: number;
+    checkedItemsCount: number;
+    totalTrackedItems: number;
+  };
   onToggleCheck: (id: number, type: CheckType) => void;
   trackedItems: Record<CheckType, boolean>;
 }
@@ -21,7 +27,7 @@ const checkConfig: Record<CheckType, { Icon: React.ElementType; activeClass: str
 };
 
 export function StudentRow({ student, onToggleCheck, trackedItems }: StudentRowProps) {
-  const { id, name, checks, dailyScore, level, xpPercent, age } = student;
+  const { id, name, checks, dailyScore, age, completionPercent, checkedItemsCount, totalTrackedItems } = student;
   
   return (
     <div className="bg-slate-800 p-3 flex items-center border-b border-slate-700/50 transition-colors hover:bg-slate-700/50 group min-w-[640px]">
@@ -65,11 +71,11 @@ export function StudentRow({ student, onToggleCheck, trackedItems }: StudentRowP
       <div className="w-1/4 pl-4 pr-2 flex flex-col justify-center">
         <div className="flex justify-between text-xs mb-1">
           <span className={cn("font-bold", dailyScore > 0 ? "text-green-400" : "text-slate-400")}>
-            +{dailyScore} pts
+            {Math.round(completionPercent)}%
           </span>
-          <span className="text-slate-500">Nvl {level}</span>
+          <span className="text-slate-500">{checkedItemsCount}/{totalTrackedItems}</span>
         </div>
-        <Progress value={xpPercent} className="h-2 bg-slate-900 border border-slate-700" indicatorClassName="bg-gradient-to-r from-blue-600 to-indigo-400" />
+        <Progress value={completionPercent} className="h-2 bg-slate-900 border border-slate-700" indicatorClassName={cn(completionPercent === 100 ? "bg-gradient-to-r from-yellow-400 to-yellow-600" : "bg-gradient-to-r from-blue-600 to-indigo-400")} />
       </div>
 
       <div className="w-12 text-right">

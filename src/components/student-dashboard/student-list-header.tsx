@@ -15,7 +15,7 @@ export function StudentListHeader({ trackedItems }: StudentListHeaderProps) {
         {trackedItems.behavior && <span className="w-10 text-center" title="Comportamento">Comp</span>}
         {trackedItems.material && <span className="w-10 text-center" title="Material">Mat</span>}
       </div>
-      <div className="w-1/4 text-right pr-2">Nível / XP</div>
+      <div className="w-1/4 text-right pr-2">Progresso do Dia</div>
       <div className="w-12 text-right"></div>
     </div>
   );

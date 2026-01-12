@@ -101,13 +101,21 @@ export function StudentDashboard() {
       if (student.checks.material) materialCount++;
       totalScore += dailyScore;
       
-      const currentXp = student.totalXp + dailyScore;
-      const level = Math.floor(currentXp / 100);
-      const levelXp = currentXp % 100;
-      const xpPercent = Math.min((levelXp / 100) * 100, 100);
       const age = calculateAge(student.birthDate);
 
-      return { ...student, dailyScore, level, xpPercent, age };
+      const activeTrackedItems = Object.keys(currentClass.trackedItems).filter(
+        key => currentClass.trackedItems[key as CheckType]
+      ) as CheckType[];
+      
+      const checkedItemsCount = activeTrackedItems.filter(
+        key => student.checks[key]
+      ).length;
+
+      const completionPercent = activeTrackedItems.length > 0
+        ? (checkedItemsCount / activeTrackedItems.length) * 100
+        : 0;
+
+      return { ...student, dailyScore, age, completionPercent, checkedItemsCount, totalTrackedItems: activeTrackedItems.length };
     }).sort((a, b) => a.name.localeCompare(b.name));
 
     const presentStudentsCount = students.filter(s => s.checks.presence).length;
