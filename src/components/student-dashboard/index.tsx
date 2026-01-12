@@ -4,7 +4,7 @@ import React, { useState, useMemo, useCallback } from "react";
 import { initialClasses, POINTS, Student, CheckType, ClassConfig } from "@/lib/data";
 import { AppHeader } from "./app-header";
 import { StatCard } from "./stat-card";
-import { StudentListHeader } from "./student-list-header";
+import { StudentListHeader, SortKey } from "./student-list-header";
 import { StudentRow } from "./student-row";
 import { CheckCircle, BookOpen, Pencil, Star, Users, Smile, Pen } from "lucide-react";
 
@@ -26,6 +26,8 @@ export function StudentDashboard() {
   const [classes, setClasses] = useState<ClassConfig[]>(initialClasses);
   const [currentClassId, setCurrentClassId] = useState<string>(initialClasses[0].id);
   const [currentDate, setCurrentDate] = useState(new Date());
+  const [sortKey, setSortKey] = useState<SortKey>("name");
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
 
   const currentClass = useMemo(() => classes.find(c => c.id === currentClassId) || classes[0], [classes, currentClassId]);
 
@@ -61,6 +63,15 @@ export function StudentDashboard() {
       return newDate;
     });
   };
+
+  const handleSort = (key: SortKey) => {
+    if (sortKey === key) {
+      setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortKey(key);
+      setSortDirection('asc');
+    }
+  }
 
   const {
     presencePercent,
@@ -116,7 +127,19 @@ export function StudentDashboard() {
         : 0;
 
       return { ...student, dailyScore, age, completionPercent, checkedItemsCount, totalTrackedItems: activeTrackedItems.length };
-    }).sort((a, b) => a.name.localeCompare(b.name));
+    }).sort((a, b) => {
+        const dir = sortDirection === 'asc' ? 1 : -1;
+        switch (sortKey) {
+            case 'name':
+                return a.name.localeCompare(b.name) * dir;
+            case 'age':
+                return ((a.age || 0) - (b.age || 0)) * dir;
+            case 'progress':
+                return (a.completionPercent - b.completionPercent) * dir;
+            default:
+                return 0;
+        }
+    });
 
     const presentStudentsCount = students.filter(s => s.checks.presence).length;
 
@@ -129,7 +152,7 @@ export function StudentDashboard() {
       totalScore,
       studentsWithScores,
     };
-  }, [currentClass]);
+  }, [currentClass, sortKey, sortDirection]);
 
   const trackedItems = currentClass.trackedItems;
 
@@ -157,7 +180,12 @@ export function StudentDashboard() {
         />
         <main className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-6 bg-background">
           <div className="bg-slate-800/50 rounded-t-xl">
-             <StudentListHeader trackedItems={trackedItems} />
+             <StudentListHeader 
+                trackedItems={trackedItems}
+                onSort={handleSort}
+                sortKey={sortKey}
+                sortDirection={sortDirection}
+             />
           </div>
          
           <div className="space-y-px bg-slate-800/50 rounded-b-xl overflow-hidden">

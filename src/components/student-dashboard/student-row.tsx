@@ -3,8 +3,7 @@
 import { Student, CheckType } from "@/lib/data";
 import { cn } from "@/lib/utils";
 import { Progress } from "@/components/ui/progress";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { UserCheck, Book, BookHeart, Smile, Pen, Crown, ThumbsUp } from "lucide-react";
+import { UserCheck, Book, BookHeart, Smile, Pen } from "lucide-react";
 
 interface StudentRowProps {
   student: Student & { 
@@ -33,17 +32,9 @@ export function StudentRow({ student, onToggleCheck, trackedItems }: StudentRowP
     <div className="bg-slate-800 p-3 flex flex-col sm:flex-row sm:items-center border-b border-slate-700/50 transition-colors hover:bg-slate-700/50 group">
         <div className="flex items-center w-full">
             <div className="w-2/5 md:w-1/3 flex items-center gap-3 pl-2">
-                <Avatar className="h-8 w-8 text-xs">
-                <AvatarFallback className="bg-slate-700 font-bold text-slate-300 border-slate-600">
-                    {age !== null ? age : '?'}
-                </AvatarFallback>
-                </Avatar>
                 <div>
-                <p className="text-sm font-semibold text-slate-200 group-hover:text-white transition-colors">{name}</p>
-                <div className="flex gap-1.5 mt-0.5 sm:hidden">
-                    {checks.verse && trackedItems.verse && <Crown size={12} className="text-yellow-400 animate-pulse" />}
-                    {checks.behavior && trackedItems.behavior && <ThumbsUp size={12} className="text-green-400" />}
-                </div>
+                  <p className="text-sm font-semibold text-slate-200 group-hover:text-white transition-colors">{name}</p>
+                   <p className="text-xs text-slate-400">{age !== null ? `${age} anos` : 'Idade não informada'}</p>
                 </div>
             </div>
             
@@ -70,10 +61,7 @@ export function StudentRow({ student, onToggleCheck, trackedItems }: StudentRowP
             </div>
 
             <div className="w-1/4 pl-4 pr-2 flex-col justify-center hidden sm:flex">
-                 <div className="flex items-center gap-1.5 mt-0.5">
-                    {checks.verse && trackedItems.verse && <Crown size={12} className="text-yellow-400 animate-pulse" />}
-                    {checks.behavior && trackedItems.behavior && <ThumbsUp size={12} className="text-green-400" />}
-                </div>
+                 {/* Espaço vazio para alinhar com o cabeçalho */}
             </div>
         </div>
 
