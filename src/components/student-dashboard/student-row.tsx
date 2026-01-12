@@ -9,6 +9,7 @@ import { UserCheck, Book, BookHeart, Smile, Pen, Crown, ThumbsUp } from "lucide-
 interface StudentRowProps {
   student: Student & { dailyScore: number; level: number; xpPercent: number };
   onToggleCheck: (id: number, type: CheckType) => void;
+  trackedItems: Record<CheckType, boolean>;
 }
 
 const checkConfig: Record<CheckType, { Icon: React.ElementType; activeClass: string; inactiveClass: string; }> = {
@@ -19,9 +20,9 @@ const checkConfig: Record<CheckType, { Icon: React.ElementType; activeClass: str
   material: { Icon: Pen, activeClass: 'bg-pink-500 border-pink-500 text-white', inactiveClass: 'text-slate-400 bg-slate-700/50' },
 };
 
-export function StudentRow({ student, onToggleCheck }: StudentRowProps) {
+export function StudentRow({ student, onToggleCheck, trackedItems }: StudentRowProps) {
   const { id, name, photo, checks, dailyScore, level, xpPercent } = student;
-  const Icon = checkConfig['presence'].Icon;
+  
   return (
     <div className="bg-slate-800 p-3 flex items-center border-b border-slate-700/50 transition-colors hover:bg-slate-700/50 group min-w-[640px]">
       <div className="w-2/5 md:w-1/3 flex items-center gap-3 pl-2">
@@ -33,14 +34,15 @@ export function StudentRow({ student, onToggleCheck }: StudentRowProps) {
         <div>
           <p className="text-sm font-semibold text-slate-200 group-hover:text-white transition-colors">{name}</p>
           <div className="flex gap-1.5 mt-0.5">
-            {checks.verse && <Crown size={12} className="text-yellow-400 animate-pulse" />}
-            {checks.behavior && <ThumbsUp size={12} className="text-green-400" />}
+            {checks.verse && trackedItems.verse && <Crown size={12} className="text-yellow-400 animate-pulse" />}
+            {checks.behavior && trackedItems.behavior && <ThumbsUp size={12} className="text-green-400" />}
           </div>
         </div>
       </div>
       
       <div className="flex-1 flex justify-center gap-2 sm:gap-4">
         {(Object.keys(checkConfig) as CheckType[]).map(type => {
+          if (!trackedItems[type]) return null;
           const CheckIcon = checkConfig[type].Icon;
           return (
             <button
@@ -49,9 +51,10 @@ export function StudentRow({ student, onToggleCheck }: StudentRowProps) {
               className={cn(
                 "w-10 h-10 rounded-lg flex items-center justify-center transition-all duration-200 border",
                 checks[type] ? checkConfig[type].activeClass : checkConfig[type].inactiveClass,
-                "hover:border-slate-500"
+                !checks.presence && type !== 'presence' ? 'opacity-50 cursor-not-allowed' : 'hover:border-slate-500',
               )}
               aria-label={`Marcar ${type} para ${name}`}
+              disabled={!checks.presence && type !== 'presence'}
             >
               <CheckIcon size={20} />
             </button>

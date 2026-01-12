@@ -1,38 +1,44 @@
 "use client";
 
 import React, { useState, useMemo, useCallback, useEffect } from "react";
-import { initialStudents, POINTS, Student, CheckType } from "@/lib/data";
+import { initialClasses, POINTS, Student, CheckType, ClassConfig } from "@/lib/data";
 import { AppHeader } from "./app-header";
 import { StatCard } from "./stat-card";
 import { StudentListHeader } from "./student-list-header";
 import { StudentRow } from "./student-row";
-import { CheckCircle, BookOpen, Pencil, Star } from "lucide-react";
+import { CheckCircle, BookOpen, Pencil, Star, Users } from "lucide-react";
 
 export function StudentDashboard() {
-  const [students, setStudents] = useState<Student[]>(initialStudents);
+  const [classes, setClasses] = useState<ClassConfig[]>(initialClasses);
+  const [currentClassId, setCurrentClassId] = useState<string>(initialClasses[0].id);
   const [currentDate, setCurrentDate] = useState(new Date());
 
-  const handleToggleCheck = useCallback((id: number, type: CheckType) => {
-    setStudents(prevStudents =>
-      prevStudents.map(student => {
-        if (student.id !== id) return student;
-        
-        const newChecks = { ...student.checks, [type]: !student.checks[type] };
+  const currentClass = useMemo(() => classes.find(c => c.id === currentClassId) || classes[0], [classes, currentClassId]);
 
-        // Logic for "presence" affecting other checks
-        if (type === 'presence' && !newChecks.presence) {
-          // If un-checking presence, un-check all other items for that day
-          Object.keys(newChecks).forEach(key => {
-            if (key !== 'presence') {
-              newChecks[key as CheckType] = false;
-            }
-          });
-        }
+  const handleToggleCheck = useCallback((studentId: number, type: CheckType) => {
+    setClasses(prevClasses =>
+      prevClasses.map(c => {
+        if (c.id !== currentClassId) return c;
         
-        return { ...student, checks: newChecks };
+        const newStudents = c.students.map(student => {
+          if (student.id !== studentId) return student;
+          
+          const newChecks = { ...student.checks, [type]: !student.checks[type] };
+
+          if (type === 'presence' && !newChecks.presence) {
+            Object.keys(newChecks).forEach(key => {
+              if (key !== 'presence') {
+                newChecks[key as CheckType] = false;
+              }
+            });
+          }
+          return { ...student, checks: newChecks };
+        });
+
+        return { ...c, students: newStudents };
       })
     );
-  }, []);
+  }, [currentClassId]);
   
   const handleDateChange = (direction: 'prev' | 'next') => {
     setCurrentDate(prevDate => {
@@ -40,7 +46,6 @@ export function StudentDashboard() {
       newDate.setDate(newDate.getDate() + (direction === 'next' ? 1 : -1));
       return newDate;
     });
-    // Here you would typically also fetch the data for the new date
   };
 
   const {
@@ -50,7 +55,9 @@ export function StudentDashboard() {
     totalScore,
     studentsWithScores
   } = useMemo(() => {
+    const students = currentClass.students;
     const totalStudents = students.length;
+
     if (totalStudents === 0) {
       return { presencePercent: 0, versePercent: 0, taskPercent: 0, totalScore: 0, studentsWithScores: [] };
     }
@@ -62,8 +69,9 @@ export function StudentDashboard() {
 
     const studentsWithScores = students.map(student => {
       const dailyScore = Object.entries(student.checks).reduce((acc, [key, value]) => {
-        if (value) {
-          return acc + (POINTS[key as CheckType] || 0);
+        const checkType = key as CheckType;
+        if (value && currentClass.trackedItems[checkType]) {
+          return acc + (POINTS[checkType] || 0);
         }
         return acc;
       }, 0);
@@ -84,13 +92,15 @@ export function StudentDashboard() {
     const presentStudentsCount = students.filter(s => s.checks.presence).length;
 
     return {
-      presencePercent: Math.round((presenceCount / totalStudents) * 100),
+      presencePercent: totalStudents > 0 ? Math.round((presenceCount / totalStudents) * 100) : 0,
       versePercent: presentStudentsCount > 0 ? Math.round((verseCount / presentStudentsCount) * 100) : 0,
       taskPercent: presentStudentsCount > 0 ? Math.round((taskCount / presentStudentsCount) * 100) : 0,
       totalScore,
       studentsWithScores,
     };
-  }, [students]);
+  }, [currentClass]);
+
+  const trackedItems = currentClass.trackedItems;
 
   return (
       <div className="flex flex-1 flex-col overflow-hidden">
@@ -98,44 +108,46 @@ export function StudentDashboard() {
             currentDate={currentDate}
             onPrevDate={() => handleDateChange('prev')}
             onNextDate={() => handleDateChange('next')}
+            classes={classes}
+            currentClass={currentClass}
+            onClassChange={setCurrentClassId}
         />
         <main className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-6 bg-slate-900">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mb-6">
-            <StatCard 
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6">
+            {trackedItems.presence && <StatCard 
               title="Presença"
               value={`${presencePercent}%`}
               Icon={CheckCircle}
               progress={presencePercent}
-              trend="up"
-              trendText={`${students.filter(s => s.checks.presence).length}/${students.length}`}
+              trendText={`${currentClass.students.filter(s => s.checks.presence).length}/${currentClass.students.length}`}
               color="blue"
-            />
-            <StatCard 
+            />}
+            {trackedItems.verse && <StatCard 
               title="Versículos"
               value={`${versePercent}%`}
               Icon={BookOpen}
               progress={versePercent}
               color="yellow"
-            />
-            <StatCard 
+            />}
+            {trackedItems.task && <StatCard 
               title="Tarefas"
               value={`${taskPercent}%`}
               Icon={Pencil}
               progress={taskPercent}
               color="purple"
-            />
+            />}
             <StatCard 
-              title="Pontuação"
+              title="Pontuação Total"
               value={totalScore.toString()}
               unit="pts"
               Icon={Star}
-              progress={(totalScore / (students.length * 100))}
+              progress={(totalScore / (currentClass.students.length * 100))}
               color="emerald"
             />
           </div>
 
           <div className="bg-slate-800/50 rounded-t-xl overflow-x-auto">
-             <StudentListHeader />
+             <StudentListHeader trackedItems={trackedItems} />
           </div>
          
           <div className="space-y-px bg-slate-800/50 rounded-b-xl overflow-hidden overflow-x-auto">
@@ -144,8 +156,16 @@ export function StudentDashboard() {
                 key={student.id}
                 student={student}
                 onToggleCheck={handleToggleCheck}
+                trackedItems={trackedItems}
               />
             ))}
+             {studentsWithScores.length === 0 && (
+                <div className="text-center py-16 text-slate-500 bg-slate-800">
+                    <Users size={40} className="mx-auto mb-2" />
+                    <h3 className="font-bold">Nenhum aluno nesta classe</h3>
+                    <p className="text-sm">Vá para as configurações para adicionar alunos.</p>
+                </div>
+             )}
           </div>
         </main>
       </div>

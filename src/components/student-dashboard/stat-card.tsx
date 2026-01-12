@@ -11,7 +11,6 @@ interface StatCardProps {
   unit?: string;
   Icon: LucideIcon;
   progress: number;
-  trend?: "up" | "down";
   trendText?: string;
   color: 'blue' | 'yellow' | 'purple' | 'emerald';
 }
@@ -39,7 +38,7 @@ const colorClasses = {
   }
 }
 
-export function StatCard({ title, value, unit, Icon, progress, trend, trendText, color }: StatCardProps) {
+export function StatCard({ title, value, unit, Icon, progress, trendText, color }: StatCardProps) {
   return (
     <Card className={cn(
       "bg-slate-800 rounded-2xl p-4 border border-slate-700 relative overflow-hidden group transition",
@@ -52,9 +51,8 @@ export function StatCard({ title, value, unit, Icon, progress, trend, trendText,
       <div className="flex items-end gap-2">
         <span className="text-2xl sm:text-3xl font-bold text-white">{value}</span>
         {unit && <span className="text-xs text-slate-400 mb-1">{unit}</span>}
-        {trend === "up" && (
+        {trendText && (
           <span className="text-xs text-green-400 mb-1 flex items-center">
-            <ArrowUp size={12} className="mr-0.5" />
             {trendText}
           </span>
         )}

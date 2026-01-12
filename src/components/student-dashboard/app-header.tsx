@@ -1,17 +1,29 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { Church, ChevronLeft, ChevronRight, CalendarDays } from "lucide-react";
+import { Church, ChevronLeft, ChevronRight, CalendarDays, ChevronDown, Check } from "lucide-react";
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { ClassConfig } from "@/lib/data";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { cn } from "@/lib/utils";
+
 
 interface AppHeaderProps {
   currentDate: Date;
   onPrevDate: () => void;
   onNextDate: () => void;
+  classes: ClassConfig[];
+  currentClass: ClassConfig;
+  onClassChange: (classId: string) => void;
 }
 
-export function AppHeader({ currentDate, onPrevDate, onNextDate }: AppHeaderProps) {
+export function AppHeader({ currentDate, onPrevDate, onNextDate, classes, currentClass, onClassChange }: AppHeaderProps) {
   const formattedDate = format(currentDate, "EEEE, dd MMM", { locale: ptBR });
   
   return (
@@ -21,10 +33,24 @@ export function AppHeader({ currentDate, onPrevDate, onNextDate }: AppHeaderProp
           <Church size={24} />
         </div>
         <div>
-          <h1 className="font-bold text-base sm:text-lg text-white tracking-wide">
-            EBD CONTROLE <span className="text-primary">JÚNIORS</span>
-          </h1>
-          <p className="text-xs text-slate-400">Classe 2 - Prof. Carlos</p>
+           <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" className="p-0 h-auto font-bold text-base sm:text-lg text-white tracking-wide hover:bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 -ml-1">
+                 EBD CONTROLE <span className="text-primary ml-1.5 mr-1">{currentClass.name.toUpperCase()}</span>
+                 <ChevronDown size={16} className="text-slate-500" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="bg-slate-800 border-slate-700 text-white">
+              {classes.map(c => (
+                <DropdownMenuItem key={c.id} onSelect={() => onClassChange(c.id)} className="cursor-pointer hover:bg-slate-700 focus:bg-slate-700">
+                  <Check size={16} className={cn("mr-2", currentClass.id === c.id ? 'opacity-100' : 'opacity-0')} />
+                  {c.name}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          <p className="text-xs text-slate-400">{currentClass.teacher}</p>
         </div>
       </div>
 
