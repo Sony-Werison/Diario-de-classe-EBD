@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useMemo } from 'react';
-import { initialClasses, ClassConfig } from "@/lib/data";
+import { initialClasses, ClassConfig, POINTS, CheckType } from "@/lib/data";
 import {
   Select,
   SelectContent,
@@ -32,30 +32,49 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { Crown, Star } from 'lucide-react';
 
-// Função para simular dados históricos, já que não temos um banco de dados
-const generateSimulatedHistory = (students: any[], period: 'week' | 'month' | 'year') => {
+const itemLabels: Record<CheckType, string> = {
+  presence: "Presença",
+  task: "Tarefa",
+  verse: "Versículo",
+  behavior: "Comportamento",
+  material: "Material",
+};
+
+const studentColors = ['#8884d8', '#82ca9d', '#ffc658', '#ff8042', '#0088FE', '#00C49F', '#FFBB28'];
+const criteriaColors: Record<CheckType, string> = {
+  presence: studentColors[0],
+  task: studentColors[1],
+  verse: studentColors[2],
+  behavior: studentColors[3],
+  material: studentColors[4],
+};
+
+
+// Função para simular dados históricos
+const generateSimulatedHistory = (students: any[], period: 'week' | 'month' | 'year', trackedItems: Record<CheckType, boolean>) => {
     const now = new Date();
     let days;
     let format;
+    let entriesCount;
 
     switch (period) {
         case 'month':
-            days = 30;
+            entriesCount = 30;
             format = (d: Date) => d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
             break;
         case 'year':
-            days = 12;
+            entriesCount = 12;
             format = (d: Date) => d.toLocaleDateString('pt-BR', { month: 'short' });
             break;
         case 'week':
         default:
-            days = 7;
+            entriesCount = 7;
             format = (d: Date) => d.toLocaleDateString('pt-BR', { weekday: 'short' });
             break;
     }
-
-    const history = [];
-    for (let i = days - 1; i >= 0; i--) {
+    
+    const history: any[] = [];
+    for (let i = entriesCount - 1; i >= 0; i--) {
         const date = new Date(now);
         if(period === 'year') {
             date.setMonth(now.getMonth() - i);
@@ -68,32 +87,56 @@ const generateSimulatedHistory = (students: any[], period: 'week' | 'month' | 'y
         };
 
         students.forEach(student => {
-             // Simula uma pontuação diária aleatória
-            const dailyScore = Math.floor(Math.random() * 50) + 10;
+            let dailyScore = 0;
+            (Object.keys(POINTS) as CheckType[]).forEach(key => {
+                const criteriaKey = `${student.name}_${key}`;
+                entry[criteriaKey] = 0;
+                if (trackedItems[key] && Math.random() > 0.4) { // 60% de chance de pontuar
+                    const score = POINTS[key];
+                    dailyScore += score;
+                    entry[criteriaKey] = score;
+                }
+            });
             entry[student.name] = (entry[student.name] || 0) + dailyScore;
         });
-
         history.push(entry);
     }
     
-     // Para a visão anual, vamos agrupar os pontos simulados
-    if (period === 'year') {
-      const monthlyTotals = new Map<string, { name: string, [key: string]: any }>();
-
-      history.forEach(entry => {
-        const month = entry.name;
-        if (!monthlyTotals.has(month)) {
-          monthlyTotals.set(month, { name: month });
-        }
-        const monthEntry = monthlyTotals.get(month)!;
-        students.forEach(student => {
-          monthEntry[student.name] = (monthEntry[student.name] || 0) + entry[student.name];
-        });
-      });
-      return Array.from(monthlyTotals.values());
-    }
-
     return history;
+};
+
+const aggregateDataForChart = (students: any[], trackedItems: Record<CheckType, boolean>) => {
+    return students.map(student => {
+        const studentData: {[key: string]: any} = {
+            name: student.name.split(' ')[0],
+            totalXp: student.totalXp,
+        };
+
+        let remainingXp = student.totalXp;
+        
+        // Simula a distribuição de XP entre os critérios
+        const activeCriteria = (Object.keys(POINTS) as CheckType[]).filter(c => trackedItems[c]);
+        const distribution = activeCriteria.reduce((acc, key) => {
+            const simulatedPortion = Math.random();
+            acc[key] = simulatedPortion;
+            return acc;
+        }, {} as Record<string, number>);
+
+        const totalPortions = Object.values(distribution).reduce((sum, val) => sum + val, 0);
+
+        activeCriteria.forEach((key, index) => {
+            if (index === activeCriteria.length -1) {
+                 studentData[key] = remainingXp;
+            } else {
+                const portion = distribution[key] / totalPortions;
+                const xpForCriterion = Math.floor(student.totalXp * portion);
+                studentData[key] = xpForCriterion;
+                remainingXp -= xpForCriterion;
+            }
+        });
+        
+        return studentData;
+    });
 };
 
 
@@ -108,25 +151,22 @@ export function RankingsDashboard() {
     return [...currentClass.students].sort((a, b) => b.totalXp - a.totalXp);
   }, [currentClass]);
 
-  const chartData = useMemo(() => {
-    return studentsSortedByXp.map(student => ({
-      name: student.name.split(' ')[0], // Pega só o primeiro nome
-      xp: student.totalXp,
-    }));
-  }, [studentsSortedByXp]);
+  const stackedBarChartData = useMemo(() => {
+    return aggregateDataForChart(studentsSortedByXp, currentClass.trackedItems);
+  }, [studentsSortedByXp, currentClass.trackedItems]);
 
   const evolutionData = useMemo(() => {
-    return generateSimulatedHistory(currentClass.students, period);
-  }, [currentClass.students, period]);
+    return generateSimulatedHistory(currentClass.students, period, currentClass.trackedItems);
+  }, [currentClass.students, period, currentClass.trackedItems]);
   
-  const studentColors = useMemo(() => {
-      const colors = ['#8884d8', '#82ca9d', '#ffc658', '#ff8042', '#0088FE', '#00C49F', '#FFBB28'];
+  const studentLineColors = useMemo(() => {
       return studentsSortedByXp.reduce((acc, student, index) => {
-          acc[student.name] = colors[index % colors.length];
+          acc[student.name] = studentColors[index % studentColors.length];
           return acc;
       }, {} as Record<string, string>);
   }, [studentsSortedByXp]);
-
+  
+  const trackedItemsList = (Object.keys(itemLabels) as CheckType[]).filter(item => currentClass.trackedItems[item]);
 
   return (
     <div className="p-4 sm:p-6 text-white bg-slate-900 min-h-screen">
@@ -199,16 +239,16 @@ export function RankingsDashboard() {
         <div className="lg:col-span-3 flex flex-col gap-6">
             <Card className="bg-slate-800 border-slate-700">
                 <CardHeader>
-                    <CardTitle>XP Total por Aluno</CardTitle>
+                    <CardTitle>Composição do XP por Aluno</CardTitle>
                     <CardDescription>
-                        Comparativo do total de XP entre os alunos da classe.
+                        Análise de como o XP de cada aluno é distribuído pelos critérios de avaliação.
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
                     <ResponsiveContainer width="100%" height={250}>
-                        <BarChart data={chartData} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
-                            <XAxis dataKey="name" stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
-                            <YAxis stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
+                        <BarChart data={stackedBarChartData} layout="vertical" margin={{ top: 0, right: 20, left: 0, bottom: 0 }}>
+                             <XAxis type="number" stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
+                             <YAxis type="category" dataKey="name" stroke="#888888" fontSize={12} tickLine={false} axisLine={false} width={60} />
                             <Tooltip
                                 cursor={{ fill: 'rgba(100, 116, 139, 0.1)' }}
                                 contentStyle={{
@@ -218,7 +258,10 @@ export function RankingsDashboard() {
                                     color: "#cbd5e1"
                                 }}
                             />
-                            <Bar dataKey="xp" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                             <Legend wrapperStyle={{fontSize: "12px", paddingTop: "10px"}} />
+                            {trackedItemsList.map(item => (
+                                <Bar key={item} dataKey={item} name={itemLabels[item]} stackId="a" fill={criteriaColors[item]} radius={[4, 4, 0, 0]} />
+                            ))}
                         </BarChart>
                     </ResponsiveContainer>
                 </CardContent>
@@ -247,7 +290,7 @@ export function RankingsDashboard() {
                             />
                             <Legend wrapperStyle={{fontSize: "12px"}}/>
                             {studentsSortedByXp.slice(0, 5).map(student => ( // Limita a 5 alunos para não poluir o gráfico
-                                <Line key={student.id} type="monotone" dataKey={student.name} stroke={studentColors[student.name] || '#8884d8'} strokeWidth={2} dot={false} />
+                                <Line key={student.id} type="monotone" dataKey={student.name} stroke={studentLineColors[student.name] || '#8884d8'} strokeWidth={2} dot={false} />
                             ))}
                         </LineChart>
                     </ResponsiveContainer>
