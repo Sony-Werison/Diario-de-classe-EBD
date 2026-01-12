@@ -1,9 +1,8 @@
 "use client";
 
-import React, { useState, useMemo, useCallback } from "react";
+import React, { useState, useMemo, useCallback, useEffect } from "react";
 import { initialStudents, POINTS, Student, CheckType } from "@/lib/data";
 import { AppHeader } from "./app-header";
-import { AppSidebar } from "./app-sidebar";
 import { StatCard } from "./stat-card";
 import { StudentListHeader } from "./student-list-header";
 import { StudentRow } from "./student-row";
@@ -15,11 +14,23 @@ export function StudentDashboard() {
 
   const handleToggleCheck = useCallback((id: number, type: CheckType) => {
     setStudents(prevStudents =>
-      prevStudents.map(student =>
-        student.id === id
-          ? { ...student, checks: { ...student.checks, [type]: !student.checks[type] } }
-          : student
-      )
+      prevStudents.map(student => {
+        if (student.id !== id) return student;
+        
+        const newChecks = { ...student.checks, [type]: !student.checks[type] };
+
+        // Logic for "presence" affecting other checks
+        if (type === 'presence' && !newChecks.presence) {
+          // If un-checking presence, un-check all other items for that day
+          Object.keys(newChecks).forEach(key => {
+            if (key !== 'presence') {
+              newChecks[key as CheckType] = false;
+            }
+          });
+        }
+        
+        return { ...student, checks: newChecks };
+      })
     );
   }, []);
   
@@ -29,6 +40,7 @@ export function StudentDashboard() {
       newDate.setDate(newDate.getDate() + (direction === 'next' ? 1 : -1));
       return newDate;
     });
+    // Here you would typically also fetch the data for the new date
   };
 
   const {
@@ -67,35 +79,35 @@ export function StudentDashboard() {
       const xpPercent = Math.min((levelXp / 100) * 100, 100);
 
       return { ...student, dailyScore, level, xpPercent };
-    });
+    }).sort((a, b) => a.name.localeCompare(b.name));
+
+    const presentStudentsCount = students.filter(s => s.checks.presence).length;
 
     return {
       presencePercent: Math.round((presenceCount / totalStudents) * 100),
-      versePercent: Math.round((verseCount / totalStudents) * 100),
-      taskPercent: Math.round((taskCount / totalStudents) * 100),
+      versePercent: presentStudentsCount > 0 ? Math.round((verseCount / presentStudentsCount) * 100) : 0,
+      taskPercent: presentStudentsCount > 0 ? Math.round((taskCount / presentStudentsCount) * 100) : 0,
       totalScore,
       studentsWithScores,
     };
   }, [students]);
 
   return (
-    <div className="flex h-screen bg-slate-900 text-slate-200">
-      <AppSidebar />
       <div className="flex flex-1 flex-col overflow-hidden">
         <AppHeader 
             currentDate={currentDate}
             onPrevDate={() => handleDateChange('prev')}
             onNextDate={() => handleDateChange('next')}
         />
-        <main className="flex-1 overflow-y-auto p-4 sm:p-6 bg-background">
-          <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+        <main className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-6 bg-slate-900">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mb-6">
             <StatCard 
               title="Presença"
               value={`${presencePercent}%`}
               Icon={CheckCircle}
               progress={presencePercent}
               trend="up"
-              trendText="Alta"
+              trendText={`${students.filter(s => s.checks.presence).length}/${students.length}`}
               color="blue"
             />
             <StatCard 
@@ -126,7 +138,7 @@ export function StudentDashboard() {
              <StudentListHeader />
           </div>
          
-          <div className="space-y-1 bg-slate-800/50 rounded-b-xl overflow-hidden overflow-x-auto">
+          <div className="space-y-px bg-slate-800/50 rounded-b-xl overflow-hidden overflow-x-auto">
             {studentsWithScores.map(student => (
               <StudentRow
                 key={student.id}
@@ -137,6 +149,5 @@ export function StudentDashboard() {
           </div>
         </main>
       </div>
-    </div>
   );
 }
