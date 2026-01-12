@@ -6,7 +6,7 @@ import { AppHeader } from "./app-header";
 import { StatCard } from "./stat-card";
 import { StudentListHeader, SortKey } from "./student-list-header";
 import { StudentRow } from "./student-row";
-import { CheckCircle, BookOpen, Pencil, Star, Users, Smile, Pen } from "lucide-react";
+import { CheckCircle, BookOpen, Pencil, Star, Users, Smile, Notebook } from "lucide-react";
 
 const calculateAge = (birthDateString: string) => {
     if (!birthDateString) return null;
@@ -218,7 +218,7 @@ export function StudentDashboard() {
             {trackedItems.material && <StatCard 
               title="Material"
               value={`${materialPercent}%`}
-              Icon={Pen}
+              Icon={Notebook}
               progress={materialPercent}
               color="pink"
             />}

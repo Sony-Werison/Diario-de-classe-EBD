@@ -7,12 +7,13 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
-import { LayoutGrid, LogOut, Settings } from "lucide-react";
+import { LayoutGrid, LogOut, Settings, FileText } from "lucide-react";
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
 const navLinks = [
   { href: "/", icon: LayoutGrid, label: "Painel" },
+  { href: "/report", icon: FileText, label: "Relatório" },
   { href: "/settings", icon: Settings, label: "Ajustes" },
 ];
 
@@ -35,7 +36,7 @@ const NavLink = ({
        <Link
           href={href}
           className={cn(
-            "flex flex-col items-center justify-center gap-1 text-xs p-2 rounded-lg transition-colors w-16",
+            "flex flex-col items-center justify-center gap-1 text-xs p-2 rounded-lg transition-colors w-20",
             active
               ? "bg-primary text-primary-foreground"
               : "text-slate-400 hover:bg-secondary hover:text-white"

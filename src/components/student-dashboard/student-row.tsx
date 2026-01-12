@@ -3,7 +3,7 @@
 import { Student, CheckType } from "@/lib/data";
 import { cn } from "@/lib/utils";
 import { Progress } from "@/components/ui/progress";
-import { CheckCircle, Pen, Pencil, BookOpen, Smile } from "lucide-react";
+import { CheckCircle, Notebook, Pencil, BookOpen, Smile } from "lucide-react";
 
 interface StudentRowProps {
   student: Student & { 
@@ -19,7 +19,7 @@ interface StudentRowProps {
 
 const checkConfig: Record<CheckType, { Icon: React.ElementType; activeClass: string; inactiveClass: string; }> = {
   presence: { Icon: CheckCircle, activeClass: 'bg-blue-500 border-blue-500 text-white', inactiveClass: 'text-slate-400 bg-slate-700/50' },
-  material: { Icon: Pen, activeClass: 'bg-pink-500 border-pink-500 text-white', inactiveClass: 'text-slate-400 bg-slate-700/50' },
+  material: { Icon: Notebook, activeClass: 'bg-pink-500 border-pink-500 text-white', inactiveClass: 'text-slate-400 bg-slate-700/50' },
   task: { Icon: Pencil, activeClass: 'bg-purple-500 border-purple-500 text-white', inactiveClass: 'text-slate-400 bg-slate-700/50' },
   verse: { Icon: BookOpen, activeClass: 'bg-yellow-500 border-yellow-500 text-black', inactiveClass: 'text-slate-400 bg-slate-700/50' },
   behavior: { Icon: Smile, activeClass: 'bg-emerald-500 border-emerald-500 text-white', inactiveClass: 'text-slate-400 bg-slate-700/50' },
@@ -32,7 +32,7 @@ export function StudentRow({ student, onToggleCheck, trackedItems }: StudentRowP
     <div className="bg-slate-800 p-3 flex flex-col sm:flex-row sm:items-center border-b border-slate-700/50 transition-colors hover:bg-slate-700/50 group">
         <div className="flex items-center w-full">
             <div className="w-2/5 md:w-1/3 flex items-center gap-3">
-                <div>
+                <div className="pl-2">
                   <p className="text-sm font-semibold text-slate-200 group-hover:text-white transition-colors">{name}</p>
                    <p className="text-xs text-slate-400">{age !== null ? `${age} anos` : 'Idade não informada'}</p>
                 </div>
