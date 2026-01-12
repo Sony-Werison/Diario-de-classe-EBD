@@ -27,45 +27,46 @@ export function AppHeader({ currentDate, onPrevDate, onNextDate, classes, curren
   const formattedDate = format(currentDate, "EEEE, dd MMM", { locale: ptBR });
   
   return (
-    <header className="bg-slate-800 border-b border-slate-700 p-3 sm:p-4 flex flex-col sm:flex-row justify-between items-center shadow-lg z-10 shrink-0 gap-3">
-      <div className="flex items-center gap-3 w-full sm:w-auto">
-        <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center text-primary-foreground font-bold text-xl shrink-0">
-          <Church size={24} />
+    <header className="bg-slate-800 border-b border-slate-700 p-3 flex flex-wrap justify-between items-center shadow-lg z-10 shrink-0 gap-3">
+      <div className="flex items-center gap-3">
+        <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-primary-foreground font-bold text-xl shrink-0">
+          <Church size={20} />
         </div>
-        <div>
-           <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="p-0 h-auto font-bold text-base sm:text-lg text-white tracking-wide hover:bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 -ml-1">
-                 EBD CONTROLE <span className="text-primary ml-1.5 mr-1">{currentClass.name.toUpperCase()}</span>
-                 <ChevronDown size={16} className="text-slate-500" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent className="bg-slate-800 border-slate-700 text-white">
-              {classes.map(c => (
-                <DropdownMenuItem key={c.id} onSelect={() => onClassChange(c.id)} className="cursor-pointer hover:bg-slate-700 focus:bg-slate-700">
-                  <Check size={16} className={cn("mr-2", currentClass.id === c.id ? 'opacity-100' : 'opacity-0')} />
-                  {c.name}
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
-
-          <p className="text-xs text-slate-400">{currentClass.teacher}</p>
-        </div>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" className="p-0 h-auto font-bold text-base text-white tracking-wide hover:bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 -ml-1">
+                <span className="truncate max-w-28 sm:max-w-none">{currentClass.name}</span>
+                <ChevronDown size={16} className="text-slate-500 ml-1 shrink-0" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent className="bg-slate-800 border-slate-700 text-white">
+            {classes.map(c => (
+              <DropdownMenuItem key={c.id} onSelect={() => onClassChange(c.id)} className="cursor-pointer hover:bg-slate-700 focus:bg-slate-700">
+                <Check size={16} className={cn("mr-2", currentClass.id === c.id ? 'opacity-100' : 'opacity-0')} />
+                {c.name}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
-      <div className="flex items-center gap-2 sm:gap-4 bg-slate-900 px-3 py-2 sm:px-4 rounded-full border border-slate-700 w-full sm:w-auto justify-between">
-        <Button variant="ghost" size="icon" className="h-7 w-7 sm:h-6 sm:w-6 text-slate-400 hover:text-white" onClick={onPrevDate}>
+      <div className="flex items-center gap-2 sm:gap-4 bg-slate-900 px-3 py-1.5 rounded-full border border-slate-700 w-full sm:w-auto justify-between order-last sm:order-none flex-grow sm:flex-grow-0">
+        <Button variant="ghost" size="icon" className="h-6 w-6 text-slate-400 hover:text-white" onClick={onPrevDate}>
           <ChevronLeft size={16} />
         </Button>
-        <span className="text-sm font-semibold text-indigo-300 flex items-center gap-2 capitalize">
+        <span className="text-sm font-semibold text-indigo-300 flex items-center gap-2 capitalize whitespace-nowrap">
           <CalendarDays size={16} />
           {formattedDate}
         </span>
-        <Button variant="ghost" size="icon" className="h-7 w-7 sm:h-6 sm:w-6 text-slate-400 hover:text-white" onClick={onNextDate}>
+        <Button variant="ghost" size="icon" className="h-6 w-6 text-slate-400 hover:text-white" onClick={onNextDate}>
           <ChevronRight size={16} />
         </Button>
       </div>
+      
+      <div className="text-right">
+        <p className="text-xs text-slate-400 font-medium truncate">{currentClass.teacher}</p>
+      </div>
+
     </header>
   );
 }
