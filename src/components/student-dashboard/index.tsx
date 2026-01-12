@@ -8,6 +8,20 @@ import { StudentListHeader } from "./student-list-header";
 import { StudentRow } from "./student-row";
 import { CheckCircle, BookOpen, Pencil, Star, Users } from "lucide-react";
 
+const calculateAge = (birthDateString: string) => {
+    if (!birthDateString) return null;
+    const birthDate = new Date(birthDateString);
+    // Fix off-by-one error when converting from YYYY-MM-DD string
+    birthDate.setUTCHours(12);
+    const today = new Date();
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const m = today.getMonth() - birthDate.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+        age--;
+    }
+    return age;
+}
+
 export function StudentDashboard() {
   const [classes, setClasses] = useState<ClassConfig[]>(initialClasses);
   const [currentClassId, setCurrentClassId] = useState<string>(initialClasses[0].id);
@@ -85,8 +99,9 @@ export function StudentDashboard() {
       const level = Math.floor(currentXp / 100);
       const levelXp = currentXp % 100;
       const xpPercent = Math.min((levelXp / 100) * 100, 100);
+      const age = calculateAge(student.birthDate);
 
-      return { ...student, dailyScore, level, xpPercent };
+      return { ...student, dailyScore, level, xpPercent, age };
     }).sort((a, b) => a.name.localeCompare(b.name));
 
     const presentStudentsCount = students.filter(s => s.checks.presence).length;

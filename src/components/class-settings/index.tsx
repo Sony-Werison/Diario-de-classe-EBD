@@ -38,6 +38,21 @@ const itemLabels: Record<CheckType, string> = {
   material: "Material",
 };
 
+const calculateAge = (birthDateString: string) => {
+    if (!birthDateString) return null;
+    const birthDate = new Date(birthDateString);
+    // Fix off-by-one error when converting from YYYY-MM-DD string
+    birthDate.setUTCHours(12);
+    const today = new Date();
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const m = today.getMonth() - birthDate.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+        age--;
+    }
+    return age;
+}
+
+
 export function ClassSettings() {
   const [classes, setClasses] = useState<ClassConfig[]>(initialClasses);
   const [currentClassId, setCurrentClassId] = useState<string>(initialClasses[0].id);
@@ -60,19 +75,19 @@ export function ClassSettings() {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
     const name = formData.get("name") as string;
-    const photo = (formData.get("initials") as string) || name.split(' ').map(n => n[0]).join('').substring(0,2).toUpperCase();
+    const birthDate = formData.get("birthDate") as string;
 
     setClasses(prevClasses => prevClasses.map(c => {
       if (c.id !== currentClassId) return c;
 
       let newStudents;
       if (editingStudent) {
-        newStudents = c.students.map(s => s.id === editingStudent.id ? {...s, name, photo} : s);
+        newStudents = c.students.map(s => s.id === editingStudent.id ? {...s, name, birthDate} : s);
       } else {
         const newStudent: Student = {
           id: Date.now(),
           name,
-          photo,
+          birthDate,
           totalXp: 0,
           checks: { presence: false, task: false, verse: false, behavior: false, material: false }
         };
@@ -210,7 +225,7 @@ export function ClassSettings() {
                     <TableRow className="border-slate-700 hover:bg-slate-800">
                       <TableHead className="text-white">Nome</TableHead>
                       <TableHead className="text-white text-center w-24">
-                        Iniciais
+                        Idade
                       </TableHead>
                       <TableHead className="text-right text-white w-28">
                         Ações
@@ -224,7 +239,7 @@ export function ClassSettings() {
                           {student.name}
                         </TableCell>
                         <TableCell className="text-center text-slate-400">
-                          {student.photo}
+                           {calculateAge(student.birthDate) !== null ? `${calculateAge(student.birthDate)} anos` : '-'}
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex gap-2 justify-end">
@@ -262,8 +277,8 @@ export function ClassSettings() {
               <Input id="name" name="name" defaultValue={editingStudent?.name} className="bg-slate-700 border-slate-600" required />
             </div>
             <div>
-              <Label htmlFor="initials">Iniciais (Avatar)</Label>
-              <Input id="initials" name="initials" defaultValue={editingStudent?.photo} className="bg-slate-700 border-slate-600" maxLength={2} placeholder="Ex: JP" />
+              <Label htmlFor="birthDate">Data de Nascimento</Label>
+              <Input id="birthDate" name="birthDate" type="date" defaultValue={editingStudent?.birthDate} className="bg-slate-700 border-slate-600" required />
             </div>
             <div className="flex justify-end gap-2 pt-4">
                  <Button type="button" variant="secondary" onClick={() => setIsStudentDialogOpen(false)}>Cancelar</Button>

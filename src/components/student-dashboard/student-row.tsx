@@ -7,7 +7,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { UserCheck, Book, BookHeart, Smile, Pen, Crown, ThumbsUp } from "lucide-react";
 
 interface StudentRowProps {
-  student: Student & { dailyScore: number; level: number; xpPercent: number };
+  student: Student & { dailyScore: number; level: number; xpPercent: number, age: number | null };
   onToggleCheck: (id: number, type: CheckType) => void;
   trackedItems: Record<CheckType, boolean>;
 }
@@ -21,14 +21,14 @@ const checkConfig: Record<CheckType, { Icon: React.ElementType; activeClass: str
 };
 
 export function StudentRow({ student, onToggleCheck, trackedItems }: StudentRowProps) {
-  const { id, name, photo, checks, dailyScore, level, xpPercent } = student;
+  const { id, name, checks, dailyScore, level, xpPercent, age } = student;
   
   return (
     <div className="bg-slate-800 p-3 flex items-center border-b border-slate-700/50 transition-colors hover:bg-slate-700/50 group min-w-[640px]">
       <div className="w-2/5 md:w-1/3 flex items-center gap-3 pl-2">
-        <Avatar className="h-8 w-8">
-          <AvatarFallback className="bg-slate-700 text-xs font-bold text-slate-300 border-slate-600">
-            {photo}
+        <Avatar className="h-8 w-8 text-xs">
+          <AvatarFallback className="bg-slate-700 font-bold text-slate-300 border-slate-600">
+            {age !== null ? age : '?'}
           </AvatarFallback>
         </Avatar>
         <div>
