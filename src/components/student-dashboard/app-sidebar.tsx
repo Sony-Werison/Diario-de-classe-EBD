@@ -32,15 +32,15 @@ const NavLink = ({
             className={cn(
               "w-12 h-12 rounded-xl flex items-center justify-center cursor-pointer transition-colors",
               active
-                ? "bg-slate-800 text-primary"
-                : "bg-transparent text-slate-500 hover:bg-slate-800 hover:text-white"
+                ? "bg-secondary text-primary"
+                : "bg-transparent text-slate-500 hover:bg-secondary hover:text-white"
             )}
           >
             <Icon size={24} />
             <span className="sr-only">{label}</span>
           </Link>
         </TooltipTrigger>
-        <TooltipContent side="right" className="bg-slate-800 border-slate-700 text-white">
+        <TooltipContent side="right" className="bg-card border-border text-white">
           <p>{label}</p>
         </TooltipContent>
       </Tooltip>
@@ -50,7 +50,7 @@ const NavLink = ({
 
 export function AppSidebar() {
   return (
-    <aside className="w-20 bg-slate-900 border-r border-slate-800 flex flex-col items-center py-6 gap-4 shrink-0 hidden sm:flex">
+    <aside className="w-20 bg-card border-r border-border flex flex-col items-center py-6 gap-4 shrink-0 hidden sm:flex">
       <NavLink href="/" icon={LayoutGrid} label="Painel" />
       <NavLink href="/rankings" icon={Trophy} label="Rankings" />
       <NavLink href="/settings" icon={Settings} label="Configurações" />

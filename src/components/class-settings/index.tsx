@@ -165,14 +165,14 @@ export function ClassSettings() {
       <div className="mb-6 flex flex-col sm:flex-row gap-4 items-start sm:items-center">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="outline" className="w-full sm:w-72 justify-between bg-slate-800 border-slate-700 hover:bg-slate-700">
+            <Button variant="outline" className="w-full sm:w-72 justify-between bg-card border-border hover:bg-secondary">
               <span className="truncate">{currentClass.name}</span>
               <ChevronDown className="h-4 w-4 shrink-0" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent className="w-full sm:w-72 bg-slate-800 border-slate-700 text-white">
+          <DropdownMenuContent className="w-full sm:w-72 bg-card border-border text-white">
             {classes.map(c => (
-              <DropdownMenuItem key={c.id} onSelect={() => setCurrentClassId(c.id)} className="cursor-pointer hover:bg-slate-700 focus:bg-slate-700">
+              <DropdownMenuItem key={c.id} onSelect={() => setCurrentClassId(c.id)} className="cursor-pointer hover:bg-secondary focus:bg-secondary">
                  <Check size={16} className={cn("mr-2", currentClassId === c.id ? 'opacity-100' : 'opacity-0')} />
                 {c.name}
               </DropdownMenuItem>
@@ -194,7 +194,7 @@ export function ClassSettings() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-1">
-          <Card className="bg-slate-800 border-slate-700">
+          <Card className="bg-card border-border">
             <CardHeader>
               <CardTitle>Critérios de Avaliação</CardTitle>
             </CardHeader>
@@ -222,7 +222,7 @@ export function ClassSettings() {
         </div>
 
         <div className="lg:col-span-2">
-          <Card className="bg-slate-800 border-slate-700">
+          <Card className="bg-card border-border">
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle>Alunos da Classe "{currentClass.name}"</CardTitle>
                <Button size="sm" onClick={openNewStudentDialog} className="bg-primary hover:bg-primary/90">
@@ -231,10 +231,10 @@ export function ClassSettings() {
               </Button>
             </CardHeader>
             <CardContent>
-              <div className="border border-slate-700 rounded-lg overflow-hidden">
+              <div className="border border-border rounded-lg overflow-hidden">
                 <Table>
                   <TableHeader>
-                    <TableRow className="border-slate-700 hover:bg-slate-800">
+                    <TableRow className="border-border hover:bg-card">
                       <TableHead className="text-white">Nome</TableHead>
                       <TableHead className="text-white text-center w-24">
                         Idade
@@ -246,7 +246,7 @@ export function ClassSettings() {
                   </TableHeader>
                   <TableBody>
                     {currentClass.students.map((student) => (
-                      <TableRow key={student.id} className="border-slate-700 hover:bg-slate-700/50">
+                      <TableRow key={student.id} className="border-border hover:bg-secondary/50">
                         <TableCell className="font-medium">
                           {student.name}
                         </TableCell>
@@ -279,18 +279,18 @@ export function ClassSettings() {
       </div>
       
        <Dialog open={isStudentDialogOpen} onOpenChange={setIsStudentDialogOpen}>
-        <DialogContent className="bg-slate-800 border-slate-700 text-white">
+        <DialogContent className="bg-card border-border text-white">
           <DialogHeader>
             <DialogTitle>{editingStudent ? "Editar Aluno" : "Adicionar Novo Aluno"}</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleSaveStudent} className="space-y-4">
             <div>
               <Label htmlFor="name">Nome do Aluno</Label>
-              <Input id="name" name="name" defaultValue={editingStudent?.name} className="bg-slate-700 border-slate-600" required />
+              <Input id="name" name="name" defaultValue={editingStudent?.name} className="bg-secondary border-border" required />
             </div>
             <div>
               <Label htmlFor="birthDate">Data de Nascimento</Label>
-              <Input id="birthDate" name="birthDate" type="date" defaultValue={editingStudent?.birthDate} className="bg-slate-700 border-slate-600" required />
+              <Input id="birthDate" name="birthDate" type="date" defaultValue={editingStudent?.birthDate} className="bg-secondary border-border" required />
             </div>
             <div className="flex justify-end gap-2 pt-4">
                  <Button type="button" variant="secondary" onClick={() => setIsStudentDialogOpen(false)}>Cancelar</Button>
@@ -301,18 +301,18 @@ export function ClassSettings() {
       </Dialog>
       
        <Dialog open={isClassDialogOpen} onOpenChange={setIsClassDialogOpen}>
-        <DialogContent className="bg-slate-800 border-slate-700 text-white">
+        <DialogContent className="bg-card border-border text-white">
           <DialogHeader>
             <DialogTitle>{editingClass ? "Editar Classe" : "Criar Nova Classe"}</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleSaveClass} className="space-y-4">
             <div>
               <Label htmlFor="name">Nome da Classe</Label>
-              <Input id="name" name="name" defaultValue={editingClass?.name} className="bg-slate-700 border-slate-600" required placeholder="Ex: Primários" />
+              <Input id="name" name="name" defaultValue={editingClass?.name} className="bg-secondary border-border" required placeholder="Ex: Primários" />
             </div>
             <div>
               <Label htmlFor="teacher">Professor(a)</Label>
-              <Input id="teacher" name="teacher" defaultValue={editingClass?.teacher} className="bg-slate-700 border-slate-600" placeholder="Ex: Profª. Ana" />
+              <Input id="teacher" name="teacher" defaultValue={editingClass?.teacher} className="bg-secondary border-border" placeholder="Ex: Profª. Ana" />
             </div>
             <div className="flex justify-end gap-2 pt-4">
                  <Button type="button" variant="secondary" onClick={() => setIsClassDialogOpen(false)}>Cancelar</Button>

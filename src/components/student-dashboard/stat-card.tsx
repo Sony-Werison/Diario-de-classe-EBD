@@ -51,7 +51,7 @@ const colorClasses = {
 export function StatCard({ title, value, unit, Icon, progress, trendText, color }: StatCardProps) {
   return (
     <Card className={cn(
-      "bg-slate-800 rounded-2xl p-3 sm:p-4 border border-slate-700 relative overflow-hidden group transition min-w-[140px] sm:min-w-[160px]",
+      "bg-card rounded-2xl p-3 sm:p-4 border border-border relative overflow-hidden group transition min-w-[140px] sm:min-w-[160px]",
       colorClasses[color].border
       )}>
       <div className="absolute -right-2 -top-2 p-3 opacity-10 group-hover:opacity-20 transition-opacity duration-300">
