@@ -45,16 +45,16 @@ export function StatCard({ title, value, unit, Icon, progress, trend, trendText,
       "bg-slate-800 rounded-2xl p-4 border border-slate-700 relative overflow-hidden group transition",
       colorClasses[color].border
       )}>
-      <div className="absolute right-0 top-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity duration-300">
-        <Icon className={cn("text-6xl", colorClasses[color].icon)} />
+      <div className="absolute -right-2 -top-2 p-3 opacity-10 group-hover:opacity-20 transition-opacity duration-300">
+        <Icon className={cn("text-6xl sm:text-7xl", colorClasses[color].icon)} />
       </div>
       <p className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-1">{title}</p>
       <div className="flex items-end gap-2">
-        <span className="text-3xl font-bold text-white">{value}</span>
+        <span className="text-2xl sm:text-3xl font-bold text-white">{value}</span>
         {unit && <span className="text-xs text-slate-400 mb-1">{unit}</span>}
         {trend === "up" && (
           <span className="text-xs text-green-400 mb-1 flex items-center">
-            <ArrowUp size={12} className="mr-1" />
+            <ArrowUp size={12} className="mr-0.5" />
             {trendText}
           </span>
         )}

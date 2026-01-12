@@ -22,9 +22,9 @@ const checkConfig: Record<CheckType, { Icon: React.ElementType; activeClass: str
 
 export function StudentRow({ student, onToggleCheck }: StudentRowProps) {
   const { id, name, photo, checks, dailyScore, level, xpPercent } = student;
-
+  const Icon = checkConfig['presence'].Icon;
   return (
-    <div className="bg-slate-800 p-3 flex items-center border-b border-slate-700/50 transition-colors hover:bg-slate-700/50 group">
+    <div className="bg-slate-800 p-3 flex items-center border-b border-slate-700/50 transition-colors hover:bg-slate-700/50 group min-w-[640px]">
       <div className="w-2/5 md:w-1/3 flex items-center gap-3 pl-2">
         <Avatar className="h-8 w-8">
           <AvatarFallback className="bg-slate-700 text-xs font-bold text-slate-300 border-slate-600">
@@ -40,21 +40,21 @@ export function StudentRow({ student, onToggleCheck }: StudentRowProps) {
         </div>
       </div>
       
-      <div className="flex-1 flex justify-center gap-1 sm:gap-6">
+      <div className="flex-1 flex justify-center gap-2 sm:gap-4">
         {(Object.keys(checkConfig) as CheckType[]).map(type => {
-          const Icon = checkConfig[type].Icon;
+          const CheckIcon = checkConfig[type].Icon;
           return (
             <button
               key={type}
               onClick={() => onToggleCheck(id, type)}
               className={cn(
-                "w-8 h-8 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center transition-all duration-200 border",
+                "w-10 h-10 rounded-lg flex items-center justify-center transition-all duration-200 border",
                 checks[type] ? checkConfig[type].activeClass : checkConfig[type].inactiveClass,
                 "hover:border-slate-500"
               )}
               aria-label={`Marcar ${type} para ${name}`}
             >
-              <Icon size={20} />
+              <CheckIcon size={20} />
             </button>
           )
         })}

@@ -87,10 +87,10 @@ export function StudentDashboard() {
             onPrevDate={() => handleDateChange('prev')}
             onNextDate={() => handleDateChange('next')}
         />
-        <main className="flex-1 overflow-y-auto p-4 sm:p-8 bg-background">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+        <main className="flex-1 overflow-y-auto p-4 sm:p-6 bg-background">
+          <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-6">
             <StatCard 
-              title="Presença Hoje"
+              title="Presença"
               value={`${presencePercent}%`}
               Icon={CheckCircle}
               progress={presencePercent}
@@ -113,7 +113,7 @@ export function StudentDashboard() {
               color="purple"
             />
             <StatCard 
-              title="Pontuação Total"
+              title="Pontuação"
               value={totalScore.toString()}
               unit="pts"
               Icon={Star}
@@ -122,11 +122,11 @@ export function StudentDashboard() {
             />
           </div>
 
-          <div className="bg-slate-800/50 rounded-t-xl">
+          <div className="bg-slate-800/50 rounded-t-xl overflow-x-auto">
              <StudentListHeader />
           </div>
          
-          <div className="space-y-1 bg-slate-800/50 rounded-b-xl overflow-hidden">
+          <div className="space-y-1 bg-slate-800/50 rounded-b-xl overflow-hidden overflow-x-auto">
             {studentsWithScores.map(student => (
               <StudentRow
                 key={student.id}
