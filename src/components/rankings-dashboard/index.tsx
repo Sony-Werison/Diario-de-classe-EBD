@@ -280,7 +280,7 @@ export function RankingsDashboard() {
                                 <Area key={student.id} type="monotone" dataKey={student.name} stroke={studentLineColors[student.name] || '#8884d8'} fillOpacity={0} strokeWidth={2} />
                             ))}
                              <Area type="monotone" dataKey={studentsSortedByXp[0]?.name} strokeWidth={2} stroke={studentLineColors[studentsSortedByXp[0]?.name] || '#8884d8'} fill="url(#colorUv)" />
-                        </LineChart>
+                        </AreaChart>
                     </ResponsiveContainer>
                 </CardContent>
             </Card>
