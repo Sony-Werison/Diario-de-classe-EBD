@@ -1,5 +1,5 @@
-import { ReportDashboard } from "@/components/report-dashboard";
+import { MonthlyReport } from "@/components/monthly-report";
 
 export default function ReportPage() {
-  return <ReportDashboard />;
+  return <MonthlyReport />;
 }

@@ -132,8 +132,6 @@ export function StudentDashboard() {
         switch (sortKey) {
             case 'name':
                 return a.name.localeCompare(b.name) * dir;
-            case 'age':
-                return ((a.age || 0) - (b.age || 0)) * dir;
             case 'progress':
                 return (a.completionPercent - b.completionPercent) * dir;
             default:

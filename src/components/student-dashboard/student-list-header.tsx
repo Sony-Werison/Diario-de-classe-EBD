@@ -2,7 +2,7 @@ import { CheckType } from "@/lib/data";
 import { cn } from "@/lib/utils";
 import { ArrowUp, ArrowDown } from "lucide-react";
 
-export type SortKey = 'name' | 'age' | 'progress';
+export type SortKey = 'name' | 'progress';
 
 interface StudentListHeaderProps {
   trackedItems: Record<CheckType, boolean>;
@@ -22,7 +22,11 @@ const itemLabels: Record<CheckType, string> = {
 export function StudentListHeader({ trackedItems, onSort, sortKey, sortDirection }: StudentListHeaderProps) {
   const visibleItems = (Object.keys(itemLabels) as CheckType[]).filter(
     item => trackedItems[item]
-  );
+  ) as CheckType[];
+
+  const orderedVisibleItems: CheckType[] = ['presence', 'material', 'task', 'verse', 'behavior'].filter(
+    item => visibleItems.includes(item as CheckType)
+  ) as CheckType[];
   
   const SortableHeader = ({ label, sortValue }: { label: string, sortValue: SortKey }) => {
     const isActive = sortKey === sortValue;
@@ -44,7 +48,7 @@ export function StudentListHeader({ trackedItems, onSort, sortKey, sortDirection
          <SortableHeader label="Aluno" sortValue="name"/>
       </div>
       <div className="flex-1 flex justify-end sm:justify-center gap-2 sm:gap-4 text-center items-end" style={{ height: '60px'}}>
-        {visibleItems.map(item => (
+        {orderedVisibleItems.map(item => (
             <span key={item} className="w-10 text-center -rotate-90 origin-center whitespace-nowrap text-slate-400" title={itemLabels[item]}>
                 {itemLabels[item]}
             </span>
