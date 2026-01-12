@@ -133,16 +133,17 @@ export function StudentDashboard() {
 
   const trackedItems = currentClass.trackedItems;
 
-  const getVisibleStatsCount = () => {
-    let count = 1; // totalScore is always visible
-    if(trackedItems.presence) count++;
-    if(trackedItems.verse) count++;
-    if(trackedItems.task) count++;
-    if(trackedItems.behavior) count++;
-    if(trackedItems.material) count++;
-    return count;
+  const getVisibleStats = () => {
+    const stats = [];
+    if(trackedItems.presence) stats.push('presence');
+    if(trackedItems.verse) stats.push('verse');
+    if(trackedItems.task) stats.push('task');
+    if(trackedItems.behavior) stats.push('behavior');
+    if(trackedItems.material) stats.push('material');
+    stats.push('totalScore');
+    return stats;
   }
-  const visibleStatsCount = getVisibleStatsCount();
+  const visibleStats = getVisibleStats();
 
   return (
       <div className="flex flex-1 flex-col overflow-hidden">
@@ -155,7 +156,7 @@ export function StudentDashboard() {
             onClassChange={setCurrentClassId}
         />
         <main className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-6 bg-slate-900">
-          <div className={`grid grid-cols-2 lg:grid-cols-${Math.min(visibleStatsCount, 6)} gap-3 sm:gap-4 mb-6`}>
+          <div className="grid grid-flow-col auto-cols-fr gap-2 sm:gap-4 mb-6 overflow-x-auto pb-4 -mx-3 sm:-mx-4 md:-mx-6 px-3 sm:px-4 md:px-6">
             {trackedItems.presence && <StatCard 
               title="Presença"
               value={`${presencePercent}%`}

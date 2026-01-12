@@ -51,23 +51,23 @@ const colorClasses = {
 export function StatCard({ title, value, unit, Icon, progress, trendText, color }: StatCardProps) {
   return (
     <Card className={cn(
-      "bg-slate-800 rounded-2xl p-4 border border-slate-700 relative overflow-hidden group transition",
+      "bg-slate-800 rounded-2xl p-3 sm:p-4 border border-slate-700 relative overflow-hidden group transition min-w-[140px] sm:min-w-[160px]",
       colorClasses[color].border
       )}>
       <div className="absolute -right-2 -top-2 p-3 opacity-10 group-hover:opacity-20 transition-opacity duration-300">
         <Icon className={cn("text-6xl sm:text-7xl", colorClasses[color].icon)} />
       </div>
-      <p className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-1">{title}</p>
-      <div className="flex items-end gap-2">
-        <span className="text-2xl sm:text-3xl font-bold text-white">{value}</span>
+      <p className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-1 truncate">{title}</p>
+      <div className="flex items-end gap-1 sm:gap-2">
+        <span className="text-2xl sm:text-3xl font-bold text-white leading-none">{value}</span>
         {unit && <span className="text-xs text-slate-400 mb-1">{unit}</span>}
         {trendText && (
-          <span className="text-xs text-green-400 mb-1 flex items-center">
+          <span className="text-xs text-green-400 mb-1 flex items-center whitespace-nowrap">
             {trendText}
           </span>
         )}
       </div>
-      <div className="w-full bg-slate-700 h-1 mt-3 rounded-full overflow-hidden">
+      <div className="w-full bg-slate-700 h-1 mt-2 sm:mt-3 rounded-full overflow-hidden">
         <Progress value={progress} indicatorClassName={colorClasses[color].progress} className="h-1 bg-slate-700"/>
       </div>
     </Card>
