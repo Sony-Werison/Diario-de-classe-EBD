@@ -156,7 +156,29 @@ export function StudentDashboard() {
             onClassChange={setCurrentClassId}
         />
         <main className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-6 bg-background">
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-4 mb-6">
+          <div className="bg-slate-800/50 rounded-t-xl">
+             <StudentListHeader trackedItems={trackedItems} />
+          </div>
+         
+          <div className="space-y-px bg-slate-800/50 rounded-b-xl overflow-hidden">
+            {studentsWithScores.map(student => (
+              <StudentRow
+                key={student.id}
+                student={student}
+                onToggleCheck={handleToggleCheck}
+                trackedItems={trackedItems}
+              />
+            ))}
+             {studentsWithScores.length === 0 && (
+                <div className="text-center py-16 text-slate-500 bg-slate-800">
+                    <Users size={40} className="mx-auto mb-2" />
+                    <h3 className="font-bold">Nenhum aluno nesta classe</h3>
+                    <p className="text-sm">Vá para as configurações para adicionar alunos.</p>
+                </div>
+             )}
+          </div>
+          
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-4 mt-6">
             {trackedItems.presence && <StatCard 
               title="Presença"
               value={`${presencePercent}%`}
@@ -201,28 +223,6 @@ export function StudentDashboard() {
               progress={(totalScore / (currentClass.students.length * 100))}
               color="indigo"
             />
-          </div>
-
-          <div className="bg-slate-800/50 rounded-t-xl">
-             <StudentListHeader trackedItems={trackedItems} />
-          </div>
-         
-          <div className="space-y-px bg-slate-800/50 rounded-b-xl overflow-hidden">
-            {studentsWithScores.map(student => (
-              <StudentRow
-                key={student.id}
-                student={student}
-                onToggleCheck={handleToggleCheck}
-                trackedItems={trackedItems}
-              />
-            ))}
-             {studentsWithScores.length === 0 && (
-                <div className="text-center py-16 text-slate-500 bg-slate-800">
-                    <Users size={40} className="mx-auto mb-2" />
-                    <h3 className="font-bold">Nenhum aluno nesta classe</h3>
-                    <p className="text-sm">Vá para as configurações para adicionar alunos.</p>
-                </div>
-             )}
           </div>
         </main>
       </div>
