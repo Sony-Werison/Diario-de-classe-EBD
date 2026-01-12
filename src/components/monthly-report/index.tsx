@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo, useRef, useCallback } from 'react';
+import React, { useState, useMemo, useRef, useCallback, useEffect } from 'react';
 import { initialClasses, ClassConfig, CheckType } from "@/lib/data";
 import {
   Select,
@@ -105,12 +105,17 @@ export function MonthlyReport() {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedCriterion, setSelectedCriterion] = useState<CheckType | 'all'>('all');
   const reportRef = useRef<HTMLDivElement>(null);
+  const [monthlyData, setMonthlyData] = useState<ReturnType<typeof generateSimulatedMonthlyData>>({});
 
   const currentClass = useMemo(() => classes.find(c => c.id === currentClassId) || classes[0], [classes, currentClassId]);
   
-  const monthlyData = useMemo(() => {
-      if (!currentClass || currentClass.students.length === 0) return {};
-      return generateSimulatedMonthlyData(currentClass.students, currentMonth, currentClass.trackedItems);
+  useEffect(() => {
+    if (!currentClass || currentClass.students.length === 0) {
+        setMonthlyData({});
+        return;
+    };
+    const data = generateSimulatedMonthlyData(currentClass.students, currentMonth, currentClass.trackedItems);
+    setMonthlyData(data);
   }, [currentClass, currentMonth]);
   
   const daysInMonth = useMemo(() => {
