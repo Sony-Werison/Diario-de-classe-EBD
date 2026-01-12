@@ -5,7 +5,6 @@ import { cn } from "@/lib/utils";
 import { Progress } from "@/components/ui/progress";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { UserCheck, Book, BookHeart, Smile, Pen, Crown, ThumbsUp } from "lucide-react";
-import { AiSuggestionDialog } from './ai-suggestion-dialog';
 
 interface StudentRowProps {
   student: Student & { dailyScore: number; level: number; xpPercent: number };
@@ -71,11 +70,6 @@ export function StudentRow({ student, onToggleCheck }: StudentRowProps) {
       </div>
 
       <div className="w-12 text-right">
-        <AiSuggestionDialog
-          studentName={name}
-          attendance={checks.presence}
-          homework={checks.task}
-        />
       </div>
     </div>
   );
