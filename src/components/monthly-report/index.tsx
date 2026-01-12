@@ -233,27 +233,27 @@ export function MonthlyReport() {
                 </CardHeader>
                 <CardContent className="overflow-x-auto pb-6">
                     <div className="border border-slate-700 rounded-lg overflow-hidden min-w-[800px]">
-                    <div className="grid bg-slate-900/50 font-bold text-xs uppercase text-slate-400" style={{gridTemplateColumns: `200px repeat(${sundaysInMonth.length}, minmax(60px, 1fr))`}}>
+                    <div className="grid bg-slate-900/50 font-bold text-xs uppercase text-slate-400" style={{gridTemplateColumns: `minmax(150px, 1.5fr) repeat(${sundaysInMonth.length}, minmax(40px, 1fr))`}}>
                         <div className="p-3 border-r border-slate-700">Aluno</div>
                         {sundaysInMonth.map(day => (
                             <div key={day.toISOString()} className="p-3 text-center border-r border-slate-700 last:border-r-0">
-                                {format(day, 'dd/MM')}
+                                {format(day, 'dd')}
                             </div>
                         ))}
                     </div>
                     <div>
                         {currentClass.students.map(student => (
-                            <div key={student.id} className="grid items-center border-b border-slate-700 last:border-b-0 text-sm hover:bg-slate-700/50" style={{gridTemplateColumns: `200px repeat(${sundaysInMonth.length}, minmax(60px, 1fr))`}}>
-                                <div className="p-3 whitespace-nowrap overflow-hidden text-ellipsis border-r border-slate-700 font-medium text-slate-200">{student.name}</div>
+                            <div key={student.id} className="grid items-center border-b border-slate-700 last:border-b-0 text-sm hover:bg-slate-700/50" style={{gridTemplateColumns: `minmax(150px, 1.5fr) repeat(${sundaysInMonth.length}, minmax(40px, 1fr))`}}>
+                                <div className="p-2 whitespace-nowrap overflow-hidden text-ellipsis border-r border-slate-700 font-medium text-slate-200">{student.name}</div>
                                 {sundaysInMonth.map(day => {
                                     const dayData = getStudentDataForDay(student.id, day);
                                     return (
-                                    <div key={day.toISOString()} className="p-2 text-center border-r border-slate-700 last:border-r-0 h-full flex items-center justify-center">
+                                    <div key={day.toISOString()} className="text-center border-r border-slate-700 last:border-r-0 h-full flex items-center justify-center py-2">
                                         {isClient && dayData ? (
                                         <TooltipProvider>
                                             <Tooltip>
                                                 <TooltipTrigger asChild>
-                                                    <span className="flex items-center justify-center gap-1.5 flex-wrap w-full">
+                                                    <span className="flex flex-col items-center justify-center gap-1">
                                                         {(Object.keys(itemIcons) as CheckType[]).filter(item => currentClass.trackedItems[item]).map(item => (
                                                             <div key={item}>
                                                                 {dayData.checks[item] ? (
