@@ -7,14 +7,12 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
-import { LayoutGrid, Users, Trophy, LogOut, Settings, CalendarCheck } from "lucide-react";
+import { LayoutGrid, LogOut, Settings } from "lucide-react";
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
 const navLinks = [
   { href: "/", icon: LayoutGrid, label: "Painel" },
-  { href: "/rankings", icon: Trophy, label: "Rankings" },
-  { href: "/report", icon: CalendarCheck, label: "Relatório" },
   { href: "/settings", icon: Settings, label: "Ajustes" },
 ];
 

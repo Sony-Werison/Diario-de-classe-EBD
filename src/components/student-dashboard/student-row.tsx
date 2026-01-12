@@ -3,7 +3,7 @@
 import { Student, CheckType } from "@/lib/data";
 import { cn } from "@/lib/utils";
 import { Progress } from "@/components/ui/progress";
-import { UserCheck, Book, BookHeart, Smile, Pen } from "lucide-react";
+import { CheckCircle, Pen, Pencil, BookOpen, Smile } from "lucide-react";
 
 interface StudentRowProps {
   student: Student & { 
@@ -18,10 +18,10 @@ interface StudentRowProps {
 }
 
 const checkConfig: Record<CheckType, { Icon: React.ElementType; activeClass: string; inactiveClass: string; }> = {
-  presence: { Icon: UserCheck, activeClass: 'bg-blue-500 border-blue-500 text-white', inactiveClass: 'text-slate-400 bg-slate-700/50' },
+  presence: { Icon: CheckCircle, activeClass: 'bg-blue-500 border-blue-500 text-white', inactiveClass: 'text-slate-400 bg-slate-700/50' },
   material: { Icon: Pen, activeClass: 'bg-pink-500 border-pink-500 text-white', inactiveClass: 'text-slate-400 bg-slate-700/50' },
-  task: { Icon: Book, activeClass: 'bg-purple-500 border-purple-500 text-white', inactiveClass: 'text-slate-400 bg-slate-700/50' },
-  verse: { Icon: BookHeart, activeClass: 'bg-yellow-500 border-yellow-500 text-black', inactiveClass: 'text-slate-400 bg-slate-700/50' },
+  task: { Icon: Pencil, activeClass: 'bg-purple-500 border-purple-500 text-white', inactiveClass: 'text-slate-400 bg-slate-700/50' },
+  verse: { Icon: BookOpen, activeClass: 'bg-yellow-500 border-yellow-500 text-black', inactiveClass: 'text-slate-400 bg-slate-700/50' },
   behavior: { Icon: Smile, activeClass: 'bg-emerald-500 border-emerald-500 text-white', inactiveClass: 'text-slate-400 bg-slate-700/50' },
 };
 
