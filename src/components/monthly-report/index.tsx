@@ -94,7 +94,11 @@ const generateSimulatedDataForStudent = (studentId: number, month: Date, classCo
                 checks.presence = isPresent;
              }
 
-            (Object.keys(itemIcons) as CheckType[]).forEach(key => {
+            const orderedVisibleItems: CheckType[] = ['presence', 'material', 'task', 'verse', 'behavior'].filter(
+                item => classConfig.trackedItems[item as CheckType]
+            ) as CheckType[];
+
+            orderedVisibleItems.forEach(key => {
                 if (key !== 'presence' && classConfig.trackedItems[key]) {
                    checks[key] = isPresent && random() > 0.4; // 60% chance if present
                 }
@@ -163,6 +167,10 @@ export function MonthlyReport() {
     const studentData = simulatedData.find(sd => sd.studentId === studentId);
     return studentData?.monthData.find(md => isSameDay(md.date, day));
   }
+
+  const orderedVisibleItems: CheckType[] = ['presence', 'material', 'task', 'verse', 'behavior'].filter(
+    item => currentClass.trackedItems[item as CheckType]
+  ) as CheckType[];
 
   return (
     <div className="p-4 sm:p-6 text-white bg-background flex-1">
@@ -233,7 +241,7 @@ export function MonthlyReport() {
                 </CardHeader>
                 <CardContent className="overflow-x-auto pb-6">
                     <div className="border border-slate-700 rounded-lg overflow-hidden min-w-[800px]">
-                    <div className="grid bg-slate-900/50 font-bold text-xs uppercase text-slate-400" style={{gridTemplateColumns: `minmax(150px, 1.5fr) repeat(${sundaysInMonth.length}, minmax(40px, 1fr))`}}>
+                    <div className="grid bg-slate-900/50 font-bold text-xs uppercase text-slate-400" style={{gridTemplateColumns: `minmax(150px, 1.5fr) repeat(${sundaysInMonth.length}, 40px)`}}>
                         <div className="p-3 border-r border-slate-700">Aluno</div>
                         {sundaysInMonth.map(day => (
                             <div key={day.toISOString()} className="p-3 text-center border-r border-slate-700 last:border-r-0">
@@ -243,7 +251,7 @@ export function MonthlyReport() {
                     </div>
                     <div>
                         {currentClass.students.map(student => (
-                            <div key={student.id} className="grid items-center border-b border-slate-700 last:border-b-0 text-sm hover:bg-slate-700/50" style={{gridTemplateColumns: `minmax(150px, 1.5fr) repeat(${sundaysInMonth.length}, minmax(40px, 1fr))`}}>
+                            <div key={student.id} className="grid items-center border-b border-slate-700 last:border-b-0 text-sm hover:bg-slate-700/50" style={{gridTemplateColumns: `minmax(150px, 1.5fr) repeat(${sundaysInMonth.length}, 40px)`}}>
                                 <div className="p-2 whitespace-nowrap overflow-hidden text-ellipsis border-r border-slate-700 font-medium text-slate-200">{student.name}</div>
                                 {sundaysInMonth.map(day => {
                                     const dayData = getStudentDataForDay(student.id, day);
@@ -254,7 +262,7 @@ export function MonthlyReport() {
                                             <Tooltip>
                                                 <TooltipTrigger asChild>
                                                     <span className="flex flex-col items-center justify-center gap-1">
-                                                        {(Object.keys(itemIcons) as CheckType[]).filter(item => currentClass.trackedItems[item]).map(item => (
+                                                        {orderedVisibleItems.map(item => (
                                                             <div key={item}>
                                                                 {dayData.checks[item] ? (
                                                                     <Check size={14} className={cn(itemColors[item])} />
@@ -267,7 +275,7 @@ export function MonthlyReport() {
                                                 </TooltipTrigger>
                                                 <TooltipContent className="bg-slate-900 border-slate-700 text-white">
                                                     <div className="space-y-1">
-                                                        {(Object.keys(itemIcons) as CheckType[]).filter(item => currentClass.trackedItems[item]).map(item => (
+                                                        {orderedVisibleItems.map(item => (
                                                             <div key={item} className="flex items-center gap-2 text-xs">
                                                                 {dayData.checks[item] ? <Check size={14} className="text-green-500"/> : <Dot size={14} className="text-slate-500" />}
                                                                 <span>{itemLabels[item]}</span>
