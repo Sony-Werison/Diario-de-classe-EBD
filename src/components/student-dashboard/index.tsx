@@ -136,10 +136,10 @@ export function StudentDashboard() {
   const getVisibleStats = () => {
     const stats = [];
     if(trackedItems.presence) stats.push('presence');
-    if(trackedItems.verse) stats.push('verse');
-    if(trackedItems.task) stats.push('task');
-    if(trackedItems.behavior) stats.push('behavior');
     if(trackedItems.material) stats.push('material');
+    if(trackedItems.task) stats.push('task');
+    if(trackedItems.verse) stats.push('verse');
+    if(trackedItems.behavior) stats.push('behavior');
     stats.push('totalScore');
     return stats;
   }
@@ -187,12 +187,12 @@ export function StudentDashboard() {
               trendText={`${currentClass.students.filter(s => s.checks.presence).length}/${currentClass.students.length}`}
               color="blue"
             />}
-            {trackedItems.verse && <StatCard 
-              title="Versículos"
-              value={`${versePercent}%`}
-              Icon={BookOpen}
-              progress={versePercent}
-              color="yellow"
+            {trackedItems.material && <StatCard 
+              title="Material"
+              value={`${materialPercent}%`}
+              Icon={Pen}
+              progress={materialPercent}
+              color="pink"
             />}
             {trackedItems.task && <StatCard 
               title="Tarefas"
@@ -201,19 +201,19 @@ export function StudentDashboard() {
               progress={taskPercent}
               color="purple"
             />}
+            {trackedItems.verse && <StatCard 
+              title="Versículos"
+              value={`${versePercent}%`}
+              Icon={BookOpen}
+              progress={versePercent}
+              color="yellow"
+            />}
              {trackedItems.behavior && <StatCard 
               title="Comportamento"
               value={`${behaviorPercent}%`}
               Icon={Smile}
               progress={behaviorPercent}
               color="emerald"
-            />}
-             {trackedItems.material && <StatCard 
-              title="Material"
-              value={`${materialPercent}%`}
-              Icon={Pen}
-              progress={materialPercent}
-              color="pink"
             />}
             <StatCard 
               title="Pontos do Dia"

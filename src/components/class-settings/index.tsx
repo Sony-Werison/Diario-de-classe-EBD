@@ -32,10 +32,10 @@ import { cn } from "@/lib/utils";
 
 const itemLabels: Record<CheckType, string> = {
   presence: "Presença",
+  material: "Material",
   task: "Tarefa",
   verse: "Versículo",
   behavior: "Comportamento",
-  material: "Material",
 };
 
 const calculateAge = (birthDateString: string) => {

@@ -7,10 +7,10 @@ interface StudentListHeaderProps {
 
 const itemLabels: Record<CheckType, string> = {
   presence: "Presença",
+  material: "Material",
   task: "Tarefa",
   verse: "Versículo",
-  behavior: "Comport.",
-  material: "Material",
+  behavior: "Comportamento",
 };
 
 export function StudentListHeader({ trackedItems }: StudentListHeaderProps) {

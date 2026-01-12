@@ -36,19 +36,19 @@ import { Crown, Star, Users, Award, Medal } from 'lucide-react';
 
 const itemLabels: Record<CheckType, string> = {
   presence: "Presença",
+  material: "Material",
   task: "Tarefa",
   verse: "Versículo",
   behavior: "Comportamento",
-  material: "Material",
 };
 
-const studentColors = ['#22c55e', '#3b82f6', '#f97316', '#8b5cf6', '#ec4899'];
+const studentColors = ['#22c55e', '#ec4899', '#3b82f6', '#f97316', '#8b5cf6'];
 const criteriaColors: Record<CheckType, string> = {
   presence: studentColors[0],
-  task: studentColors[1],
-  verse: studentColors[2],
-  behavior: studentColors[3],
-  material: studentColors[4],
+  material: studentColors[1],
+  task: studentColors[2],
+  verse: studentColors[3],
+  behavior: studentColors[4],
 };
 
 
