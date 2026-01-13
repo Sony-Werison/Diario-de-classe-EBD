@@ -64,8 +64,15 @@ export function StudentDashboard({ initialDate, classId: initialClassId }: { ini
     setUserRole(role);
     
     const data = getSimulatedData();
-    setClasses(data.classes);
-    const resolvedClassId = initialClassId || data.classes[0]?.id;
+    let availableClasses = data.classes;
+    if (role === 'teacher') {
+        const teacherId = sessionStorage.getItem('teacherId');
+        if (teacherId) {
+            availableClasses = data.classes.filter(c => c.teachers.some(t => t.id === teacherId));
+        }
+    }
+    setClasses(availableClasses);
+    const resolvedClassId = initialClassId || availableClasses[0]?.id;
     if(resolvedClassId) {
         setCurrentClassId(resolvedClassId);
     }
@@ -82,9 +89,11 @@ export function StudentDashboard({ initialDate, classId: initialClassId }: { ini
         
         const dateKey = format(dateFromUrl, "yyyy-MM-dd");
         const data = getSimulatedData();
+        const teacherId = sessionStorage.getItem('teacherId');
+        const role = sessionStorage.getItem('userRole');
 
         const lesson = data.lessons[currentClassId]?.[dateKey] || {
-          teacherId: currentClass.teachers[0]?.id || "",
+          teacherId: role === 'teacher' ? teacherId : currentClass.teachers[0]?.id || "",
           title: "",
           status: 'held',
           cancellationReason: '',

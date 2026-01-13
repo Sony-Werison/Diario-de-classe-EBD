@@ -1,13 +1,17 @@
 
 "use client";
 
-import { Church, Shield, Eye, ArrowRight } from 'lucide-react';
+import { Church, Shield, Eye, ArrowRight, User } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { useState, useMemo, useEffect } from 'react';
+import { getSimulatedData, Teacher } from '@/lib/data';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
 
 const profiles = [
   {
     name: "Professor",
-    icon: Church,
+    icon: User, // Changed icon to User for clarity
     description: "Acesso para registrar aulas e gerenciar as turmas atribuídas.",
     role: "teacher"
   },
@@ -27,16 +31,32 @@ const profiles = [
 
 export default function ProfileSelectionPage() {
   const router = useRouter();
+  const [isTeacherSelectOpen, setIsTeacherSelectOpen] = useState(false);
+  const [allTeachers, setAllTeachers] = useState<Teacher[]>([]);
+
+  useEffect(() => {
+    // Load all teachers from all classes on component mount
+    const data = getSimulatedData();
+    const teachers = data.classes.flatMap(c => c.teachers);
+    // Remove duplicates
+    const uniqueTeachers = Array.from(new Map(teachers.map(t => [t.id, t])).values());
+    setAllTeachers(uniqueTeachers.sort((a,b) => a.name.localeCompare(b.name)));
+  }, []);
 
   const handleProfileSelect = (role: string) => {
-    // Store role in sessionStorage to persist across page loads but not sessions
-    sessionStorage.setItem('userRole', role);
-    // For teacher profile, let's assume teacher-3 for demonstration
     if (role === 'teacher') {
-        sessionStorage.setItem('teacherId', 'teacher-3');
+      setIsTeacherSelectOpen(true);
     } else {
-        sessionStorage.removeItem('teacherId');
+      sessionStorage.setItem('userRole', role);
+      sessionStorage.removeItem('teacherId');
+      router.push('/calendar');
     }
+  };
+
+  const handleTeacherSelect = (teacher: Teacher) => {
+    sessionStorage.setItem('userRole', 'teacher');
+    sessionStorage.setItem('teacherId', teacher.id);
+    setIsTeacherSelectOpen(false);
     router.push('/calendar');
   };
 
@@ -71,6 +91,29 @@ export default function ProfileSelectionPage() {
           );
         })}
       </div>
+
+      <Dialog open={isTeacherSelectOpen} onOpenChange={setIsTeacherSelectOpen}>
+        <DialogContent className="bg-card border-border text-white">
+          <DialogHeader>
+            <DialogTitle>Quem está acessando?</DialogTitle>
+            <DialogDescription>
+              Selecione o seu nome na lista para continuar.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="max-h-[60vh] overflow-y-auto space-y-2 pr-2">
+            {allTeachers.map(teacher => (
+              <Button 
+                key={teacher.id} 
+                variant="outline" 
+                className="w-full justify-start text-base"
+                onClick={() => handleTeacherSelect(teacher)}
+              >
+                {teacher.name}
+              </Button>
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
