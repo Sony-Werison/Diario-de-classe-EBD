@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useMemo, useEffect } from 'react';
@@ -12,7 +13,7 @@ import {
   getDay,
 } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { ChevronLeft, ChevronRight, Church, CalendarCheck, CheckCircle, Ban, ChevronDown, Check } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Church, Ban, CheckCircle, ChevronDown, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { getSimulatedData, DailyLesson, ClassConfig, initialClasses, Teacher } from '@/lib/data';
 import { Button } from '@/components/ui/button';
@@ -32,7 +33,7 @@ export function CalendarPage() {
     const data = getSimulatedData();
     setDailyLessons(data.lessons);
     setIsClient(true);
-  }, [currentMonth]);
+  }, [currentMonth, currentClassId]);
   
   useEffect(() => {
     const handleStorageChange = () => {
@@ -136,32 +137,32 @@ export function CalendarPage() {
                     key={day.toString()}
                     href={`/dashboard/${dateKey}`}
                     className={cn(
-                        'flex items-start sm:items-center justify-between p-4 rounded-lg transition-colors flex-col sm:flex-row gap-4 sm:gap-2',
+                        'flex items-center justify-between p-4 rounded-lg transition-colors',
                         'hover:bg-secondary',
                         isToday && 'bg-primary/10 border border-primary/50'
                     )}
                 >
-                    <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-4 flex-1">
                        <div className="flex flex-col items-center">
                             <span className="text-xs text-slate-400 uppercase">{format(day, "EEE", { locale: ptBR })}</span>
                             <span className={cn('text-2xl font-bold', isToday ? 'text-primary' : 'text-white')}>
                                 {format(day, "d")}
                             </span>
                        </div>
-                       <div>
+                       <div className="flex-1">
                             <span className={cn('font-semibold', isToday ? 'text-primary' : 'text-white')}>
                                 {format(day, "d 'de' MMMM", { locale: ptBR })}
                             </span>
                            {lesson && (
                              <div className="text-sm text-slate-400 mt-1 space-y-1">
-                                <p className='truncate max-w-xs'>{lesson.title || "Aula sem título"}</p>
+                                <p className='truncate max-w-xs sm:max-w-sm md:max-w-md'>{lesson.title || "Aula sem título"}</p>
                                 <p className="font-medium text-slate-500">{teacherName}</p>
                              </div>
                            )}
                        </div>
                     </div>
                     {lesson && (
-                        <div className="text-right self-center">
+                        <div className="ml-4">
                            {lesson.status === 'cancelled' ? (
                                 <Ban className="w-5 h-5 text-yellow-500" title="Aula não realizada"/>
                            ) : (
