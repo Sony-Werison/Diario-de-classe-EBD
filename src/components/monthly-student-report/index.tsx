@@ -158,7 +158,7 @@ export function MonthlyStudentReport() {
                     </DropdownMenuTrigger>
                     <DropdownMenuContent className="w-[var(--radix-dropdown-menu-trigger-width)] bg-card border-border text-white">
                         {classes.map((c) => (
-                        <DropdownMenuItem key={c.id} onSelect={() => setCurrentClassId(c.id)} className="cursor-pointer focus:bg-card">
+                        <DropdownMenuItem key={c.id} onSelect={() => setCurrentClassId(c.id)} className="cursor-pointer focus:bg-secondary">
                             <Check size={16} className={cn("mr-2", currentClassId === c.id ? "opacity-100" : "opacity-0")} />
                             <div className="w-3 h-3 rounded-full mr-2" style={{backgroundColor: c.color}}/>
                             {c.name}
@@ -176,7 +176,7 @@ export function MonthlyStudentReport() {
                     </DropdownMenuTrigger>
                     <DropdownMenuContent className="w-[var(--radix-dropdown-menu-trigger-width)] bg-card border-border text-white">
                         {currentClass.students.map((s) => (
-                        <DropdownMenuItem key={s.id} onSelect={() => setSelectedStudentId(s.id)} className="cursor-pointer focus:bg-card">
+                        <DropdownMenuItem key={s.id} onSelect={() => setSelectedStudentId(s.id)} className="cursor-pointer focus:bg-secondary">
                              <Check size={16} className={cn("mr-2", selectedStudentId === s.id ? "opacity-100" : "opacity-0")} />
                             {s.name}
                         </DropdownMenuItem>
@@ -213,52 +213,55 @@ export function MonthlyStudentReport() {
                         const isComplete = progress.completionPercent === 100;
                         
                         return (
-                             <div key={dateKey} className="bg-slate-800 p-3 border-b border-slate-700/50">
-                                <div className="flex items-start justify-between gap-3">
+                            <div key={dateKey} className="bg-slate-800 p-2 border-b border-slate-700/50">
+                                <div className="flex items-center justify-between gap-3">
                                     <div className="flex-1 space-y-2 min-w-0">
-                                      <div>
-                                        <p className="text-sm font-semibold text-slate-200">{format(day, "dd 'de' MMMM", { locale: ptBR })}</p>
-                                        <p className={cn("text-xs truncate", isLessonCancelled ? "text-yellow-400 italic" : "text-slate-400")}>
-                                            {isLessonCancelled ? lesson.cancellationReason : lesson?.title || "Sem título"}
-                                        </p>
-                                      </div>
-                                      <div className="flex flex-col justify-center">
-                                        <div className="flex justify-between text-xs mb-0.5">
-                                            <span className={cn("font-bold", !isComplete ? "text-yellow-400" : "text-primary")}>
-                                                {Math.round(progress.completionPercent)}%
-                                            </span>
-                                            <span className="text-slate-500">{progress.checkedItemsCount}/{progress.totalTrackedItems}</span>
+                                        <div>
+                                            <p className={cn("text-sm font-semibold", isLessonCancelled ? "text-slate-500" : "text-slate-200")}>{format(day, "dd 'de' MMMM", { locale: ptBR })}</p>
+                                            <p className={cn("text-xs truncate", isLessonCancelled ? "text-yellow-400 italic" : "text-slate-400")}>
+                                                {isLessonCancelled ? lesson.cancellationReason : lesson?.title || "Sem título"}
+                                            </p>
                                         </div>
-                                        <Progress value={progress.completionPercent} className="h-1 bg-slate-900 border border-slate-700" indicatorClassName={cn(!isComplete ? "bg-gradient-to-r from-yellow-400 to-yellow-600" : "bg-primary")} />
-                                      </div>
-                                    </div>
-                                    <div className="flex flex-col items-end gap-1.5 shrink-0">
-                                        {(Object.keys(checkConfig) as (CheckType | 'task')[]).map(type => {
-                                            if (!currentClass.trackedItems[type] || (type === 'task' && currentClass.taskMode === 'daily')) return null;
-
-                                            const CheckIcon = checkConfig[type].Icon;
-                                            return (
-                                            <div key={type} className="flex items-center gap-1.5">
-                                                <span className="text-[10px] text-slate-500 font-semibold w-12 text-right">{checkConfig[type].label}</span>
-                                                <div
-                                                    className={cn(
-                                                        "w-6 h-6 rounded-lg flex items-center justify-center transition-all duration-200 border",
-                                                        checks?.[type] ? checkConfig[type].activeClass : checkConfig[type].inactiveClass,
-                                                    )}
-                                                    >
-                                                    {isLessonCancelled && !checks?.[type] && type !== 'task' ? <Ban size={14} className="text-yellow-500" /> : <CheckIcon size={14} />}
-                                                </div>
+                                        <div className="flex flex-col justify-center">
+                                            <div className="flex justify-between text-xs mb-0.5">
+                                                <span className={cn("font-bold", !isComplete ? "text-yellow-400" : "text-primary")}>
+                                                    {Math.round(progress.completionPercent)}%
+                                                </span>
+                                                <span className="text-slate-500">{progress.checkedItemsCount}/{progress.totalTrackedItems}</span>
                                             </div>
-                                            )
-                                        })}
+                                            <Progress value={progress.completionPercent} className="h-1 bg-slate-900 border border-slate-700" indicatorClassName={cn(!isComplete ? "bg-gradient-to-r from-yellow-400 to-yellow-600" : "bg-primary")} />
+                                        </div>
+                                    </div>
 
-                                         {currentClass.trackedItems.task && currentClass.taskMode === 'daily' && (
-                                            <div className="flex flex-col items-end gap-1 mt-1">
-                                                <span className="text-[10px] text-slate-500 font-semibold">{checkConfig.task.label}</span>
+                                    <div className="flex flex-col items-end gap-1.5 shrink-0">
+                                        <div className="flex flex-wrap justify-end gap-1">
+                                            {(Object.keys(checkConfig) as (CheckType | 'task')[]).map(type => {
+                                                if (!currentClass.trackedItems[type] || (type === 'task' && currentClass.taskMode === 'daily')) return null;
+
+                                                const CheckIcon = checkConfig[type].Icon;
+                                                return (
+                                                    <div key={type} className="flex flex-col items-center gap-1">
+                                                        <div
+                                                            className={cn(
+                                                                "w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200 border cursor-default",
+                                                                checks?.[type] ? checkConfig[type].activeClass : checkConfig[type].inactiveClass,
+                                                            )}
+                                                            >
+                                                            {isLessonCancelled && !checks?.[type] && type !== 'task' ? <Ban size={16} className="text-yellow-500" /> : <CheckIcon size={16} />}
+                                                        </div>
+                                                        <span className="text-[9px] text-slate-500 font-semibold">{checkConfig[type].label}</span>
+                                                    </div>
+                                                )
+                                            })}
+                                        </div>
+                                        
+                                        {currentClass.trackedItems.task && currentClass.taskMode === 'daily' && (
+                                            <div className="flex flex-col items-center gap-1">
                                                 <div className="flex items-center justify-center gap-1 border border-slate-700 rounded-lg p-1 bg-slate-700/50">
                                                     {weekDays.map(day => (
                                                         <button
                                                             key={day.key}
+                                                            disabled={true}
                                                             className={cn(
                                                                 "w-5 h-6 rounded-md flex items-center justify-center transition-all duration-200 text-[10px] font-bold cursor-default",
                                                                 checks?.dailyTasks?.[day.key] ? checkConfig.task.activeClass : 'text-slate-400 bg-slate-700/50'
@@ -268,6 +271,7 @@ export function MonthlyStudentReport() {
                                                         </button>
                                                     ))}
                                                 </div>
+                                                <span className="text-[9px] text-slate-500 font-semibold">{checkConfig.task.label}</span>
                                             </div>
                                         )}
                                     </div>
@@ -289,3 +293,5 @@ export function MonthlyStudentReport() {
     </div>
   );
 }
+
+    
