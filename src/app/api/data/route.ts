@@ -6,6 +6,12 @@ import { getInitialData } from '@/lib/data';
 
 const DATA_BLOB_KEY = 'data.json';
 
+// Define a type for the error object from Vercel Blob
+interface VercelBlobError extends Error {
+  code?: string;
+  status?: number;
+}
+
 export async function GET(request: NextRequest) {
   try {
     const blob = await get(DATA_BLOB_KEY, {
@@ -13,10 +19,12 @@ export async function GET(request: NextRequest) {
     });
     const data = await blob.json();
     return NextResponse.json(data, { status: 200 });
-  } catch (error: any) {
-    // O erro do Vercel Blob para "não encontrado" pode não ter um 'status' padrão.
-    // Verificamos pelo nome do erro ou mensagem.
-    if (error.code === 'not_found' || (error.status && error.status === 404)) {
+  } catch (error: unknown) {
+    const vercelError = error as VercelBlobError;
+
+    // The 'not_found' code indicates the blob doesn't exist.
+    // This is expected on the first run.
+    if (vercelError.code === 'not_found') {
       console.log("Blob não encontrado. Criando com dados iniciais.");
       try {
           const initialData = getInitialData();
@@ -25,14 +33,16 @@ export async function GET(request: NextRequest) {
               token: process.env.BLOB_READ_WRITE_TOKEN 
           });
           return NextResponse.json(initialData, { status: 200 });
-      } catch (putError: any) {
-           console.error("Erro ao criar o blob inicial:", putError);
-           return NextResponse.json({ message: "Erro interno ao criar os dados iniciais.", error: putError.message }, { status: 500 });
+      } catch (putError: unknown) {
+           const putVercelError = putError as VercelBlobError;
+           console.error("Erro ao criar o blob inicial:", putVercelError);
+           return NextResponse.json({ message: "Erro interno ao criar os dados iniciais.", error: putVercelError.message }, { status: 500 });
       }
     }
-    // Para qualquer outro erro na busca (GET)
-    console.error("Erro ao buscar os dados do Blob:", error);
-    return NextResponse.json({ message: "Erro interno ao buscar os dados.", error: error.message || 'Erro desconhecido' }, { status: 500 });
+    
+    // For any other error during the GET operation
+    console.error("Erro ao buscar os dados do Blob:", vercelError);
+    return NextResponse.json({ message: "Erro interno ao buscar os dados.", error: vercelError.message || 'Erro desconhecido' }, { status: 500 });
   }
 }
 
@@ -52,8 +62,9 @@ export async function POST(request: NextRequest) {
     });
     
     return NextResponse.json({ message: "Dados salvos com sucesso" }, { status: 200 });
-  } catch (error: any) {
-    console.error("Erro ao salvar os dados no Blob:", error);
-    return NextResponse.json({ message: "Erro interno ao salvar os dados.", error: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    const vercelError = error as VercelBlobError;
+    console.error("Erro ao salvar os dados no Blob:", vercelError);
+    return NextResponse.json({ message: "Erro interno ao salvar os dados.", error: vercelError.message }, { status: 500 });
   }
 }
