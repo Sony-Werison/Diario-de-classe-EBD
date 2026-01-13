@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useMemo, useCallback, useEffect } from "react";
-import { initialClasses, POINTS, Student, CheckType, ClassConfig, DailyLesson } from "@/lib/data";
+import { initialClasses, POINTS, Student, CheckType, ClassConfig, DailyLesson, generateFullSimulatedData, SimulatedFullData } from "@/lib/data";
 import { AppHeader } from "./app-header";
 import { StatCard } from "./stat-card";
 import { StudentListHeader, SortKey } from "./student-list-header";
@@ -9,61 +9,6 @@ import { StudentRow } from "./student-row";
 import { CheckCircle, BookOpen, Pencil, Star, Users, Smile, Notebook, Pen } from "lucide-react";
 import { addDays, subDays, startOfDay, format, getDay, getDaysInMonth, isSameDay } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
-
-type SimulatedDayData = {
-    date: Date;
-    checks: Record<CheckType, boolean>;
-};
-
-type SimulatedStudentData = {
-    studentId: number;
-    monthData: SimulatedDayData[];
-};
-
-// Function to generate consistent random data for a student for a specific month
-const generateSimulatedDataForStudent = (studentId: number, month: Date, classConfig: ClassConfig): SimulatedStudentData => {
-    const daysInMonth = getDaysInMonth(month);
-    const monthData: SimulatedDayData[] = [];
-    const year = month.getFullYear();
-    const monthIndex = month.getMonth();
-
-    for (let day = 1; day <= daysInMonth; day++) {
-        const date = new Date(year, monthIndex, day);
-        // Only generate data for Sundays
-        if (getDay(date) === 0) {
-            const seed = studentId * day * (monthIndex + 1) * year;
-            const random = () => {
-                let x = Math.sin(seed + day) * 10000;
-                return x - Math.floor(x);
-            };
-
-            const checks: Record<CheckType, boolean> = {} as any;
-            
-            const orderedVisibleItems: CheckType[] = ['presence', 'material', 'task', 'verse', 'behavior'].filter(
-                item => classConfig.trackedItems[item as CheckType]
-            ) as CheckType[];
-            
-            let isPresent = false;
-             if (classConfig.trackedItems.presence) {
-                isPresent = random() > 0.2; // 80% chance of presence
-                checks.presence = isPresent;
-             }
-
-
-            orderedVisibleItems.forEach(key => {
-                if (key !== 'presence' && classConfig.trackedItems[key]) {
-                   checks[key] = isPresent && random() > 0.4; // 60% chance if present
-                } else if (!classConfig.trackedItems[key]) {
-                   checks[key] = false;
-                }
-            });
-
-            monthData.push({ date, checks });
-        }
-    }
-    return { studentId, monthData };
-};
-
 
 const calculateAge = (birthDateString: string) => {
     if (!birthDateString) return null;
@@ -78,96 +23,76 @@ const calculateAge = (birthDateString: string) => {
     return age;
 }
 
-const generateFullSimulatedData = (classes: ClassConfig[]): Record<string, DailyLesson> => {
-    const lessons: Record<string, DailyLesson> = {};
-    const today = new Date();
-    // Generate for current and previous month
-    for (let monthOffset = -1; monthOffset <= 0; monthOffset++) {
-        const month = new Date(today.getFullYear(), today.getMonth() + monthOffset, 1);
-        classes.forEach(classConfig => {
-            classConfig.students.forEach(student => {
-                const studentData = generateSimulatedDataForStudent(student.id, month, classConfig);
-                studentData.monthData.forEach(dayData => {
-                    const dateKey = format(dayData.date, "yyyy-MM-dd");
-                    if (!lessons[dateKey]) {
-                        lessons[dateKey] = {
-                            teacherId: classConfig.teachers[0]?.id || "",
-                            title: `Aula de ${format(dayData.date, "dd/MM")}`,
-                        };
-                    }
-                });
-            });
-        });
-    }
-    return lessons;
-};
-
 export function StudentDashboard() {
   const [classes, setClasses] = useState<ClassConfig[]>(initialClasses);
   const [currentClassId, setCurrentClassId] = useState<string>(initialClasses[0].id);
   const [currentDate, setCurrentDate] = useState<Date>(startOfDay(new Date()));
   const [sortKey, setSortKey] = useState<SortKey>("name");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
-  const [dailyLessons, setDailyLessons] = useState<Record<string, DailyLesson>>({});
+  const [simulatedData, setSimulatedData] = useState<SimulatedFullData>({ lessons: {}, studentRecords: {} });
   const { toast } = useToast();
   const [isClient, setIsClient] = useState(false);
   
   useEffect(() => {
     setIsClient(true);
-    setDailyLessons(generateFullSimulatedData(initialClasses));
-     setCurrentDate(startOfDay(new Date()));
+    setSimulatedData(generateFullSimulatedData(initialClasses));
+    setCurrentDate(startOfDay(new Date()));
   }, []);
-
 
   const currentClass = useMemo(() => classes.find(c => c.id === currentClassId) || classes[0], [classes, currentClassId]);
 
   const dateKey = useMemo(() => currentDate ? format(currentDate, "yyyy-MM-dd") : '', [currentDate]);
 
   const dailyLesson = useMemo(() => {
-     if (!dateKey || !dailyLessons[dateKey]) {
+     if (!dateKey || !simulatedData.lessons[dateKey]) {
       return {
         teacherId: currentClass.teachers[0]?.id || "",
         title: "",
       };
     }
-    return dailyLessons[dateKey];
-  }, [dateKey, dailyLessons, currentClass.teachers]);
+    return simulatedData.lessons[dateKey];
+  }, [dateKey, simulatedData.lessons, currentClass.teachers]);
+  
+  const dailyStudentChecks = useMemo(() => {
+    return simulatedData.studentRecords[currentClassId]?.[dateKey] || {};
+  }, [simulatedData.studentRecords, currentClassId, dateKey]);
 
 
   const handleToggleCheck = useCallback((studentId: number, type: CheckType) => {
-    setClasses(prevClasses =>
-      prevClasses.map(c => {
-        if (c.id !== currentClassId) return c;
-        
-        const newStudents = c.students.map(student => {
-          if (student.id !== studentId) return student;
-          
-          const newChecks = { ...student.checks, [type]: !student.checks[type] };
+    setSimulatedData(prevData => {
+        const newStudentRecords = { ...prevData.studentRecords };
+        if (!newStudentRecords[currentClassId]) newStudentRecords[currentClassId] = {};
+        if (!newStudentRecords[currentClassId][dateKey]) newStudentRecords[currentClassId][dateKey] = {};
 
-          if (type === 'presence' && !newChecks.presence) {
+        const currentChecks = newStudentRecords[currentClassId][dateKey][studentId] || { presence: false, task: false, verse: false, behavior: false, material: false };
+        const newChecks = { ...currentChecks, [type]: !currentChecks[type] };
+
+        if (type === 'presence' && !newChecks.presence) {
             Object.keys(newChecks).forEach(key => {
-              if (key !== 'presence') {
-                newChecks[key as CheckType] = false;
-              }
+                if (key !== 'presence') {
+                    newChecks[key as CheckType] = false;
+                }
             });
-          }
-          return { ...student, checks: newChecks };
-        });
-
-        return { ...c, students: newStudents };
-      })
-    );
-  }, [currentClassId]);
+        }
+        
+        newStudentRecords[currentClassId][dateKey][studentId] = newChecks;
+        
+        return { ...prevData, studentRecords: newStudentRecords };
+    });
+  }, [currentClassId, dateKey]);
 
   const handleLessonDetailChange = useCallback((field: keyof DailyLesson, value: string) => {
-    setDailyLessons(prev => ({
+    setSimulatedData(prev => ({
       ...prev,
-      [dateKey]: {
-        ...dailyLesson,
-        [field]: value,
+      lessons: {
+        ...prev.lessons,
+        [dateKey]: {
+          ...(prev.lessons[dateKey] || { teacherId: currentClass.teachers[0]?.id || "", title: "" }),
+          [field]: value,
+        }
       }
     }));
-  }, [dateKey, dailyLesson]);
+  }, [dateKey, currentClass.teachers]);
   
   const handleDateChange = (date: Date) => {
     setCurrentDate(startOfDay(date));
@@ -186,9 +111,8 @@ export function StudentDashboard() {
 
   const handleSave = () => {
     if (!currentDate) return;
-    // Here you would typically save to a database.
-    // For now, we just show a confirmation.
-    setDailyLessons(prev => ({ ...prev, [dateKey]: dailyLesson as DailyLesson }));
+    // Data is already saved in state via handleLessonDetailChange and handleToggleCheck.
+    // This function can be used for API calls in the future.
     toast({
       title: "Aula Salva!",
       description: `As informações da aula de ${format(currentDate, "dd/MM/yyyy")} foram salvas com sucesso.`,
@@ -228,7 +152,9 @@ export function StudentDashboard() {
     let totalScore = 0;
 
     const studentsWithScores = students.map(student => {
-      const dailyScore = Object.entries(student.checks).reduce((acc, [key, value]) => {
+      const studentChecks = dailyStudentChecks[student.id] || { presence: false, task: false, verse: false, behavior: false, material: false };
+
+      const dailyScore = Object.entries(studentChecks).reduce((acc, [key, value]) => {
         const checkType = key as CheckType;
         if (value && currentClass.trackedItems[checkType]) {
           return acc + (POINTS[checkType] || 0);
@@ -236,11 +162,11 @@ export function StudentDashboard() {
         return acc;
       }, 0);
 
-      if (student.checks.presence) presenceCount++;
-      if (student.checks.verse) verseCount++;
-      if (student.checks.task) taskCount++;
-      if (student.checks.behavior) behaviorCount++;
-      if (student.checks.material) materialCount++;
+      if (studentChecks.presence) presenceCount++;
+      if (studentChecks.verse) verseCount++;
+      if (studentChecks.task) taskCount++;
+      if (studentChecks.behavior) behaviorCount++;
+      if (studentChecks.material) materialCount++;
       totalScore += dailyScore;
       
       const age = calculateAge(student.birthDate);
@@ -250,14 +176,14 @@ export function StudentDashboard() {
       ) as CheckType[];
       
       const checkedItemsCount = activeTrackedItems.filter(
-        key => student.checks[key]
+        key => studentChecks[key]
       ).length;
 
       const completionPercent = activeTrackedItems.length > 0
         ? (checkedItemsCount / activeTrackedItems.length) * 100
         : 0;
 
-      return { ...student, dailyScore, age, completionPercent, checkedItemsCount, totalTrackedItems: activeTrackedItems.length };
+      return { ...student, checks: studentChecks, dailyScore, age, completionPercent, checkedItemsCount, totalTrackedItems: activeTrackedItems.length };
     }).sort((a, b) => {
         const dir = sortDirection === 'asc' ? 1 : -1;
         switch (sortKey) {
@@ -270,7 +196,7 @@ export function StudentDashboard() {
         }
     });
 
-    const presentStudentsCount = students.filter(s => s.checks.presence).length;
+    const presentStudentsCount = students.filter(s => (dailyStudentChecks[s.id] || {}).presence).length;
 
     return {
       presencePercent: totalStudents > 0 ? Math.round((presenceCount / totalStudents) * 100) : 0,
@@ -281,7 +207,7 @@ export function StudentDashboard() {
       totalScore,
       studentsWithScores,
     };
-  }, [currentClass, sortKey, sortDirection]);
+  }, [currentClass, sortKey, sortDirection, dailyStudentChecks]);
 
   const trackedItems = currentClass.trackedItems;
 
@@ -302,7 +228,7 @@ export function StudentDashboard() {
             dailyLesson={dailyLesson}
             onLessonDetailChange={handleLessonDetailChange}
             onSave={handleSave}
-            dailyLessons={dailyLessons}
+            dailyLessons={simulatedData.lessons}
         />
         <main className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-6 bg-background">
           <div className="bg-slate-800/50 rounded-t-xl">
@@ -338,7 +264,7 @@ export function StudentDashboard() {
               value={`${presencePercent}%`}
               Icon={CheckCircle}
               progress={presencePercent}
-              trendText={`${currentClass.students.filter(s => s.checks.presence).length}/${currentClass.students.length}`}
+              trendText={`${currentClass.students.filter(s => (dailyStudentChecks[s.id] || {}).presence).length}/${currentClass.students.length}`}
               color="blue"
             />}
             {trackedItems.material && <StatCard 
@@ -382,5 +308,3 @@ export function StudentDashboard() {
       </div>
   );
 }
-
-    

@@ -28,22 +28,12 @@ import {
 } from "@/components/ui/tooltip";
 
 import { Check, ChevronDown, ChevronLeft, ChevronRight, Download, Users, X, CheckCircle, Notebook, Pencil, BookOpen, Smile } from "lucide-react";
-import { initialClasses, ClassConfig, Student, CheckType } from "@/lib/data";
+import { initialClasses, ClassConfig, Student, CheckType, generateFullSimulatedData, SimulatedFullData } from "@/lib/data";
 import { cn } from "@/lib/utils";
 import { format, getDaysInMonth, startOfMonth, addMonths, subMonths, getDay, isSameDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toPng } from 'html-to-image';
 
-
-type SimulatedDayData = {
-    date: Date;
-    checks: Record<CheckType, boolean>;
-}
-
-type SimulatedStudentData = {
-    studentId: number;
-    monthData: SimulatedDayData[];
-}
 
 const itemIcons: Record<CheckType, React.ElementType> = {
   presence: CheckCircle,
@@ -69,60 +59,19 @@ const itemColors: Record<CheckType, string> = {
     behavior: 'text-emerald-400',
 }
 
-
-// Function to generate consistent random data for a student for a specific month
-const generateSimulatedDataForStudent = (studentId: number, month: Date, classConfig: ClassConfig): SimulatedStudentData => {
-    const daysInMonth = getDaysInMonth(month);
-    const monthData: SimulatedDayData[] = [];
-    const year = month.getFullYear();
-    const monthIndex = month.getMonth();
-
-    for (let day = 1; day <= daysInMonth; day++) {
-        const date = new Date(year, monthIndex, day);
-        // Only generate data for Sundays
-        if (getDay(date) === 0) {
-            const seed = studentId * day * (monthIndex + 1) * year;
-            const random = () => {
-                let x = Math.sin(seed + day) * 10000;
-                return x - Math.floor(x);
-            };
-
-            const checks: Record<CheckType, boolean> = {} as any;
-            
-            const orderedVisibleItems: CheckType[] = ['presence', 'material', 'task', 'verse', 'behavior'].filter(
-                item => classConfig.trackedItems[item as CheckType]
-            ) as CheckType[];
-            
-            let isPresent = false;
-             if (classConfig.trackedItems.presence) {
-                isPresent = random() > 0.2; // 80% chance of presence
-                checks.presence = isPresent;
-             }
-
-
-            orderedVisibleItems.forEach(key => {
-                if (key !== 'presence' && classConfig.trackedItems[key]) {
-                   checks[key] = isPresent && random() > 0.4; // 60% chance if present
-                } else if (!classConfig.trackedItems[key]) {
-                   checks[key] = false;
-                }
-            });
-
-            monthData.push({ date, checks });
-        }
-    }
-    return { studentId, monthData };
-};
-
-
 export function MonthlyReport() {
-  const [classes] = useState<ClassConfig[]>(initialClasses);
+  const [classes, setClasses] = useState<ClassConfig[]>(initialClasses);
   const [currentClassId, setCurrentClassId] = useState<string>(initialClasses[0].id);
   const [currentMonth, setCurrentMonth] = useState(startOfMonth(new Date()));
-  const [simulatedData, setSimulatedData] = useState<SimulatedStudentData[]>([]);
+  const [simulatedData, setSimulatedData] = useState<SimulatedFullData>({ lessons: {}, studentRecords: {} });
   const [isClient, setIsClient] = useState(false);
   const [filter, setFilter] = useState<CheckType | "all">("all");
 
+  useEffect(() => {
+    setIsClient(true);
+    setSimulatedData(generateFullSimulatedData(initialClasses));
+    setCurrentMonth(startOfMonth(new Date()));
+  }, []);
 
   const currentClass = useMemo(
     () => classes.find((c) => c.id === currentClassId) || classes[0],
@@ -134,18 +83,20 @@ export function MonthlyReport() {
   ) as CheckType[], [currentClass.trackedItems]);
 
 
-  useEffect(() => {
-    setIsClient(true);
-    // Set initial month to current month only on client
-    setCurrentMonth(startOfMonth(new Date()));
-  }, []);
+  const monthStudentRecords = useMemo(() => {
+    const classRecords = simulatedData.studentRecords[currentClassId];
+    if (!classRecords) return {};
 
-  useEffect(() => {
-    if (isClient) {
-        const data = currentClass.students.map(student => generateSimulatedDataForStudent(student.id, currentMonth, currentClass));
-        setSimulatedData(data);
+    const monthKey = format(currentMonth, 'yyyy-MM');
+    const relevantRecords: typeof classRecords = {};
+    
+    for (const dateKey in classRecords) {
+      if (dateKey.startsWith(monthKey)) {
+        relevantRecords[dateKey] = classRecords[dateKey];
+      }
     }
-  }, [currentClass, currentMonth, isClient]);
+    return relevantRecords;
+  }, [simulatedData.studentRecords, currentClassId, currentMonth]);
 
 
   const reportRef = useRef<HTMLDivElement>(null);
@@ -176,9 +127,9 @@ export function MonthlyReport() {
   
   const sundaysInMonth = useMemo(() => daysInMonth.filter(d => getDay(d) === 0), [daysInMonth]);
 
-  const getStudentDataForDay = (studentId: number, day: Date) => {
-    const studentData = simulatedData.find(sd => sd.studentId === studentId);
-    return studentData?.monthData.find(md => isSameDay(md.date, day));
+  const getStudentChecksForDay = (studentId: number, day: Date) => {
+    const dateKey = format(day, 'yyyy-MM-dd');
+    return monthStudentRecords[dateKey]?.[studentId];
   }
   
   const Legend = () => (
@@ -293,10 +244,10 @@ export function MonthlyReport() {
                               <tr key={student.id} className="text-sm hover:bg-slate-800/50">
                                   <td className="p-2 whitespace-nowrap overflow-hidden text-ellipsis border-b border-r border-slate-700 font-medium text-slate-200 sticky left-0 bg-slate-800/50 z-10">{student.name}</td>
                                   {sundaysInMonth.map(day => {
-                                      const dayData = getStudentDataForDay(student.id, day);
+                                      const studentChecks = getStudentChecksForDay(student.id, day);
                                       return (
                                           <td key={day.toISOString()} className="text-center border-b border-r border-slate-700 last:border-r-0 h-full p-2">
-                                              {dayData ? (
+                                              {studentChecks ? (
                                               <TooltipProvider>
                                                   <Tooltip>
                                                       <TooltipTrigger asChild>
@@ -304,13 +255,13 @@ export function MonthlyReport() {
                                                               {filter === 'all' ? (
                                                                   orderedVisibleItems.map(item => {
                                                                       const Icon = itemIcons[item];
-                                                                      const isChecked = dayData.checks[item];
+                                                                      const isChecked = studentChecks[item];
                                                                       return (
                                                                           <Icon key={item} size={14} className={cn(isChecked ? itemColors[item] : 'text-slate-700 opacity-60')} />
                                                                       )
                                                                   })
                                                               ) : (
-                                                                  dayData.checks[filter] ? (
+                                                                  studentChecks[filter] ? (
                                                                       <Check size={16} className="text-green-500" />
                                                                   ) : (
                                                                       <X size={16} className="text-red-500" />
@@ -322,7 +273,7 @@ export function MonthlyReport() {
                                                           <div className="space-y-1">
                                                               {orderedVisibleItems.map(item => (
                                                                   <div key={item} className="flex items-center gap-2 text-xs">
-                                                                      {dayData.checks[item] ? <Check size={14} className="text-green-500"/> : <X size={14} className="text-slate-500" />}
+                                                                      {studentChecks[item] ? <Check size={14} className="text-green-500"/> : <X size={14} className="text-slate-500" />}
                                                                       <span>{itemLabels[item]}</span>
                                                                   </div>
                                                               ))}
@@ -353,5 +304,3 @@ export function MonthlyReport() {
     </div>
   );
 }
-
-    
