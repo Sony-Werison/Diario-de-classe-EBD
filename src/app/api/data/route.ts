@@ -9,12 +9,14 @@ const DATA_BLOB_KEY = 'data.json';
 export async function GET(request: NextRequest) {
   try {
     const blob = await get(DATA_BLOB_KEY, {
-        token: process.env.BLOB_READ_WRITE_TOKEN
+      token: process.env.BLOB_READ_WRITE_TOKEN
     });
     const data = await blob.json();
     return NextResponse.json(data, { status: 200 });
   } catch (error: any) {
-    if (error && typeof error === 'object' && 'status' in error && error.status === 404) {
+    // O erro do Vercel Blob para "não encontrado" pode não ter um 'status' padrão.
+    // Verificamos pelo nome do erro ou mensagem.
+    if (error.code === 'not_found' || (error.status && error.status === 404)) {
       console.log("Blob não encontrado. Criando com dados iniciais.");
       try {
           const initialData = getInitialData();
