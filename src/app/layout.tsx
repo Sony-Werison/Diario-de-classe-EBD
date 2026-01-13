@@ -12,6 +12,20 @@ const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
 export const metadata: Metadata = {
   title: "Diário de classe EBD - ICABV",
   description: "Painel de controle para Escola Bíblica Dominical.",
+  openGraph: {
+    title: "Diário de classe EBD - ICABV",
+    description: "Painel de controle para Escola Bíblica Dominical.",
+    images: [
+      {
+        url: "/logo.png",
+        width: 1200,
+        height: 630,
+        alt: "Logo Diário de classe EBD - ICABV",
+      },
+    ],
+    locale: "pt_BR",
+    type: "website",
+  },
 };
 
 export default function RootLayout({
