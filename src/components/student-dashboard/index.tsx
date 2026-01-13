@@ -35,8 +35,8 @@ export function StudentDashboard({ initialDate }: { initialDate?: string }) {
   const [classes, setClasses] = useState<ClassConfig[]>(initialClasses);
   const [currentClassId, setCurrentClassId] = useState<string>(initialClasses[0].id);
   const [currentDate, setCurrentDate] = useState<Date>(() => initialDate ? startOfDay(parseISO(initialDate)) : startOfDay(new Date()));
-  const [sortKey, setSortKey] = useState<SortKey>("progress");
-  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
+  const [sortKey, setSortKey] = useState<SortKey>("name");
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
   const { toast } = useToast();
   const [isClient, setIsClient] = useState(false);
   const [isDeleteAlertOpen, setIsDeleteAlertOpen] = useState(false);
@@ -260,8 +260,9 @@ export function StudentDashboard({ initialDate }: { initialDate?: string }) {
         switch (sortKey) {
             case 'progress':
                 return (a.completionPercent - b.completionPercent) * dir || (a.dailyScore - b.dailyScore) * dir;
+            case 'name':
             default:
-                 return a.name.localeCompare(b.name) * (sortDirection === 'asc' ? 1 : -1);
+                 return a.name.localeCompare(b.name) * dir;
         }
     });
 
