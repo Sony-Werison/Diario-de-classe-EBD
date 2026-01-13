@@ -67,12 +67,14 @@ export function MonthlyStudentReport() {
   
   const sundaysInMonth = useMemo(() => {
     const monthStart = startOfMonth(currentMonth);
-    const days = Array.from({ length: monthStart.getDay() + 35 }, (_, i) => {
+    const days = Array.from({ length: 35 }, (_, i) => {
         const day = new Date(monthStart);
         day.setDate(day.getDate() - monthStart.getDay() + i);
         return day;
     });
-    return days.filter(day => getDay(day) === 0 && day.getMonth() === currentMonth.getMonth());
+    const sundays = days.filter(day => getDay(day) === 0);
+    // Ensure we only show Sundays from the current month
+    return sundays.filter(day => day.getMonth() === currentMonth.getMonth());
   }, [currentMonth]);
 
 
@@ -139,7 +141,7 @@ export function MonthlyStudentReport() {
                 {selectedStudent ? (
                     sundaysInMonth.map(day => {
                         const dateKey = format(day, 'yyyy-MM-dd');
-                        const lesson = lessons[dateKey];
+                        const lesson = lessons[currentClassId]?.[dateKey];
                         const checks = studentRecords[currentClassId]?.[dateKey]?.[selectedStudent.id];
 
                         if (!lesson && !checks) return null; // Skip days with no data

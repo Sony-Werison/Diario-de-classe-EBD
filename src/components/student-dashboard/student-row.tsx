@@ -5,7 +5,7 @@
 import { Student, CheckType, StudentChecks, DailyTasks } from "@/lib/data";
 import { cn } from "@/lib/utils";
 import { Progress } from "@/components/ui/progress";
-import { CheckCircle, Notebook, Pencil, BookOpen, Smile } from "lucide-react";
+import { CheckCircle, Notebook, Pencil, BookOpen, Smile, Ban } from "lucide-react";
 
 interface StudentRowProps {
   student: Student & { 
@@ -16,7 +16,7 @@ interface StudentRowProps {
     totalTrackedItems: number;
   };
   onToggleCheck: (id: string, type: CheckType | 'task') => void;
-  onToggleDailyTask: (studentId: string, day: string) => void;
+  onToggleDailyTask: (studentId: string, day: keyof DailyTasks) => void;
   trackedItems: Record<CheckType | 'task', boolean>;
   taskMode: 'unique' | 'daily';
   isLessonCancelled: boolean;
@@ -39,7 +39,7 @@ const weekDays: { key: keyof DailyTasks, label: string }[] = [
     { key: 'sat', label: 'S' },
 ];
 
-export function StudentRow({ student, onToggleCheck, trackedItems, taskMode, onToggleDailyTask, isLessonCancelled }: StudentRowProps) {
+export function StudentRow({ student, onToggleCheck, onToggleDailyTask, trackedItems, taskMode, isLessonCancelled }: StudentRowProps) {
   const { id, name, checks, dailyScore, age, completionPercent, checkedItemsCount, totalTrackedItems } = student;
   const singleItem = totalTrackedItems <= 1 && taskMode === 'unique';
   
@@ -57,7 +57,8 @@ export function StudentRow({ student, onToggleCheck, trackedItems, taskMode, onT
                 {(Object.keys(checkConfig) as (CheckType | 'task')[]).map(type => {
                     if (!trackedItems[type]) return null;
 
-                    const isDisabled = !checks.presence && type !== 'presence' && type !== 'task' && !isLessonCancelled;
+                    let isDisabled = !checks.presence && ['material', 'verse', 'behavior'].includes(type);
+                    if (isLessonCancelled) isDisabled = false;
 
                     if (type === 'task' && taskMode === 'daily') {
                         return (
@@ -69,12 +70,12 @@ export function StudentRow({ student, onToggleCheck, trackedItems, taskMode, onT
                                             onClick={() => onToggleDailyTask(id, day.key)}
                                             className={cn(
                                                 "w-7 h-8 rounded-md flex items-center justify-center transition-all duration-200 text-xs font-bold",
-                                                checks.dailyTasks?.[day.key] ? checkConfig.task.activeClass : 'text-slate-400 bg-slate-700/50',
+                                                (checks.dailyTasks as any)?.[day.key] ? checkConfig.task.activeClass : 'text-slate-400 bg-slate-700/50',
                                                 'hover:border-slate-500' // Always allow hover for tasks
                                             )}
                                             aria-label={`Marcar tarefa de ${day.label} para ${name}`}
                                             >
-                                            {day.label}
+                                            {isLessonCancelled && !(checks.dailyTasks as any)?.[day.key] ? <Ban size={16} className="text-yellow-500/80"/> : day.label}
                                         </button>
                                     ))}
                                 </div>
@@ -96,7 +97,7 @@ export function StudentRow({ student, onToggleCheck, trackedItems, taskMode, onT
                             aria-label={`Marcar ${type} para ${name}`}
                             disabled={isDisabled}
                             >
-                            <CheckIcon size={20} />
+                            {isLessonCancelled && !(checks as any)[type] && type !== 'task' ? <Ban size={20} className="text-yellow-500"/> : <CheckIcon size={20} />}
                             </button>
                             <span className="text-[10px] text-slate-500 font-semibold">{checkConfig[type].label}</span>
                         </div>

@@ -26,7 +26,7 @@ export function CalendarPage() {
   const [isClient, setIsClient] = useState(false);
   const [currentClassId, setCurrentClassId] = useState<string>("");
 
-  const { classes, lessons: dailyLessons } = fullData;
+  const { classes, lessons: allLessons } = fullData;
 
   const currentClass = useMemo(() => classes.find(c => c.id === currentClassId) || classes[0], [classes, currentClassId]);
 
@@ -131,11 +131,10 @@ export function CalendarPage() {
         <div className="flex flex-col p-4 gap-3">
           {sundays.map(day => {
             const dateKey = format(day, 'yyyy-MM-dd');
-            const lesson = dailyLessons[dateKey];
+            const lesson = allLessons[currentClass.id]?.[dateKey];
             const isToday = isSameDay(day, new Date());
             const teacherName = lesson ? getTeacherName(lesson.teacherId, currentClass) : null;
             const hasRecord = !!fullData.studentRecords[currentClass.id]?.[dateKey];
-
 
             return (
                 <Link

@@ -69,14 +69,14 @@ export function StudentDashboard({ initialDate, classId: initialClassId }: { ini
 
   useEffect(() => {
     // On mount or date change, load data from our central source
-    if (initialDate && currentClass) {
+    if (isClient && initialDate && currentClass) {
         const dateFromUrl = parseISO(initialDate);
         setCurrentDate(startOfDay(dateFromUrl));
         
         const dateKey = format(dateFromUrl, "yyyy-MM-dd");
         const data = getSimulatedData();
 
-        const lesson = data.lessons[dateKey] || {
+        const lesson = data.lessons[currentClassId]?.[dateKey] || {
           teacherId: currentClass.teachers[0]?.id || "",
           title: "",
           status: 'held',
@@ -99,10 +99,10 @@ export function StudentDashboard({ initialDate, classId: initialClassId }: { ini
         setDailyLesson(lesson as DailyLesson);
         setDailyStudentChecks(checks);
         setCancellationReason(lesson.cancellationReason || "");
-    } else if (!initialDate) {
+    } else if (isClient && !initialDate) {
       router.push('/calendar');
     }
-  }, [initialDate, currentClass, currentClassId, router]);
+  }, [initialDate, currentClass, currentClassId, router, isClient]);
 
 
   const dateKey = useMemo(() => currentDate ? format(currentDate, "yyyy-MM-dd") : '', [currentDate]);
@@ -138,11 +138,11 @@ export function StudentDashboard({ initialDate, classId: initialClassId }: { ini
     });
   }, []);
 
-  const handleToggleDailyTask = useCallback((studentId: string, day: string) => {
+  const handleToggleDailyTask = useCallback((studentId: string, day: keyof DailyTasks) => {
     setDailyStudentChecks(prevChecks => {
         const newChecksForStudent = { ...(prevChecks[studentId] || defaultChecks) };
         const newDailyTasks = { ...(newChecksForStudent.dailyTasks || {}) };
-        newDailyTasks[day] = !newDailyTasks[day];
+        (newDailyTasks as any)[day] = !(newDailyTasks as any)[day];
 
         // Update main task check if 5 or more days are completed
         const completedCount = Object.values(newDailyTasks).filter(v => v).length;
@@ -160,7 +160,7 @@ export function StudentDashboard({ initialDate, classId: initialClassId }: { ini
 
   const handleLessonDetailChange = useCallback((field: keyof DailyLesson, value: string) => {
     setDailyLesson(prev => ({
-      ...(prev || { teacherId: currentClass.teachers[0]?.id || "", title: "", status: 'held' }),
+      ...(prev || { teacherId: currentClass.teachers[0]?.id || "", title: "", status: 'held', cancellationReason: '' }),
       [field]: value,
     }) as DailyLesson);
   }, [currentClass.teachers]);
@@ -174,13 +174,22 @@ export function StudentDashboard({ initialDate, classId: initialClassId }: { ini
   }
 
   const handleSave = () => {
-    if (!currentDate) return;
+    if (!currentDate || !currentClass) return;
     
     const data = getSimulatedData();
     
-    const finalLesson = { ...dailyLesson, status: dailyLesson?.status === 'cancelled' ? 'cancelled' : 'held', cancellationReason: dailyLesson?.status === 'cancelled' ? cancellationReason : "" };
+    const finalLesson: DailyLesson = { 
+        teacherId: dailyLesson?.teacherId || currentClass.teachers[0]?.id || "",
+        title: dailyLesson?.title || "",
+        status: dailyLesson?.status === 'cancelled' ? 'cancelled' : 'held',
+        cancellationReason: dailyLesson?.status === 'cancelled' ? cancellationReason : "",
+    };
 
-    data.lessons[dateKey] = finalLesson as DailyLesson;
+    if (!data.lessons[currentClassId]) {
+        data.lessons[currentClassId] = {};
+    }
+    data.lessons[currentClassId][dateKey] = finalLesson;
+
     if (!data.studentRecords[currentClassId]) {
         data.studentRecords[currentClassId] = {};
     }
@@ -195,17 +204,20 @@ export function StudentDashboard({ initialDate, classId: initialClassId }: { ini
   }
 
   const handleDeleteLesson = () => {
-    if (!currentDate) return;
+    if (!currentDate || !currentClassId) return;
   
     const data = getSimulatedData();
-    delete data.lessons[dateKey];
+    
+    if (data.lessons[currentClassId]) {
+      delete data.lessons[currentClassId][dateKey];
+    }
     if (data.studentRecords[currentClassId]) {
       delete data.studentRecords[currentClassId][dateKey];
     }
     saveSimulatedData(data);
     
     setIsDeleteAlertOpen(false);
-    router.push('/calendar');
+    router.push(`/calendar?classId=${currentClassId}`);
     
     toast({
       title: "Aula Excluída",
@@ -221,7 +233,7 @@ export function StudentDashboard({ initialDate, classId: initialClassId }: { ini
       }
       
       const updatedLesson: DailyLesson = {
-          ...(dailyLesson || { teacherId: currentClass.teachers[0]?.id || "", title: "" }),
+          ...(dailyLesson || { teacherId: currentClass.teachers[0]?.id || "", title: "", status: 'held' }),
           status: 'cancelled',
           cancellationReason: cancellationReason,
       };
@@ -229,7 +241,10 @@ export function StudentDashboard({ initialDate, classId: initialClassId }: { ini
       setDailyLesson(updatedLesson);
 
       const data = getSimulatedData();
-      data.lessons[dateKey] = updatedLesson;
+       if (!data.lessons[currentClassId]) {
+        data.lessons[currentClassId] = {};
+      }
+      data.lessons[currentClassId][dateKey] = updatedLesson;
       saveSimulatedData(data);
       
       setIsCancelDialogOpen(false);
@@ -278,10 +293,16 @@ export function StudentDashboard({ initialDate, classId: initialClassId }: { ini
       }, 0);
 
       if (studentChecks.presence) presenceCount++;
-      if (studentChecks.verse && studentChecks.presence) verseCount++;
+      // Task can be counted even if absent
       if (studentChecks.task) taskCount++;
-      if (studentChecks.behavior && studentChecks.presence) behaviorCount++;
-      if (studentChecks.material && studentChecks.presence) materialCount++;
+
+      // These depend on presence
+      if (studentChecks.presence) {
+        if (studentChecks.verse) verseCount++;
+        if (studentChecks.behavior) behaviorCount++;
+        if (studentChecks.material) materialCount++;
+      }
+      
       totalScore += dailyScore;
       
       const age = calculateAge(student.birthDate);
@@ -436,7 +457,7 @@ export function StudentDashboard({ initialDate, classId: initialClassId }: { ini
                 <AlertDialogHeader>
                 <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
                 <AlertDialogDescription>
-                    Esta ação não pode ser desfeita. Todos os registros de presença e pontuação para esta aula serão perdidos permanentemente.
+                    Esta ação não pode ser desfeita. Todos os registros de presença e pontuação para esta aula serão perdidos permanentemente para esta classe.
                 </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>

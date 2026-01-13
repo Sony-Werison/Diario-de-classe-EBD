@@ -8,8 +8,8 @@ export type TaskMode = 'unique' | 'daily';
 export type DailyTasks = Record<string, boolean>;
 
 export type StudentChecks = Record<CheckType, boolean> & {
-    task?: boolean; // For unique task mode
-    dailyTasks?: DailyTasks; // For daily task mode
+    task: boolean; 
+    dailyTasks: DailyTasks;
 };
 
 export type Student = {
@@ -28,7 +28,7 @@ export type Teacher = {
 export type DailyLesson = {
   teacherId: string;
   title: string;
-  status?: 'held' | 'cancelled';
+  status: 'held' | 'cancelled';
   cancellationReason?: string;
 }
 
@@ -129,12 +129,12 @@ export type SimulatedStudentData = {
 
 export type SimulatedFullData = {
   classes: ClassConfig[];
-  lessons: Record<string, DailyLesson>;
+  lessons: Record<string, Record<string, DailyLesson>>; // [classId][dateKey] -> lesson
   studentRecords: Record<string, Record<string, Record<string, StudentChecks>>>; // [classId][dateKey][studentId] -> checks
 }
 
 // Function to generate consistent random data for a student for a specific month
-export const generateSimulatedDataForStudent = (studentId: string, month: Date, classConfig: ClassConfig): SimulatedStudentData => {
+export const generateSimulatedDataForStudent = (studentId: string, month: Date, classConfig: ClassConfig): SimulatedDayData[] => {
     const daysInMonth = getDaysInMonth(month);
     const monthData: SimulatedDayData[] = [];
     const year = month.getFullYear();
@@ -146,12 +146,14 @@ export const generateSimulatedDataForStudent = (studentId: string, month: Date, 
         // Only generate data for Sundays
         if (getDay(date) === 0) {
             const seed = studentSeed * day * (monthIndex + 1) * year;
+            let sineSeed = Math.sin(seed) * 10000;
             const random = () => {
-                let x = Math.sin(seed + day) * 10000;
+                sineSeed += 1;
+                let x = Math.sin(sineSeed) * 10000;
                 return x - Math.floor(x);
             };
 
-            const checks: StudentChecks = { presence: false, verse: false, behavior: false, material: false };
+            const checks: StudentChecks = { presence: false, verse: false, behavior: false, material: false, task: false, dailyTasks: {} };
             
             const allItems: (CheckType | 'task')[] = ['presence', 'material', 'task', 'verse', 'behavior'];
             
@@ -165,15 +167,15 @@ export const generateSimulatedDataForStudent = (studentId: string, month: Date, 
                 if (key !== 'presence' && classConfig.trackedItems[key]) {
                     if (key === 'task') {
                         if (classConfig.taskMode === 'unique') {
-                            checks.task = isPresent && random() > 0.4;
+                            checks.task = random() > 0.4; // not dependent on presence
                         } else {
                             checks.dailyTasks = {
-                                mon: isPresent && random() > 0.3,
-                                tue: isPresent && random() > 0.3,
-                                wed: isPresent && random() > 0.3,
-                                thu: isPresent && random() > 0.3,
-                                fri: isPresent && random() > 0.3,
-                                sat: isPresent && random() > 0.3,
+                                mon: random() > 0.3,
+                                tue: random() > 0.3,
+                                wed: random() > 0.3,
+                                thu: random() > 0.3,
+                                fri: random() > 0.3,
+                                sat: random() > 0.3,
                             };
                             const completedCount = Object.values(checks.dailyTasks).filter(v => v).length;
                             checks.task = completedCount >= 5;
@@ -182,18 +184,23 @@ export const generateSimulatedDataForStudent = (studentId: string, month: Date, 
                        (checks as any)[key] = isPresent && random() > 0.4; // 60% chance if present
                     }
                 } else if (!classConfig.trackedItems[key]) {
-                   (checks as any)[key] = false;
+                   if (key === 'task') {
+                     checks.task = false;
+                     checks.dailyTasks = {};
+                   } else {
+                    (checks as any)[key] = false;
+                   }
                 }
             });
 
             monthData.push({ date, checks });
         }
     }
-    return { studentId, monthData };
+    return monthData;
 };
 
 export const generateFullSimulatedData = (classes: ClassConfig[]): Omit<SimulatedFullData, 'classes'> => {
-    const lessons: Record<string, DailyLesson> = {};
+    const lessons: SimulatedFullData['lessons'] = {};
     const studentRecords: SimulatedFullData['studentRecords'] = {};
     const today = new Date();
     
@@ -205,27 +212,28 @@ export const generateFullSimulatedData = (classes: ClassConfig[]): Omit<Simulate
             if (!studentRecords[classConfig.id]) {
                 studentRecords[classConfig.id] = {};
             }
+             if (!lessons[classConfig.id]) {
+                lessons[classConfig.id] = {};
+            }
 
             classConfig.students.forEach(student => {
                 const studentMonthlyData = generateSimulatedDataForStudent(student.id, month, classConfig);
                 
-                studentMonthlyData.monthData.forEach(dayData => {
+                studentMonthlyData.forEach(dayData => {
                     const dateKey = format(dayData.date, "yyyy-MM-dd");
                     
-                    // Create lesson if it doesn't exist
-                    if (!lessons[dateKey]) {
+                    if (!lessons[classConfig.id][dateKey]) {
                          const randomTeacherIndex = Math.floor(Math.random() * classConfig.teachers.length);
                          const isCancelled = Math.random() < 0.05; // 5% chance of cancellation
-                        lessons[dateKey] = {
+                        lessons[classConfig.id][dateKey] = {
                             teacherId: classConfig.teachers[randomTeacherIndex]?.id || "",
                             title: `Aula sobre ${["Criação", "Patriarcas", "Êxodo", "Juízes", "Reis"][Math.floor(Math.random()*5)]}`,
                             status: isCancelled ? 'cancelled' : 'held',
                             cancellationReason: isCancelled ? 'Evento especial na igreja' : undefined,
                         };
                     }
-
-                    // Create student record for the day only if the lesson was held
-                    if (lessons[dateKey].status === 'held') {
+                    
+                    if (lessons[classConfig.id][dateKey].status === 'held') {
                         if (!studentRecords[classConfig.id][dateKey]) {
                             studentRecords[classConfig.id][dateKey] = {};
                         }
@@ -238,6 +246,7 @@ export const generateFullSimulatedData = (classes: ClassConfig[]): Omit<Simulate
     return { lessons, studentRecords };
 };
 
+
 // Centralized functions to get and save data from localStorage
 export const getSimulatedData = (): SimulatedFullData => {
   if (typeof window === 'undefined') {
@@ -246,25 +255,34 @@ export const getSimulatedData = (): SimulatedFullData => {
   try {
     const savedData = localStorage.getItem(SIMULATED_DATA_KEY);
     if (savedData) {
-      const parsedData = JSON.parse(savedData);
-      // Ensure classes are part of the saved data, if not, add them.
-      if (!parsedData.classes || parsedData.classes.length !== initialClasses.length) {
-        // A simple check to see if we need to regenerate/update.
-        // A more robust migration strategy would be needed for a real app.
-        const { lessons, studentRecords } = generateFullSimulatedData(initialClasses);
-        const newData = { classes: initialClasses, lessons, studentRecords };
+      const parsedData: SimulatedFullData = JSON.parse(savedData);
+      
+      let needsUpdate = false;
+      if (!parsedData.classes || parsedData.classes.length === 0) {
+        parsedData.classes = initialClasses;
+        needsUpdate = true;
+      }
+      
+      // Migration: Ensure lesson structure is per-class
+      const firstKey = Object.keys(parsedData.lessons)[0];
+      if (firstKey && typeof (parsedData.lessons as any)[firstKey].teacherId === 'string') {
+          // This is the old structure, needs migration
+          needsUpdate = true;
+      }
+
+      parsedData.classes.forEach((c: ClassConfig) => {
+        if (!c.taskMode) {
+          c.taskMode = c.id === 'adolescentes' || c.id === 'jovens' ? 'daily' : 'unique';
+          needsUpdate = true;
+        }
+      });
+      
+      if(needsUpdate) {
+        const { lessons, studentRecords } = generateFullSimulatedData(parsedData.classes);
+        const newData = { classes: parsedData.classes, lessons, studentRecords };
         localStorage.setItem(SIMULATED_DATA_KEY, JSON.stringify(newData));
         return newData;
       }
-       // Ensure taskMode is set
-      parsedData.classes.forEach((c: ClassConfig) => {
-        if (!c.taskMode) {
-          c.taskMode = 'unique';
-          if (c.id === 'adolescentes' || c.id === 'jovens') {
-            c.taskMode = 'daily';
-          }
-        }
-      });
 
       return parsedData;
     } else {
