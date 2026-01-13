@@ -13,6 +13,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState, useContext } from "react";
 import { DataContext } from "@/contexts/DataContext";
+import Image from "next/image";
 
 const navLinks = [
   { href: "/calendar", icon: Calendar, label: "Calendário" },
@@ -95,18 +96,19 @@ const NavLink = ({
 const handleLogout = () => {
   sessionStorage.removeItem('userRole');
   sessionStorage.removeItem('teacherId');
+  sessionStorage.removeItem('isDemo');
 };
 
 export function AppSidebar() {
   const dataContext = useContext(DataContext);
-  const { fullData } = dataContext || {};
+  const { fullData, isDemo } = dataContext || {};
 
   const [currentUser, setCurrentUser] = useState('');
   const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
     setIsClient(true);
-    const role = sessionStorage.getItem('userRole') || 'admin';
+    const role = isDemo ? 'visualização' : sessionStorage.getItem('userRole') || 'admin';
     const teacherId = sessionStorage.getItem('teacherId');
     let currentUserName = role;
 
@@ -119,10 +121,14 @@ export function AppSidebar() {
     }
     setCurrentUser(currentUserName);
     
-  }, [fullData]);
+  }, [fullData, isDemo]);
 
   return (
     <aside className="w-20 bg-card border-r border-border flex-col items-center py-6 gap-4 shrink-0 hidden sm:flex">
+      <Link href="/">
+        <Image src="/logo.png" alt="Logo" width={48} height={48} className="rounded-xl" />
+      </Link>
+      
       {isClient && (
         <TooltipProvider delayDuration={0}>
           <Tooltip>

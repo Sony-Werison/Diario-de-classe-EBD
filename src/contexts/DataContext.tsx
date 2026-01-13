@@ -2,11 +2,12 @@
 "use client";
 
 import React, { createContext, useState, useEffect, useCallback } from 'react';
-import { getSimulatedData, saveSimulatedData, SimulatedFullData } from '@/lib/data';
+import { getSimulatedData, saveSimulatedData, SimulatedFullData, getInitialData } from '@/lib/data';
 
 interface DataContextType {
     fullData: SimulatedFullData | null;
     isLoading: boolean;
+    isDemo: boolean;
     error: Error | null;
     updateAndSaveData: (updater: (prevData: SimulatedFullData) => SimulatedFullData) => void;
 }
@@ -17,13 +18,21 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
     const [fullData, setFullData] = useState<SimulatedFullData | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<Error | null>(null);
+    const [isDemo, setIsDemo] = useState(false);
 
     useEffect(() => {
+        const isDemoMode = sessionStorage.getItem('isDemo') === 'true';
+        setIsDemo(isDemoMode);
+
         const loadData = async () => {
             try {
                 setIsLoading(true);
-                const data = await getSimulatedData();
-                setFullData(data);
+                if (isDemoMode) {
+                    setFullData(getInitialData());
+                } else {
+                    const data = await getSimulatedData();
+                    setFullData(data);
+                }
             } catch (err) {
                 setError(err as Error);
                 console.error("Failed to load data in context", err);
@@ -35,6 +44,8 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
     }, []);
 
     const updateAndSaveData = useCallback((updater: (prevData: SimulatedFullData) => SimulatedFullData) => {
+        if (isDemo) return; // Prevent saving in demo mode
+        
         setFullData(prevData => {
             if (!prevData) return null;
             const newData = updater(prevData);
@@ -42,11 +53,12 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
             saveSimulatedData(newData);
             return newData;
         });
-    }, []);
+    }, [isDemo]);
 
     const value = {
         fullData,
         isLoading,
+        isDemo,
         error,
         updateAndSaveData,
     };

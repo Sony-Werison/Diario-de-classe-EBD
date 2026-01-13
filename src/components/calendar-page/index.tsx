@@ -20,11 +20,12 @@ import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { DataContext } from '@/contexts/DataContext';
+import Image from 'next/image';
 
 export function CalendarPage() {
   const [currentMonth, setCurrentMonth] = useState(startOfMonth(new Date()));
   const dataContext = useContext(DataContext);
-  const { fullData, isLoading } = dataContext || { fullData: null, isLoading: true };
+  const { fullData, isLoading, isDemo } = dataContext || { fullData: null, isLoading: true, isDemo: false };
 
   const [isClient, setIsClient] = useState(false);
   const [currentClassId, setCurrentClassId] = useState<string>("");
@@ -33,7 +34,7 @@ export function CalendarPage() {
 
   useEffect(() => {
     setIsClient(true);
-    const role = sessionStorage.getItem('userRole') || 'admin';
+    const role = isDemo ? 'viewer' : sessionStorage.getItem('userRole') || 'admin';
     setUserRole(role);
 
     if (fullData) {
@@ -54,19 +55,19 @@ export function CalendarPage() {
             setCurrentClassId(availableClasses[0].id);
         }
     }
-  }, [fullData, currentClassId]);
+  }, [fullData, currentClassId, isDemo]);
   
   const { classes: allSystemClasses, lessons: allLessons } = fullData || { classes: [], lessons: {} };
 
   const availableClasses = useMemo(() => {
     if (!userRole || !allSystemClasses) return [];
-    if (userRole === 'admin' || userRole === 'viewer') return allSystemClasses;
+    if (userRole === 'admin' || userRole === 'viewer' || isDemo) return allSystemClasses;
     if (userRole === 'teacher') {
       const teacherId = sessionStorage.getItem('teacherId');
       return allSystemClasses.filter(c => c.teachers.some(t => t.id === teacherId));
     }
     return [];
-  }, [allSystemClasses, userRole]);
+  }, [allSystemClasses, userRole, isDemo]);
 
   const currentClass = useMemo(() => availableClasses.find(c => c.id === currentClassId), [availableClasses, currentClassId]);
 
@@ -110,8 +111,8 @@ export function CalendarPage() {
     <div className="p-4 sm:p-6 text-white bg-background flex-1 flex flex-col">
       <header className="mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center text-primary-foreground font-bold text-xl shrink-0">
-                <Church size={24} />
+              <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center text-primary-foreground font-bold text-xl shrink-0 p-1.5 border border-primary/20">
+                <Image src="/logo.png" alt="Logo" width={32} height={32} />
               </div>
               <div>
                 <h1 className="text-2xl font-bold">Aulas</h1>

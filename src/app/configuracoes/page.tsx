@@ -14,7 +14,7 @@ import { SimulatedFullData } from "@/lib/data";
 
 export default function SettingsPage() {
   const dataContext = useContext(DataContext);
-  const { fullData: data, updateAndSaveData, isLoading } = dataContext || { fullData: null, updateAndSaveData: () => {}, isLoading: true };
+  const { fullData: data, updateAndSaveData, isLoading, isDemo } = dataContext || { fullData: null, updateAndSaveData: () => {}, isLoading: true, isDemo: false };
 
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -24,14 +24,14 @@ export default function SettingsPage() {
   const [adminPassword, setAdminPassword] = useState('');
   const [teacherPassword, setTeacherPassword] = useState('');
   
-  const isAdmin = userRole === 'admin';
+  const isAdmin = userRole === 'admin' && !isDemo;
 
 
   useEffect(() => {
     setIsClient(true);
-    const role = sessionStorage.getItem('userRole') || 'admin';
+    const role = isDemo ? 'viewer' : sessionStorage.getItem('userRole') || 'admin';
     setUserRole(role);
-  }, []);
+  }, [isDemo]);
   
   useEffect(() => {
     if (data?.passwords) {

@@ -68,7 +68,7 @@ const colorPresets = [
 
 export function ClassSettings() {
   const dataContext = useContext(DataContext);
-  const { fullData: data, updateAndSaveData, isLoading } = dataContext || { fullData: null, updateAndSaveData: () => {}, isLoading: true };
+  const { fullData: data, updateAndSaveData, isLoading, isDemo } = dataContext || { fullData: null, updateAndSaveData: () => {}, isLoading: true, isDemo: false };
 
   const [currentClassId, setCurrentClassId] = useState<string>('');
   const [isStudentDialogOpen, setIsStudentDialogOpen] = useState(false);
@@ -78,12 +78,12 @@ export function ClassSettings() {
   const { toast } = useToast();
   const [userRole, setUserRole] = useState<string>('');
   const [isClient, setIsClient] = useState(false);
-  const isViewer = userRole === 'viewer';
+  const isReadOnly = userRole === 'viewer' || isDemo;
 
 
   useEffect(() => {
     setIsClient(true);
-    const role = sessionStorage.getItem('userRole') || 'admin';
+    const role = isDemo ? 'viewer' : sessionStorage.getItem('userRole') || 'admin';
     setUserRole(role);
     
     if (data) {
@@ -98,21 +98,21 @@ export function ClassSettings() {
         }
     }
 
-  }, [data, currentClassId]);
+  }, [data, currentClassId, isDemo]);
   
   const availableClasses = useMemo(() => {
     if (!data || !userRole) return [];
-    if (userRole === 'admin' || userRole === 'viewer') return data.classes;
+    if (userRole === 'admin' || userRole === 'viewer' || isDemo) return data.classes;
     if (userRole === 'teacher') {
       const teacherId = sessionStorage.getItem('teacherId');
       return data.classes.filter(c => c.teachers.some(t => t.id === teacherId));
     }
     return [];
-  }, [data, userRole]);
+  }, [data, userRole, isDemo]);
 
 
   const handleTrackedItemToggle = (item: CheckType | 'task') => {
-    if (!currentClass || isViewer || !updateAndSaveData) return;
+    if (!currentClass || isReadOnly || !updateAndSaveData) return;
     updateAndSaveData(prev => ({
         ...prev!,
         classes: prev!.classes.map(c =>
@@ -124,7 +124,7 @@ export function ClassSettings() {
   };
   
     const handleTaskModeChange = (mode: TaskMode) => {
-        if(isViewer || !updateAndSaveData) return;
+        if(isReadOnly || !updateAndSaveData) return;
         updateAndSaveData(prev => ({
             ...prev!,
             classes: prev!.classes.map(c =>
@@ -135,7 +135,7 @@ export function ClassSettings() {
 
   const handleSaveStudent = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if(isViewer || !updateAndSaveData) return;
+    if(isReadOnly || !updateAndSaveData) return;
     const formData = new FormData(e.currentTarget);
     const name = formData.get("name") as string;
     const birthDate = formData.get("birthDate") as string;
@@ -168,13 +168,13 @@ export function ClassSettings() {
   };
   
   const handleEditStudent = (student: Student) => {
-    if(isViewer) return;
+    if(isReadOnly) return;
     setEditingStudent(student);
     setIsStudentDialogOpen(true);
   }
 
   const handleDeleteStudent = (studentId: string) => {
-    if(isViewer || !updateAndSaveData) return;
+    if(isReadOnly || !updateAndSaveData) return;
     updateAndSaveData(prev => ({
         ...prev!,
         classes: prev!.classes.map(c =>
@@ -186,14 +186,14 @@ export function ClassSettings() {
   }
   
   const openNewStudentDialog = () => {
-    if(isViewer) return;
+    if(isReadOnly) return;
     setEditingStudent(null);
     setIsStudentDialogOpen(true);
   }
 
   const handleSaveClass = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!editingClass || isViewer || !updateAndSaveData) return;
+    if (!editingClass || isReadOnly || !updateAndSaveData) return;
 
     const formData = new FormData(e.currentTarget);
     const name = formData.get("name") as string;
@@ -234,7 +234,7 @@ export function ClassSettings() {
   }
 
   const openNewClassDialog = () => {
-    if(isViewer) return;
+    if(isReadOnly) return;
     setEditingClass({
         id: '',
         name: '',
@@ -248,13 +248,13 @@ export function ClassSettings() {
   }
 
   const openEditClassDialog = () => {
-    if(!currentClass || isViewer) return;
+    if(!currentClass || isReadOnly) return;
     setEditingClass(currentClass);
     setIsClassDialogOpen(true);
   }
   
   const addTeacher = () => {
-    if(isViewer) return;
+    if(isReadOnly) return;
     setEditingClass(prev => {
         if (!prev) return null;
         return {
@@ -265,7 +265,7 @@ export function ClassSettings() {
   }
 
   const removeTeacher = (teacherId: string) => {
-     if(isViewer) return;
+     if(isReadOnly) return;
      setEditingClass(prev => {
         if (!prev) return null;
         const newTeachers = prev.teachers.filter(t => t.id !== teacherId);
@@ -277,7 +277,7 @@ export function ClassSettings() {
   }
 
   const handleDeleteTeacher = (teacherId: string) => {
-    if (isViewer || !updateAndSaveData || !currentClass) return;
+    if (isReadOnly || !updateAndSaveData || !currentClass) return;
      if (currentClass.teachers.length <= 1) {
         toast({ title: "Ação não permitida", description: "A classe deve ter pelo menos um professor.", variant: "destructive" });
         return;
@@ -321,7 +321,7 @@ export function ClassSettings() {
             </DialogHeader>
             {editingClass && (
                 <form onSubmit={handleSaveClass} className="space-y-4">
-                    <fieldset disabled={isViewer}>
+                    <fieldset disabled={isReadOnly}>
                         <div>
                         <Label htmlFor="class-name">Nome da Classe</Label>
                         <Input id="class-name" name="name" defaultValue={editingClass.name} className="bg-input border-border" required placeholder="Ex: Primários" />
@@ -374,7 +374,7 @@ export function ClassSettings() {
                                 ))}
                             </div>
                         </div>
-                        {!isViewer && <div className="flex justify-end gap-2 pt-4">
+                        {!isReadOnly && <div className="flex justify-end gap-2 pt-4">
                             <Button type="button" variant="secondary" onClick={() => setIsClassDialogOpen(false)}>Cancelar</Button>
                             <Button type="submit" className="bg-primary hover:bg-primary/90">{editingClass.id ? "Salvar Alterações" : "Criar Classe"}</Button>
                         </div>}
@@ -414,12 +414,12 @@ export function ClassSettings() {
             ))}
           </DropdownMenuContent>
         </DropdownMenu>
-        {userRole === 'admin' && <div className="flex gap-2 w-full sm:w-auto">
-            <Button onClick={openNewClassDialog} className="bg-primary hover:bg-primary/90 text-white" disabled={isViewer}>
+        {userRole === 'admin' && !isDemo && <div className="flex gap-2 w-full sm:w-auto">
+            <Button onClick={openNewClassDialog} className="bg-primary hover:bg-primary/90 text-white" disabled={isReadOnly}>
                 <PlusCircle size={16} className="mr-2" />
                 Criar Classe
             </Button>
-            <Button variant="secondary" onClick={openEditClassDialog} className="w-full sm:w-auto" disabled={isViewer}>
+            <Button variant="secondary" onClick={openEditClassDialog} className="w-full sm:w-auto" disabled={isReadOnly}>
                 <Edit size={16} className="mr-2" />
                 Editar Classe
             </Button>
@@ -450,10 +450,10 @@ export function ClassSettings() {
                                         <TableCell className="font-medium">{teacher.name}</TableCell>
                                         <TableCell className="text-right">
                                             <div className="flex gap-2 justify-end">
-                                                <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-white" onClick={openEditClassDialog} disabled={isViewer}>
+                                                <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-white" onClick={openEditClassDialog} disabled={isReadOnly}>
                                                     <Edit size={16}/>
                                                 </Button>
-                                                <Button variant="ghost" size="icon" className="h-8 w-8 text-red-500 hover:text-red-400" onClick={() => handleDeleteTeacher(teacher.id)} disabled={isViewer}>
+                                                <Button variant="ghost" size="icon" className="h-8 w-8 text-red-500 hover:text-red-400" onClick={() => handleDeleteTeacher(teacher.id)} disabled={isReadOnly}>
                                                     <Trash2 size={16}/>
                                                 </Button>
                                             </div>
@@ -473,7 +473,7 @@ export function ClassSettings() {
             <Card className="bg-card border-border">
                 <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle>Alunos da Classe "{currentClass.name}"</CardTitle>
-                {!isViewer && <Button size="sm" onClick={openNewStudentDialog} className="bg-primary hover:bg-primary/90 text-white">
+                {!isReadOnly && <Button size="sm" onClick={openNewStudentDialog} className="bg-primary hover:bg-primary/90 text-white">
                     <PlusCircle size={16} className="mr-2" />
                     Adicionar Aluno
                 </Button>}
@@ -503,10 +503,10 @@ export function ClassSettings() {
                             </TableCell>
                             <TableCell className="text-right">
                             <div className="flex gap-2 justify-end">
-                                <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-white" onClick={() => handleEditStudent(student)} disabled={isViewer}>
+                                <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-white" onClick={() => handleEditStudent(student)} disabled={isReadOnly}>
                                     <Edit size={16}/>
                                 </Button>
-                                <Button variant="ghost" size="icon" className="h-8 w-8 text-red-500 hover:text-red-400" onClick={() => handleDeleteStudent(student.id)} disabled={isViewer}>
+                                <Button variant="ghost" size="icon" className="h-8 w-8 text-red-500 hover:text-red-400" onClick={() => handleDeleteStudent(student.id)} disabled={isReadOnly}>
                                     <Trash2 size={16}/>
                                 </Button>
                             </div>
@@ -546,7 +546,7 @@ export function ClassSettings() {
                       checked={currentClass.trackedItems[item]}
                       onCheckedChange={() => handleTrackedItemToggle(item)}
                       className="data-[state=checked]:bg-primary"
-                      disabled={isViewer}
+                      disabled={isReadOnly}
                     />
                   </div>
                 ))}
@@ -560,7 +560,7 @@ export function ClassSettings() {
                     <CardTitle>Modo de Tarefa de Casa</CardTitle>
                 </CardHeader>
                 <CardContent>
-                    <RadioGroup value={currentClass.taskMode} onValueChange={handleTaskModeChange} disabled={isViewer}>
+                    <RadioGroup value={currentClass.taskMode} onValueChange={handleTaskModeChange} disabled={isReadOnly}>
                         <div className="flex items-center space-x-2">
                             <RadioGroupItem value="unique" id="unique" />
                             <Label htmlFor="unique">Tarefa Única</Label>
@@ -586,7 +586,7 @@ export function ClassSettings() {
             <DialogTitle>{editingStudent ? "Editar Aluno" : "Adicionar Novo Aluno"}</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleSaveStudent} className="space-y-4">
-             <fieldset disabled={isViewer}>
+             <fieldset disabled={isReadOnly}>
                 <div>
                   <Label htmlFor="name">Nome do Aluno</Label>
                   <Input id="name" name="name" defaultValue={editingStudent?.name} className="bg-input border-border" required />
@@ -595,7 +595,7 @@ export function ClassSettings() {
                   <Label htmlFor="birthDate">Data de Nascimento</Label>
                   <Input id="birthDate" name="birthDate" type="date" defaultValue={editingStudent?.birthDate} className="bg-input border-border" required />
                 </div>
-                {!isViewer && <div className="flex justify-end gap-2 pt-4">
+                {!isReadOnly && <div className="flex justify-end gap-2 pt-4">
                      <Button type="button" variant="secondary" onClick={() => setIsStudentDialogOpen(false)}>Cancelar</Button>
                      <Button type="submit" className="bg-primary hover:bg-primary/90">{editingStudent ? "Salvar Alterações" : "Adicionar Aluno"}</Button>
                 </div>}
@@ -611,7 +611,7 @@ export function ClassSettings() {
           </DialogHeader>
           {editingClass && (
             <form onSubmit={handleSaveClass} className="space-y-4">
-                <fieldset disabled={isViewer}>
+                <fieldset disabled={isReadOnly}>
                     <div>
                     <Label htmlFor="class-name">Nome da Classe</Label>
                     <Input id="class-name" name="name" defaultValue={editingClass.name} className="bg-input border-border" required placeholder="Ex: Primários" />
@@ -664,7 +664,7 @@ export function ClassSettings() {
                             ))}
                         </div>
                     </div>
-                    {!isViewer && <div className="flex justify-end gap-2 pt-4">
+                    {!isReadOnly && <div className="flex justify-end gap-2 pt-4">
                         <Button type="button" variant="secondary" onClick={() => setIsClassDialogOpen(false)}>Cancelar</Button>
                         <Button type="submit" className="bg-primary hover:bg-primary/90">{editingClass.id ? "Salvar Alterações" : "Criar Classe"}</Button>
                     </div>}

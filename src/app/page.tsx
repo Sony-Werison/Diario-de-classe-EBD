@@ -4,7 +4,7 @@
 import { Church, Shield, Eye, ArrowRight, User } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState, useContext, useEffect, useMemo } from 'react';
-import { Teacher, ClassConfig } from '@/lib/data';
+import { Teacher, ClassConfig, SimulatedFullData, getInitialData } from '@/lib/data';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { DataContext } from '@/contexts/DataContext';
@@ -52,29 +52,20 @@ export default function ProfileSelectionPage() {
     // Limpa a sessão sempre que o usuário volta para a tela de login
     sessionStorage.removeItem('userRole');
     sessionStorage.removeItem('teacherId');
+    sessionStorage.removeItem('isDemo');
   }, []);
-
-  const teachersByClass = useMemo(() => {
-    if (!fullData) return new Map<string, TeacherWithClass[]>();
-
-    const map = new Map<string, TeacherWithClass[]>();
-    fullData.classes.forEach(c => {
-        const teachersWithClass = c.teachers.map(t => ({...t, className: c.name}));
-        map.set(c.name, teachersWithClass);
-    });
-    return map;
-  }, [fullData]);
 
   const handleProfileSelect = async (role: string) => {
     setPassword('');
     setPasswordError('');
-    setSelectedRole(role);
-
+    
     if (role === 'viewer') {
-      sessionStorage.setItem('userRole', role);
-      sessionStorage.removeItem('teacherId');
+      sessionStorage.setItem('isDemo', 'true');
       router.push('/calendar');
+      return;
     }
+    
+    setSelectedRole(role);
   };
 
   const handlePasswordSubmit = () => {
@@ -82,6 +73,7 @@ export default function ProfileSelectionPage() {
 
     const correctPassword = passwords[selectedRole as keyof typeof passwords];
     if (password === correctPassword) {
+      sessionStorage.removeItem('isDemo');
       if (selectedRole === 'admin') {
         sessionStorage.setItem('userRole', 'admin');
         sessionStorage.removeItem('teacherId');
@@ -95,6 +87,17 @@ export default function ProfileSelectionPage() {
       setPasswordError('Senha incorreta. Tente novamente.');
     }
   };
+
+  const teachersByClass = useMemo(() => {
+    if (!fullData) return new Map<string, TeacherWithClass[]>();
+
+    const map = new Map<string, TeacherWithClass[]>();
+    fullData.classes.forEach(c => {
+        const teachersWithClass = c.teachers.map(t => ({...t, className: c.name}));
+        map.set(c.name, teachersWithClass);
+    });
+    return map;
+  }, [fullData]);
 
   const handleTeacherSelect = (teacher: Teacher) => {
     sessionStorage.setItem('userRole', 'teacher');

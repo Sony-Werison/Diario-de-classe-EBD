@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import { Button } from "@/components/ui/button";
@@ -36,6 +35,7 @@ import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { Badge } from "../ui/badge";
+import Image from "next/image";
 
 interface AppHeaderProps {
   currentDate: Date;
@@ -77,8 +77,8 @@ export function AppHeader({
     <header className="bg-card border-b border-border p-3 flex flex-col shadow-lg z-10 shrink-0 gap-4" style={{'--class-color': currentClass.color} as React.CSSProperties}>
       <div className="flex items-center justify-between w-full">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 bg-[var(--class-color)] rounded-lg flex items-center justify-center text-white font-bold text-xl shrink-0 sm:hidden">
-            <Church size={20} />
+          <div className="w-8 h-8 bg-[var(--class-color)]/10 rounded-lg flex items-center justify-center text-white font-bold text-xl shrink-0 sm:hidden p-1 border border-[var(--class-color)]/20">
+            <Image src="/logo.png" alt="Logo" width={24} height={24} />
           </div>
           <DropdownMenu>
             <DropdownMenuTrigger asChild disabled={classes.length <= 1}>

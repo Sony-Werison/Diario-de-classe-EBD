@@ -45,7 +45,7 @@ const defaultChecks: StudentChecks = {
 export function StudentDashboard({ initialDate, classId: initialClassId }: { initialDate?: string, classId?: string }) {
   const router = useRouter();
   const dataContext = useContext(DataContext);
-  const { fullData, updateAndSaveData, isLoading } = dataContext || { fullData: null, updateAndSaveData: () => {}, isLoading: true };
+  const { fullData, updateAndSaveData, isLoading, isDemo } = dataContext || { fullData: null, updateAndSaveData: () => {}, isLoading: true, isDemo: false };
 
   const [currentClassId, setCurrentClassId] = useState<string>('');
   const [currentDate, setCurrentDate] = useState<Date>(() => initialDate ? startOfDay(parseISO(initialDate)) : startOfDay(new Date()));
@@ -56,7 +56,7 @@ export function StudentDashboard({ initialDate, classId: initialClassId }: { ini
   const [cancellationReason, setCancellationReason] = useState("");
   const [userRole, setUserRole] = useState<string>('');
   const [currentUser, setCurrentUser] = useState('');
-  const isViewer = userRole === 'viewer';
+  const isReadOnly = userRole === 'viewer' || isDemo;
   
   // These states hold the current data for the dashboard
   const [dailyLesson, setDailyLesson] = useState<DailyLesson | undefined>();
@@ -66,7 +66,7 @@ export function StudentDashboard({ initialDate, classId: initialClassId }: { ini
 
   useEffect(() => {
     setIsClient(true);
-    const role = sessionStorage.getItem('userRole') || 'admin';
+    const role = isDemo ? 'viewer' : sessionStorage.getItem('userRole') || 'admin';
     setUserRole(role);
 
     if (fullData) {
@@ -93,7 +93,7 @@ export function StudentDashboard({ initialDate, classId: initialClassId }: { ini
             router.push('/calendar');
         }
     }
-  }, [fullData, initialClassId, initialDate, router]);
+  }, [fullData, initialClassId, initialDate, router, isDemo]);
 
   const currentClass = useMemo(() => classes.find(c => c.id === currentClassId), [classes, currentClassId]);
   const dateKey = useMemo(() => currentDate ? format(currentDate, "yyyy-MM-dd") : '', [currentDate]);
@@ -137,7 +137,7 @@ export function StudentDashboard({ initialDate, classId: initialClassId }: { ini
 
 
   const handleToggleCheck = useCallback((studentId: string, type: CheckType | 'task') => {
-    if(isViewer) return;
+    if(isReadOnly) return;
     setDailyStudentChecks(prevChecks => {
         const newChecksForStudent = { ...(prevChecks[studentId] || defaultChecks) };
         (newChecksForStudent as any)[type] = !(newChecksForStudent as any)[type];
@@ -157,10 +157,10 @@ export function StudentDashboard({ initialDate, classId: initialClassId }: { ini
             [studentId]: newChecksForStudent
         };
     });
-  }, [isViewer]);
+  }, [isReadOnly]);
 
   const handleToggleDailyTask = useCallback((studentId: string, day: keyof DailyTasks) => {
-    if(isViewer) return;
+    if(isReadOnly) return;
     setDailyStudentChecks(prevChecks => {
         const newChecksForStudent = { ...(prevChecks[studentId] || defaultChecks) };
         const newDailyTasks = { ...(newChecksForStudent.dailyTasks || {}) };
@@ -178,15 +178,15 @@ export function StudentDashboard({ initialDate, classId: initialClassId }: { ini
             }
         };
     });
-  }, [isViewer]);
+  }, [isReadOnly]);
 
   const handleLessonDetailChange = useCallback((field: keyof DailyLesson, value: string) => {
-    if(!currentClass || isViewer) return;
+    if(!currentClass || isReadOnly) return;
     setDailyLesson(prev => ({
       ...(prev || { teacherId: currentClass.teachers[0]?.id || "", title: "", status: 'held', cancellationReason: '' }),
       [field]: value,
     }) as DailyLesson);
-  }, [currentClass, isViewer]);
+  }, [currentClass, isReadOnly]);
   
   const handleSundayNavigation = (direction: 'prev' | 'next') => {
     const newDate = new Date(currentDate);
@@ -197,7 +197,7 @@ export function StudentDashboard({ initialDate, classId: initialClassId }: { ini
   }
 
   const handleSave = () => {
-    if (!currentDate || !currentClass || isViewer || !fullData || !updateAndSaveData) return;
+    if (!currentDate || !currentClass || isReadOnly || !fullData || !updateAndSaveData) return;
     
     updateAndSaveData((prevData: SimulatedFullData) => {
         const dataToSave = JSON.parse(JSON.stringify(prevData)) as SimulatedFullData;
@@ -229,7 +229,7 @@ export function StudentDashboard({ initialDate, classId: initialClassId }: { ini
   }
 
   const handleDeleteLesson = () => {
-    if (!currentDate || !currentClassId || isViewer || !fullData || !updateAndSaveData) return;
+    if (!currentDate || !currentClassId || isReadOnly || !fullData || !updateAndSaveData) return;
   
     updateAndSaveData((prevData: SimulatedFullData) => {
         const dataToSave = JSON.parse(JSON.stringify(prevData)) as SimulatedFullData;
@@ -259,7 +259,7 @@ export function StudentDashboard({ initialDate, classId: initialClassId }: { ini
         toast({ title: "O motivo é obrigatório", variant: "destructive" });
         return;
       }
-      if(!currentClass || isViewer || !fullData || !updateAndSaveData) return;
+      if(!currentClass || isReadOnly || !fullData || !updateAndSaveData) return;
       
       const updatedLesson: DailyLesson = {
           ...(dailyLesson || { teacherId: currentClass.teachers[0]?.id || "", title: "", status: 'held' }),
@@ -405,7 +405,7 @@ export function StudentDashboard({ initialDate, classId: initialClassId }: { ini
                 setCancellationReason(dailyLesson?.cancellationReason || "");
                 setIsCancelDialogOpen(true);
             }}
-            isReadOnly={isViewer}
+            isReadOnly={isReadOnly}
             currentUser={currentUser}
         />
         <main className="flex-1 p-3 sm:p-4 md:p-6 bg-background">
@@ -423,7 +423,7 @@ export function StudentDashboard({ initialDate, classId: initialClassId }: { ini
                 trackedItems={trackedItems}
                 taskMode={currentClass.taskMode}
                 isLessonCancelled={dailyLesson.status === 'cancelled'}
-                isReadOnly={isViewer}
+                isReadOnly={isReadOnly}
               />
             ))}
              {studentsWithScores.length === 0 && (
@@ -502,7 +502,7 @@ export function StudentDashboard({ initialDate, classId: initialClassId }: { ini
                 <DialogHeader>
                     <DialogTitle>Marcar aula como não realizada</DialogTitle>
                 </DialogHeader>
-                <fieldset disabled={isViewer}>
+                <fieldset disabled={isReadOnly}>
                     <div className="space-y-4">
                         <Label htmlFor="cancellation-reason">Motivo (Obrigatório)</Label>
                         <Textarea 
@@ -512,7 +512,7 @@ export function StudentDashboard({ initialDate, classId: initialClassId }: { ini
                             placeholder="Ex: Feriado, evento especial na igreja, etc."
                         />
                     </div>
-                    {!isViewer && <div className="flex justify-end gap-2 pt-4">
+                    {!isReadOnly && <div className="flex justify-end gap-2 pt-4">
                         <Button variant="ghost" onClick={() => setIsCancelDialogOpen(false)}>Cancelar</Button>
                         <Button onClick={handleConfirmCancelLesson} className="bg-primary text-primary-foreground hover:bg-primary/90">Confirmar</Button>
                     </div>}
