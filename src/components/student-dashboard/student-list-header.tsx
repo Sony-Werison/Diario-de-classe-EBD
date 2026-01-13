@@ -1,3 +1,4 @@
+
 import { CheckType } from "@/lib/data";
 import { cn } from "@/lib/utils";
 import { ArrowUp, ArrowDown } from "lucide-react";
@@ -41,22 +42,26 @@ export function StudentListHeader({ trackedItems, onSort, sortKey, sortDirection
         </button>
     )
   }
+  
+  const singleItem = orderedVisibleItems.length === 1;
 
   return (
     <div className="p-4 flex items-center text-xs font-bold text-slate-400 uppercase tracking-wider border-b border-slate-700">
-      <div className="w-1/3 flex justify-center items-end" style={{ height: '60px'}}>
-         <span className="w-10 text-center -rotate-90 origin-center whitespace-nowrap text-slate-400">Aluno</span>
+      <div className={cn("flex justify-center items-end", singleItem ? "w-1/2" : "w-1/3")} style={{ height: '60px'}}>
+         <span className={cn("w-10 text-center whitespace-nowrap text-slate-400", singleItem ? 'w-auto' : '-rotate-90 origin-center')}>Aluno</span>
       </div>
-      <div className="flex-1 flex justify-center gap-4 text-center items-end" style={{ height: '60px'}}>
+      <div className={cn("flex-1 flex justify-center gap-4 text-center items-end", singleItem && "justify-start")} style={{ height: '60px'}}>
         {orderedVisibleItems.map(item => (
-            <span key={item} className="w-10 text-center -rotate-90 origin-center whitespace-nowrap text-slate-400" title={itemLabels[item]}>
+            <span key={item} className={cn("w-10 text-center whitespace-nowrap text-slate-400", singleItem ? 'w-auto' : '-rotate-90 origin-center')} title={itemLabels[item]}>
                 {itemLabels[item]}
             </span>
         ))}
       </div>
-      <div className="w-1/4 text-right pr-2 hidden sm:block">
-         <SortableHeader label="Progresso do Dia" sortValue="progress"/>
-      </div>
+      {!singleItem && (
+        <div className="w-1/4 text-right pr-2 hidden sm:block">
+           <SortableHeader label="Progresso do Dia" sortValue="progress"/>
+        </div>
+      )}
     </div>
   );
 }

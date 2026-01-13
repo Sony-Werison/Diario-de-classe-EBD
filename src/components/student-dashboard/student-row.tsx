@@ -28,18 +28,19 @@ const checkConfig: Record<CheckType, { Icon: React.ElementType; activeClass: str
 
 export function StudentRow({ student, onToggleCheck, trackedItems }: StudentRowProps) {
   const { id, name, checks, dailyScore, age, completionPercent, checkedItemsCount, totalTrackedItems } = student;
+  const singleItem = totalTrackedItems <= 1;
   
   return (
     <div className="bg-slate-800 p-3 flex flex-col sm:flex-row sm:items-center border-b border-slate-700/50 transition-colors hover:bg-slate-700/50 group">
         <div className="flex items-center w-full">
-            <div className="w-1/3 flex items-center gap-3">
+            <div className={cn("flex items-center gap-3", singleItem ? "w-1/2" : "w-1/3")}>
                 <div className="pl-2">
                   <p className="text-sm font-semibold text-slate-200 group-hover:text-white transition-colors">{name}</p>
                    <p className="text-xs text-slate-400">{age !== null ? `${age} anos` : 'Idade não informada'}</p>
                 </div>
             </div>
             
-            <div className="flex-1 flex justify-center gap-4">
+            <div className={cn("flex-1 flex justify-center gap-4", singleItem && "justify-start")}>
                 {(Object.keys(checkConfig) as CheckType[]).map(type => {
                 if (!trackedItems[type]) return null;
                 const CheckIcon = checkConfig[type].Icon;
@@ -61,26 +62,30 @@ export function StudentRow({ student, onToggleCheck, trackedItems }: StudentRowP
                 })}
             </div>
 
-            <div className="w-1/4 pl-4 pr-2 flex-col justify-center hidden sm:flex">
-                <div className="flex justify-between text-xs mb-1">
-                <span className={cn("font-bold", dailyScore > 0 ? "text-[var(--class-color)]" : "text-slate-400")}>
-                    {Math.round(completionPercent)}%
-                </span>
-                <span className="text-slate-500">{checkedItemsCount}/{totalTrackedItems}</span>
+            {!singleItem && (
+                <div className="w-1/4 pl-4 pr-2 flex-col justify-center hidden sm:flex">
+                    <div className="flex justify-between text-xs mb-1">
+                    <span className={cn("font-bold", dailyScore > 0 ? "text-[var(--class-color)]" : "text-slate-400")}>
+                        {Math.round(completionPercent)}%
+                    </span>
+                    <span className="text-slate-500">{checkedItemsCount}/{totalTrackedItems}</span>
+                    </div>
+                    <Progress value={completionPercent} className="h-2 bg-slate-900 border border-slate-700" indicatorClassName={cn(completionPercent === 100 ? "bg-gradient-to-r from-yellow-400 to-yellow-600" : "bg-[var(--class-color)]")} />
                 </div>
-                <Progress value={completionPercent} className="h-2 bg-slate-900 border border-slate-700" indicatorClassName={cn(completionPercent === 100 ? "bg-gradient-to-r from-yellow-400 to-yellow-600" : "bg-[var(--class-color)]")} />
-            </div>
+            )}
         </div>
 
-      <div className="w-full sm:hidden mt-3 sm:mt-0 sm:pl-4 sm:pr-2 flex flex-col justify-center">
-        <div className="flex justify-between text-xs mb-1">
-          <span className={cn("font-bold", dailyScore > 0 ? "text-[var(--class-color)]" : "text-slate-400")}>
-            {Math.round(completionPercent)}%
-          </span>
-          <span className="text-slate-500">{checkedItemsCount}/{totalTrackedItems}</span>
+      {!singleItem && (
+        <div className="w-full sm:hidden mt-3 sm:mt-0 sm:pl-4 sm:pr-2 flex flex-col justify-center">
+            <div className="flex justify-between text-xs mb-1">
+            <span className={cn("font-bold", dailyScore > 0 ? "text-[var(--class-color)]" : "text-slate-400")}>
+                {Math.round(completionPercent)}%
+            </span>
+            <span className="text-slate-500">{checkedItemsCount}/{totalTrackedItems}</span>
+            </div>
+            <Progress value={completionPercent} className="h-2 bg-slate-900 border border-slate-700" indicatorClassName={cn(completionPercent === 100 ? "bg-gradient-to-r from-yellow-400 to-yellow-600" : "bg-[var(--class-color)]")} />
         </div>
-        <Progress value={completionPercent} className="h-2 bg-slate-900 border border-slate-700" indicatorClassName={cn(completionPercent === 100 ? "bg-gradient-to-r from-yellow-400 to-yellow-600" : "bg-[var(--class-color)]")} />
-      </div>
+      )}
 
     </div>
   );

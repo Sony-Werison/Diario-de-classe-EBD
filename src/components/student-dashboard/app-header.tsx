@@ -198,7 +198,7 @@ export function AppHeader({
                 </Button>
             )}
              <Button variant="destructive" size="icon" className="h-9 w-9" onClick={onOpenDeleteAlert}>
-                <Trash2 size={14}/>
+                <Trash2 size={16}/>
                 <span className="sr-only">Excluir</span>
               </Button>
          </div>

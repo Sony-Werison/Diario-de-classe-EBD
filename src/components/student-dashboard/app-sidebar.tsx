@@ -1,3 +1,4 @@
+
 "use client";
 
 import {
@@ -13,10 +14,15 @@ import { usePathname } from 'next/navigation';
 
 const navLinks = [
   { href: "/calendar", icon: Calendar, label: "Calendário" },
-  { href: "/", icon: LayoutGrid, label: "Aulas" },
   { href: "/report", icon: FileText, label: "Relatório" },
   { href: "/settings", icon: Settings, label: "Ajustes" },
 ];
+
+const mobileNavLinks = [
+  { href: "/calendar", icon: Calendar, label: "Calendário" },
+  { href: "/report", icon: FileText, label: "Relatório" },
+  { href: "/settings", icon: Settings, label: "Ajustes" },
+]
 
 const NavLink = ({
   href,
@@ -75,11 +81,17 @@ const NavLink = ({
 };
 
 export function AppSidebar() {
+  const pathname = usePathname();
+  const isDashboard = pathname.startsWith('/dashboard');
+
   return (
     <aside className="w-20 bg-card border-r border-border flex-col items-center py-6 gap-4 shrink-0 hidden sm:flex">
       {navLinks.map(link => (
         <NavLink key={link.href} {...link} />
       ))}
+       {isDashboard && (
+        <NavLink href="/" icon={LayoutGrid} label="Aulas" />
+      )}
       <div className="mt-auto">
         <NavLink href="/logout" icon={LogOut} label="Sair" />
       </div>
@@ -90,7 +102,7 @@ export function AppSidebar() {
 export function AppBottomNav() {
   return (
     <nav className="sm:hidden fixed bottom-0 left-0 right-0 bg-card border-t border-border h-16 flex items-center justify-around z-50">
-        {navLinks.map(link => (
+        {mobileNavLinks.map(link => (
           <NavLink key={link.href} {...link} isMobile />
         ))}
     </nav>
