@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Users, Cake, ArrowUp, ArrowDown } from 'lucide-react';
 import { itemIcons } from '../report-helpers';
 import { startOfMonth, startOfYear } from 'date-fns';
+import { Progress } from '../ui/progress';
 
 const calculateAge = (birthDateString: string) => {
     if (!birthDateString) return 0;
@@ -142,6 +143,13 @@ const calculateClassStats = (classConfig: ClassConfig, studentRecords: Simulated
     };
 };
 
+const RateDisplay = ({ rate }: { rate: number }) => (
+    <div className="flex items-center gap-2">
+        <span className="font-semibold text-white w-8">{rate.toFixed(0)}%</span>
+        <Progress value={rate} className="h-1.5 w-10 bg-slate-700" indicatorClassName="bg-primary/50" />
+    </div>
+);
+
 
 export function OverviewReport() {
     const [fullData, setFullData] = useState<SimulatedFullData | null>(null);
@@ -202,12 +210,10 @@ export function OverviewReport() {
                         </div>
                         
                         <div className="space-y-2 pt-2 border-t border-border mt-auto">
-                            <div className="flex justify-between items-center pt-2">
+                           <div className="grid grid-cols-[1fr_auto_auto] items-center pt-2">
                                 <h4 className="text-sm font-semibold text-slate-300">Médias Gerais</h4>
-                                <div className="grid grid-cols-2 gap-2 text-xs font-bold text-slate-400">
-                                    <span className="text-right">Mês</span>
-                                    <span className="text-right">Ano</span>
-                                </div>
+                                <span className="text-xs font-bold text-slate-400 text-right pr-2">Mês</span>
+                                <span className="text-xs font-bold text-slate-400 text-right">Ano</span>
                             </div>
                            
                            {allTrackedItems.map(itemKey => {
@@ -227,14 +233,16 @@ export function OverviewReport() {
                                 }
 
                                 return (
-                                    <div key={itemKey} className="flex items-center justify-between text-sm">
+                                    <div key={itemKey} className="grid grid-cols-[1fr_auto_auto] items-center text-sm">
                                         <div className="flex items-center gap-2">
                                             <Icon size={14} className="text-slate-400" />
                                             <span className="text-slate-300">{label}</span>
                                         </div>
-                                        <div className="grid grid-cols-2 gap-2 font-semibold text-white w-20 text-right">
-                                            <span>{monthlyRate.toFixed(0)}%</span>
-                                            <span>{yearlyRate.toFixed(0)}%</span>
+                                        <div className="text-right pr-2">
+                                            <RateDisplay rate={monthlyRate} />
+                                        </div>
+                                        <div className="text-right">
+                                            <RateDisplay rate={yearlyRate} />
                                         </div>
                                     </div>
                                 )
@@ -252,4 +260,3 @@ export function OverviewReport() {
         </div>
     );
 }
-
