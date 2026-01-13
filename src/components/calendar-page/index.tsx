@@ -25,7 +25,7 @@ export function CalendarPage() {
   const [fullData, setFullData] = useState(getSimulatedData());
   const [isClient, setIsClient] = useState(false);
   const [currentClassId, setCurrentClassId] = useState<string>("");
-  const [userRole, setUserRole] = useState<string>('admin');
+  const [userRole, setUserRole] = useState<string>('');
 
   useEffect(() => {
     setIsClient(true);
@@ -33,10 +33,13 @@ export function CalendarPage() {
     setUserRole(role);
     
     const teacherId = sessionStorage.getItem('teacherId');
-    let availableClasses = fullData.classes;
+    const savedData = getSimulatedData();
+    setFullData(savedData);
+
+    let availableClasses = savedData.classes;
 
     if (role === 'teacher' && teacherId) {
-        availableClasses = fullData.classes.filter(c => c.teachers.some(t => t.id === teacherId));
+        availableClasses = savedData.classes.filter(c => c.teachers.some(t => t.id === teacherId));
     }
     
     if (availableClasses.length > 0 && (!currentClassId || !availableClasses.find(c => c.id === currentClassId))) {
@@ -51,11 +54,12 @@ export function CalendarPage() {
     return () => {
       window.removeEventListener('storage', handleStorageChange);
     };
-  }, [fullData.classes, currentClassId]);
+  }, [currentClassId]);
   
   const { classes: allSystemClasses, lessons: allLessons } = fullData;
 
   const availableClasses = useMemo(() => {
+    if (!userRole) return [];
     if (userRole === 'admin' || userRole === 'viewer') return allSystemClasses;
     if (userRole === 'teacher') {
       const teacherId = sessionStorage.getItem('teacherId');

@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -75,13 +75,13 @@ export function ClassSettings() {
   const [editingClass, setEditingClass] = useState<ClassConfig | null>(null);
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [userRole, setUserRole] = useState<string>('admin');
+  const [userRole, setUserRole] = useState<string>('');
+  const [isClient, setIsClient] = useState(false);
   const isViewer = userRole === 'viewer';
 
 
   useEffect(() => {
-    // This effect runs once on the client to load data from localStorage
-    // and prevent hydration mismatch.
+    setIsClient(true);
     const role = sessionStorage.getItem('userRole') || 'admin';
     setUserRole(role);
     const savedData = getSimulatedData();
@@ -107,7 +107,7 @@ export function ClassSettings() {
   }, [currentClassId]);
   
   const availableClasses = useMemo(() => {
-    if (!data) return [];
+    if (!data || !userRole) return [];
     if (userRole === 'admin' || userRole === 'viewer') return data.classes;
     if (userRole === 'teacher') {
       const teacherId = sessionStorage.getItem('teacherId');
@@ -337,7 +337,7 @@ export function ClassSettings() {
     }
   };
 
-  if (!data) {
+  if (!isClient || !data) {
     return null; // Render nothing on the server until client is ready
   }
 

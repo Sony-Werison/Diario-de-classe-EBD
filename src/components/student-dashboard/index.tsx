@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import React, { useState, useMemo, useCallback, useEffect } from "react";
@@ -52,7 +51,7 @@ export function StudentDashboard({ initialDate, classId: initialClassId }: { ini
   const [isDeleteAlertOpen, setIsDeleteAlertOpen] = useState(false);
   const [isCancelDialogOpen, setIsCancelDialogOpen] = useState(false);
   const [cancellationReason, setCancellationReason] = useState("");
-  const [userRole, setUserRole] = useState<string>('admin');
+  const [userRole, setUserRole] = useState<string>('');
   const [currentUser, setCurrentUser] = useState('');
   const isViewer = userRole === 'viewer';
   
@@ -61,6 +60,7 @@ export function StudentDashboard({ initialDate, classId: initialClassId }: { ini
   const [dailyStudentChecks, setDailyStudentChecks] = useState<Record<string, StudentChecks>>({});
 
   useEffect(() => {
+    setIsClient(true);
     const role = sessionStorage.getItem('userRole') || 'admin';
     setUserRole(role);
     
@@ -84,7 +84,6 @@ export function StudentDashboard({ initialDate, classId: initialClassId }: { ini
     if(resolvedClassId) {
         setCurrentClassId(resolvedClassId);
     }
-    setIsClient(true);
   }, [initialClassId]);
 
   const currentClass = useMemo(() => classes.find(c => c.id === currentClassId), [classes, currentClassId]);
@@ -101,7 +100,7 @@ export function StudentDashboard({ initialDate, classId: initialClassId }: { ini
         const role = sessionStorage.getItem('userRole');
 
         const lesson = data.lessons[currentClassId]?.[dateKey] || {
-          teacherId: role === 'teacher' ? teacherId : currentClass.teachers[0]?.id || "",
+          teacherId: role === 'teacher' ? (teacherId || "") : (currentClass.teachers[0]?.id || ""),
           title: "",
           status: 'held',
           cancellationReason: '',
