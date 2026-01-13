@@ -46,8 +46,7 @@ export function StudentRow({ student, onToggleCheck, onToggleDailyTask, trackedI
 
   return (
     <div className="bg-slate-800 p-2 border-b border-slate-700/50">
-      <div className="flex items-start justify-between gap-3">
-        {/* Coluna Esquerda: Nome, Idade e Progresso */}
+      <div className="flex items-center justify-between gap-3">
         <div className="flex-1 space-y-1 min-w-0">
             <div>
                 <p className="text-sm font-semibold text-slate-200 truncate">{name}</p>
@@ -64,9 +63,8 @@ export function StudentRow({ student, onToggleCheck, onToggleDailyTask, trackedI
             </div>
         </div>
 
-        {/* Coluna Direita: Checks */}
-        <div className="flex flex-col items-center gap-1.5">
-            <div className="grid grid-cols-6 gap-1">
+        <div className="flex flex-col items-end gap-1.5 shrink-0">
+            <div className="flex flex-wrap justify-end gap-1">
                 {(Object.keys(checkConfig) as (CheckType | 'task')[]).map(type => {
                     if (!trackedItems[type] || (type === 'task' && taskMode === 'daily')) return null;
 

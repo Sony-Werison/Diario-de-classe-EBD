@@ -121,20 +121,16 @@ export function MonthlyStudentReport() {
     const sundays: Date[] = [];
     const month = currentMonth.getMonth();
     const year = currentMonth.getFullYear();
-    const date = new Date(year, month, 1);
+    let date = new Date(year, month, 1);
 
+    // Find the first Sunday of the month
     while (getDay(date) !== 0) {
         date.setDate(date.getDate() + 1);
+        // If we jumped to the next month, there's no Sunday in the first few days.
+        if (date.getMonth() !== month) break;
     }
-
-    if(date.getMonth() > month) { // Started in next month
-        date.setDate(1);
-        while (getDay(date) !== 0) {
-            date.setDate(date.getDate() + 1);
-        }
-    }
-
-
+    
+    // If we are still in the correct month, add all Sundays
     while (date.getMonth() === month) {
         sundays.push(new Date(date));
         date.setDate(date.getDate() + 7);
@@ -218,7 +214,7 @@ export function MonthlyStudentReport() {
 
                         return (
                              <div key={dateKey} className="bg-slate-800 p-2 border-b border-slate-700/50">
-                                <div className="flex items-start justify-between gap-3">
+                                <div className="flex items-center justify-between gap-3">
                                     <div className="flex-1 space-y-1 min-w-0">
                                       <div className='mb-1'>
                                         <p className="text-sm font-semibold text-slate-200">{format(day, "dd 'de' MMMM", { locale: ptBR })}</p>
@@ -236,8 +232,8 @@ export function MonthlyStudentReport() {
                                             <Progress value={completionPercent} className="h-1 bg-slate-900 border border-slate-700" indicatorClassName={cn(isComplete ? "bg-gradient-to-r from-yellow-400 to-yellow-600" : "bg-primary")} />
                                         </div>}
                                     </div>
-                                    <div className="flex flex-col items-center gap-1.5">
-                                        <div className="grid grid-cols-6 gap-1">
+                                    <div className="flex flex-col items-end gap-1.5 shrink-0">
+                                        <div className="flex flex-wrap justify-end gap-1">
                                             {(Object.keys(checkConfig) as (CheckType | 'task')[]).map(type => {
                                                 if (!currentClass.trackedItems[type] || (type === 'task' && currentClass.taskMode === 'daily')) return null;
 
@@ -264,7 +260,7 @@ export function MonthlyStudentReport() {
                                                         <button
                                                             key={day.key}
                                                             className={cn(
-                                                                "w-5 h-6 rounded-md flex items-center justify-center transition-all duration-200 text-[10px] font-bold",
+                                                                "w-5 h-6 rounded-md flex items-center justify-center transition-all duration-200 text-[10px] font-bold cursor-default",
                                                                 checks?.dailyTasks?.[day.key] ? checkConfig.task.activeClass : 'text-slate-400 bg-slate-700/50'
                                                             )}
                                                             >
