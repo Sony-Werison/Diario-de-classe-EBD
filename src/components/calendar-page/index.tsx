@@ -7,17 +7,15 @@ import {
   subMonths,
   startOfMonth,
   endOfMonth,
-  startOfWeek,
-  endOfWeek,
   eachDayOfInterval,
   isSameMonth,
   isSameDay,
   getDay,
 } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { ChevronLeft, ChevronRight, Church } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Church, CalendarCheck } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { initialClasses, generateFullSimulatedData, SimulatedFullData, DailyLesson } from '@/lib/data';
+import { initialClasses, generateFullSimulatedData, SimulatedFullData } from '@/lib/data';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 
@@ -31,12 +29,11 @@ export function CalendarPage() {
     setSimulatedData(generateFullSimulatedData(initialClasses));
   }, []);
 
-  const days = useMemo(() => {
+  const sundays = useMemo(() => {
     const monthStart = startOfMonth(currentMonth);
     const monthEnd = endOfMonth(currentMonth);
-    const startDate = startOfWeek(monthStart, { locale: ptBR });
-    const endDate = endOfWeek(monthEnd, { locale: ptBR });
-    return eachDayOfInterval({ start: startDate, end: endDate });
+    const daysInMonth = eachDayOfInterval({ start: monthStart, end: monthEnd });
+    return daysInMonth.filter(day => getDay(day) === 0);
   }, [currentMonth]);
   
   const dailyLessons = useMemo(() => {
@@ -55,8 +52,6 @@ export function CalendarPage() {
   if (!isClient) {
     return null; // Or a loading skeleton
   }
-
-  const isSunday = (day: Date) => getDay(day) === 0;
 
   return (
     <div className="p-4 sm:p-6 text-white bg-background flex-1 flex flex-col">
@@ -87,69 +82,48 @@ export function CalendarPage() {
           </div>
         </div>
 
-        <div className="grid grid-cols-7 text-center text-xs font-bold text-slate-400 border-b border-border">
-          {['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].map(day => (
-            <div key={day} className="py-2">{day}</div>
-          ))}
-        </div>
-
-        <div className="grid grid-cols-7 flex-1">
-          {days.map(day => {
+        <div className="flex flex-col p-4 gap-3">
+          {sundays.map(day => {
             const dateKey = format(day, 'yyyy-MM-dd');
-            const hasLesson = dailyLessons[dateKey] && isSunday(day);
+            const hasLesson = dailyLessons[dateKey];
             const isToday = isSameDay(day, new Date());
 
-            const cellContent = (
-                <div className="p-2 flex flex-col h-full">
-                    <span
-                        className={cn(
-                        'font-semibold mb-1',
-                        isToday && 'bg-primary text-primary-foreground rounded-full w-6 h-6 flex items-center justify-center'
-                        )}
-                    >
-                        {format(day, 'd')}
-                    </span>
+            return (
+                <Link
+                    key={day.toString()}
+                    href={`/dashboard/${dateKey}`}
+                    className={cn(
+                        'flex items-center justify-between p-4 rounded-lg transition-colors',
+                        'hover:bg-secondary',
+                        isToday && 'bg-primary/10 border border-primary/50'
+                    )}
+                >
+                    <div className="flex items-center gap-4">
+                       <CalendarCheck className={cn("w-6 h-6", isToday ? "text-primary" : "text-slate-500")} />
+                       <div>
+                            <span className={cn('font-semibold', isToday ? 'text-primary' : 'text-white')}>
+                                {format(day, 'd \'de\' MMMM', { locale: ptBR })}
+                            </span>
+                            <span className="text-sm text-slate-400 ml-2">
+                                (Domingo)
+                            </span>
+                       </div>
+                    </div>
                     {hasLesson && (
-                        <div className="mt-auto text-left">
-                            <span className="text-xs bg-indigo-500/20 text-indigo-300 px-2 py-0.5 rounded-full">
+                        <div className="text-right">
+                            <span className="text-xs bg-indigo-500/20 text-indigo-300 px-2 py-1 rounded-full font-medium">
                                 Aula registrada
                             </span>
                         </div>
                     )}
-                </div>
-            );
-
-            if (isSunday(day) && isSameMonth(day, currentMonth)) {
-                 return (
-                    <Link
-                        key={day.toString()}
-                        href={`/dashboard/${dateKey}`}
-                        className={cn(
-                            'relative border-r border-b border-border',
-                            !isSameMonth(day, currentMonth) && 'bg-secondary/20 text-slate-500',
-                            isSameMonth(day, currentMonth) && 'hover:bg-secondary transition-colors',
-                            'h-24 sm:h-32'
-                        )}
-                    >
-                        {cellContent}
-                    </Link>
-                 )
-            }
-            
-            return (
-              <div
-                key={day.toString()}
-                className={cn(
-                  'relative border-r border-b border-border',
-                  !isSameMonth(day, currentMonth) && 'bg-secondary/30 text-slate-600',
-                   isSunday(day) && 'bg-primary/5',
-                   'h-24 sm:h-32'
-                )}
-              >
-               {cellContent}
-              </div>
-            );
+                </Link>
+             )
           })}
+           {sundays.length === 0 && (
+                <div className="text-center py-10 text-slate-500">
+                  <p>Nenhum domingo neste mês.</p>
+                </div>
+            )}
         </div>
       </div>
     </div>

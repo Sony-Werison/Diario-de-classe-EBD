@@ -6,9 +6,10 @@ import { AppHeader } from "./app-header";
 import { StatCard } from "./stat-card";
 import { StudentListHeader, SortKey } from "./student-list-header";
 import { StudentRow } from "./student-row";
-import { CheckCircle, BookOpen, Pencil, Star, Users, Smile, Notebook, Pen } from "lucide-react";
-import { addDays, subDays, startOfDay, format, getDay, getDaysInMonth, isSameDay } from "date-fns";
+import { CheckCircle, BookOpen, Pencil, Star, Users, Smile, Notebook } from "lucide-react";
+import { startOfDay, format, parseISO } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
+import { useRouter } from 'next/navigation';
 
 const calculateAge = (birthDateString: string) => {
     if (!birthDateString) return null;
@@ -24,6 +25,7 @@ const calculateAge = (birthDateString: string) => {
 }
 
 export function StudentDashboard({ initialDate }: { initialDate?: string }) {
+  const router = useRouter();
   const [classes, setClasses] = useState<ClassConfig[]>(initialClasses);
   const [currentClassId, setCurrentClassId] = useState<string>(initialClasses[0].id);
   const [currentDate, setCurrentDate] = useState<Date>(startOfDay(new Date()));
@@ -37,11 +39,13 @@ export function StudentDashboard({ initialDate }: { initialDate?: string }) {
     setIsClient(true);
     setSimulatedData(generateFullSimulatedData(initialClasses));
     if (initialDate) {
-        setCurrentDate(startOfDay(new Date(initialDate)));
+        // Ensure the date is parsed correctly, considering timezone
+        const dateFromUrl = parseISO(initialDate);
+        setCurrentDate(startOfDay(dateFromUrl));
     } else {
-        setCurrentDate(startOfDay(new Date()));
+        router.push('/');
     }
-  }, [initialDate]);
+  }, [initialDate, router]);
 
   const currentClass = useMemo(() => classes.find(c => c.id === currentClassId) || classes[0], [classes, currentClassId]);
 
@@ -99,18 +103,15 @@ export function StudentDashboard({ initialDate }: { initialDate?: string }) {
     }));
   }, [dateKey, currentClass.teachers]);
   
-  const handleDateChange = (date: Date) => {
-    setCurrentDate(startOfDay(date));
-  };
-  
   const handleSundayNavigation = (direction: 'prev' | 'next') => {
      setCurrentDate(prevDate => {
       if (!prevDate) return startOfDay(new Date());
       let newDate = new Date(prevDate);
-      const dayOfWeek = newDate.getDay();
-      // Always move 7 days
       const offset = direction === 'next' ? 7 : -7;
       newDate.setDate(newDate.getDate() + offset);
+      
+      const newDateKey = format(newDate, 'yyyy-MM-dd');
+      router.push(`/dashboard/${newDateKey}`);
       return newDate;
     });
   }
@@ -119,6 +120,7 @@ export function StudentDashboard({ initialDate }: { initialDate?: string }) {
     if (!currentDate) return;
     // Data is already saved in state via handleLessonDetailChange and handleToggleCheck.
     // This function can be used for API calls in the future.
+    setSimulatedData(prev => ({...prev})); // Trigger re-render to update dependent components if needed
     toast({
       title: "Aula Salva!",
       description: `As informações da aula de ${format(currentDate, "dd/MM/yyyy")} foram salvas com sucesso.`,
@@ -217,7 +219,7 @@ export function StudentDashboard({ initialDate }: { initialDate?: string }) {
 
   const trackedItems = currentClass.trackedItems;
 
-  if (!isClient) {
+  if (!isClient || !initialDate) {
     return null; // or a loading spinner
   }
   
@@ -225,7 +227,6 @@ export function StudentDashboard({ initialDate }: { initialDate?: string }) {
       <div className="flex flex-1 flex-col">
         <AppHeader 
             currentDate={currentDate}
-            onDateChange={handleDateChange}
             onPrevSunday={() => handleSundayNavigation('prev')}
             onNextSunday={() => handleSundayNavigation('next')}
             classes={classes}
@@ -234,7 +235,6 @@ export function StudentDashboard({ initialDate }: { initialDate?: string }) {
             dailyLesson={dailyLesson}
             onLessonDetailChange={handleLessonDetailChange}
             onSave={handleSave}
-            dailyLessons={simulatedData.lessons}
         />
         <main className="flex-1 p-3 sm:p-4 md:p-6 bg-background">
           <div className="bg-slate-800/50 rounded-t-xl">

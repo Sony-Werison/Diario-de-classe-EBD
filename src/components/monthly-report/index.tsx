@@ -2,24 +2,11 @@
 import React, { useState, useMemo, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import {
   Tooltip,
   TooltipContent,
@@ -27,10 +14,10 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 
-import { Check, ChevronDown, ChevronLeft, ChevronRight, Download, Users, X, CheckCircle, Notebook, Pencil, BookOpen, Smile } from "lucide-react";
-import { initialClasses, ClassConfig, Student, CheckType, generateFullSimulatedData, SimulatedFullData } from "@/lib/data";
+import { Check, ChevronDown, ChevronLeft, ChevronRight, Users, CheckCircle, Notebook, Pencil, BookOpen, Smile } from "lucide-react";
+import { initialClasses, ClassConfig, CheckType, generateFullSimulatedData, SimulatedFullData } from "@/lib/data";
 import { cn } from "@/lib/utils";
-import { format, getDaysInMonth, startOfMonth, addMonths, subMonths, getDay, isSameDay } from "date-fns";
+import { format, getDaysInMonth, startOfMonth, addMonths, subMonths, getDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
 
@@ -194,7 +181,11 @@ export function MonthlyReport() {
               <table className="w-full border-collapse table-fixed">
                   <thead className="sticky top-0 z-10 bg-slate-900/80 backdrop-blur-sm">
                       <tr>
-                          <th className="p-3 border-b border-r border-slate-700 text-left text-xs font-bold uppercase text-slate-400 sticky left-0 bg-slate-900/80 z-20 w-1/3 sm:w-auto">Aluno</th>
+                          <th className="p-3 border-b border-r border-slate-700 text-left text-xs font-bold uppercase text-slate-400 sticky left-0 bg-slate-900/80 z-20 w-1/3 sm:w-auto">
+                            <div className="flex justify-center items-end" style={{ height: '60px'}}>
+                                <span className="w-10 text-center -rotate-90 origin-center whitespace-nowrap text-slate-400">Aluno</span>
+                            </div>
+                          </th>
                           {sundaysInMonth.map(day => (
                               <th key={day.toISOString()} className="p-3 text-center border-b border-r border-slate-700 last:border-r-0 text-xs font-bold uppercase text-slate-400 w-16">
                                   {format(day, 'dd')}
@@ -229,7 +220,7 @@ export function MonthlyReport() {
                                                           <div className="space-y-1">
                                                               {orderedVisibleItems.map(item => (
                                                                   <div key={item} className="flex items-center gap-2 text-xs">
-                                                                      {studentChecks[item] ? <Check size={14} className="text-green-500"/> : <X size={14} className="text-slate-500" />}
+                                                                      {studentChecks[item] ? <Check size={14} className="text-green-500"/> : <span className="w-[14px] h-[14px] flex items-center justify-center text-slate-500">-</span>}
                                                                       <span>{itemLabels[item]}</span>
                                                                   </div>
                                                               ))}

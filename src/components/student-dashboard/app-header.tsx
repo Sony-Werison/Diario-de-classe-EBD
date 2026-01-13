@@ -32,7 +32,6 @@ import { cn } from "@/lib/utils";
 
 interface AppHeaderProps {
   currentDate: Date;
-  onDateChange: (date: Date) => void;
   onPrevSunday: () => void;
   onNextSunday: () => void;
   classes: ClassConfig[];
@@ -41,12 +40,10 @@ interface AppHeaderProps {
   dailyLesson: DailyLesson | undefined;
   onLessonDetailChange: (field: keyof DailyLesson, value: string) => void;
   onSave: () => void;
-  dailyLessons: Record<string, DailyLesson>;
 }
 
 export function AppHeader({
   currentDate,
-  onDateChange,
   onPrevSunday,
   onNextSunday,
   classes,
@@ -55,7 +52,6 @@ export function AppHeader({
   dailyLesson,
   onLessonDetailChange,
   onSave,
-  dailyLessons,
 }: AppHeaderProps) {
   const formattedDate = format(currentDate, "EEEE, dd 'de' MMMM", { locale: ptBR });
   const teacherName = currentClass.teachers.find(
@@ -175,5 +171,3 @@ export function AppHeader({
     </header>
   );
 }
-
-    
