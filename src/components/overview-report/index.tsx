@@ -49,7 +49,7 @@ const AgeStat: React.FC<{ Icon: React.ElementType, label: string, studentName: s
     </div>
 );
 
-const calculateStatsForPeriod = (classConfig: ClassConfig, studentRecords: SimulatedFullData['studentRecords'], startDate: Date, endDate: Date) => {
+const calculateStatsForPeriod = (classConfig: ClassConfig, studentRecords: SimulatedFullData['studentRecords'], lessons: SimulatedFullData['lessons'], startDate: Date, endDate: Date) => {
     const students = classConfig.students;
     if (students.length === 0) {
         return {
@@ -60,6 +60,8 @@ const calculateStatsForPeriod = (classConfig: ClassConfig, studentRecords: Simul
     }
 
     const classRecords = studentRecords[classConfig.id] || {};
+    const classLessons = lessons[classConfig.id] || {};
+    
     let totalPossibleAttendance = 0;
     let actualAttendance = 0;
     const criteriaCounts = {
@@ -70,55 +72,55 @@ const calculateStatsForPeriod = (classConfig: ClassConfig, studentRecords: Simul
     const studentScores: Record<string, { score: number, count: number }> = {};
     students.forEach(s => studentScores[s.id] = { score: 0, count: 0 });
 
-    for (const dateKey in classRecords) {
+    for (const dateKey in classLessons) {
         const recordDate = new Date(dateKey);
         recordDate.setUTCHours(12);
+        
         if (recordDate < startDate || recordDate > endDate) continue;
+        
+        const lesson = classLessons[dateKey];
+        if (lesson.status === 'cancelled') continue;
 
-        const dayRecords = classRecords[dateKey];
-        const sundaysInPeriod = classConfig.students.length > 0;
-        if (!sundaysInPeriod) continue;
-
+        const dayRecords = classRecords[dateKey] || {};
         totalPossibleAttendance += students.length;
 
         students.forEach(student => {
             const record = dayRecords[student.id];
             
-            let dayScore = 0;
-            let dayTotal = 0;
-
             if (record?.presence) {
                 actualAttendance++;
             }
             
-            for (const key in classConfig.trackedItems) {
-                const item = key as CheckType | 'task';
-                if (classConfig.trackedItems[item]) {
-                    if (!criteriaCounts.total[item]) criteriaCounts.total[item] = 0;
-                    if (!criteriaCounts.checked[item]) criteriaCounts.checked[item] = 0;
-                    
-                     const isApplicable = (item !== 'presence' && item !== 'task') ? record?.presence : true;
-                     if(isApplicable) {
-                        dayTotal++;
-                     }
+            const activeItems = (Object.keys(classConfig.trackedItems) as (CheckType | 'task')[]).filter(key => classConfig.trackedItems[key]);
+            
+            let dayScore = 0;
+            let dayTotalApplicable = 0;
 
-                     if (item === 'presence' || item === 'task') {
-                         criteriaCounts.total[item]++;
-                         if(record?.[item]) {
-                            criteriaCounts.checked[item]++;
-                            if(isApplicable) dayScore++;
-                         }
-                     } else if (record?.presence) {
-                         criteriaCounts.total[item]++;
-                         if(record?.[item]) {
-                            criteriaCounts.checked[item]++;
-                             if(isApplicable) dayScore++;
-                         }
-                     }
+            activeItems.forEach(item => {
+                 if (!criteriaCounts.total[item]) criteriaCounts.total[item] = 0;
+                 if (!criteriaCounts.checked[item]) criteriaCounts.checked[item] = 0;
+
+                const isApplicable = (item !== 'presence' && item !== 'task') ? record?.presence : true;
+                
+                if (isApplicable) {
+                    criteriaCounts.total[item]++;
+                    dayTotalApplicable++;
+                    if (record?.[item]) {
+                        criteriaCounts.checked[item]++;
+                        dayScore++;
+                    }
+                } else if (item === 'task') { // Task is always "applicable" in terms of denominator, even if student is absent
+                    criteriaCounts.total[item]++;
+                    dayTotalApplicable++;
+                     if (record?.[item]) {
+                        criteriaCounts.checked[item]++;
+                        dayScore++;
+                    }
                 }
-            }
-            if (dayTotal > 0) {
-                studentScores[student.id].score += (dayScore / dayTotal);
+            });
+
+            if (dayTotalApplicable > 0) {
+                studentScores[student.id].score += (dayScore / dayTotalApplicable);
                 studentScores[student.id].count++;
             }
         });
@@ -146,7 +148,7 @@ const calculateStatsForPeriod = (classConfig: ClassConfig, studentRecords: Simul
     };
 };
 
-const calculateClassStats = (classConfig: ClassConfig, studentRecords: SimulatedFullData['studentRecords'], currentMonth: Date) => {
+const calculateClassStats = (classConfig: ClassConfig, fullData: SimulatedFullData, currentMonth: Date) => {
     const students = classConfig.students;
     if (students.length === 0) {
         return {
@@ -167,7 +169,7 @@ const calculateClassStats = (classConfig: ClassConfig, studentRecords: Simulated
 
     const monthStart = startOfMonth(currentMonth);
     const monthEnd = new Date(monthStart.getFullYear(), monthStart.getMonth() + 1, 0);
-    const monthStats = calculateStatsForPeriod(classConfig, studentRecords, monthStart, monthEnd);
+    const monthStats = calculateStatsForPeriod(classConfig, fullData.studentRecords, fullData.lessons, monthStart, monthEnd);
 
     return {
         totalStudents: students.length,
@@ -209,7 +211,7 @@ export function OverviewReport() {
         if (!fullData) return [];
         return fullData.classes.map(c => ({
             ...c,
-            stats: calculateClassStats(c, fullData.studentRecords, currentMonth)
+            stats: calculateClassStats(c, fullData, currentMonth)
         }));
     }, [fullData, currentMonth]);
 
@@ -294,7 +296,7 @@ export function OverviewReport() {
                             {allTrackedItems.map(itemKey => {
                                     if (!classData.trackedItems[itemKey]) return null;
                                     const Icon = itemIcons[itemKey];
-                                    const monthlyRate = (itemKey === 'presence' ? classData.stats.monthStats.attendanceRate : classData.stats.monthStats.criteriaRates[itemKey]) || 0;
+                                    const monthlyRate = (classData.stats.monthStats.criteriaRates[itemKey]) || 0;
                                     const label = itemLabels[itemKey];
 
                                     return (
