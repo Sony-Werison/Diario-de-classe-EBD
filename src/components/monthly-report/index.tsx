@@ -206,7 +206,7 @@ export function MonthlyReport() {
                                       const studentChecks = getStudentChecksForDay(student.id, day);
                                       return (
                                           <td key={day.toISOString()} className="text-center border-b border-r border-border last:border-r-0 h-full p-2">
-                                            <button onClick={() => handleDayClick(day)} className="w-full h-full flex items-center justify-center cursor-pointer rounded-md hover:bg-secondary/50">
+                                            <button onClick={() => handleDayClick(day)} className="w-full h-full flex items-center justify-center cursor-pointer rounded-md">
                                               {studentChecks ? (
                                               <TooltipProvider>
                                                   <Tooltip>

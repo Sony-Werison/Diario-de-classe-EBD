@@ -83,7 +83,7 @@ export function CalendarPage() {
           </div>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-                <Button variant="outline" className="w-full sm:w-60 justify-between bg-card border-border hover:bg-secondary">
+                <Button variant="outline" className="w-full sm:w-60 justify-between bg-card border-border hover:bg-card">
                   <div className="flex items-center gap-2">
                     <div className="w-3 h-3 rounded-full" style={{backgroundColor: currentClass.color}}/>
                     <span className="truncate">{currentClass.name}</span>
@@ -142,7 +142,6 @@ export function CalendarPage() {
                     href={`/dashboard/${dateKey}?classId=${currentClass.id}`}
                     className={cn(
                         'flex items-center justify-between p-4 rounded-lg transition-colors',
-                        'hover:bg-secondary',
                         isToday && 'bg-primary/10 border border-primary/50'
                     )}
                 >
