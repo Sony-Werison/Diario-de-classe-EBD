@@ -16,16 +16,16 @@ const profiles = [
     role: "teacher"
   },
   {
-    name: "Administrativo",
-    icon: Shield,
-    description: "Acesso total para configurar classes e visualizar todos os relatórios.",
-    role: "admin"
-  },
-  {
     name: "Visualização",
     icon: Eye,
     description: "Acesso somente para visualizar os relatórios e o calendário.",
     role: "viewer"
+  },
+  {
+    name: "Administrativo",
+    icon: Shield,
+    description: "Acesso total para configurar classes e visualizar todos os relatórios.",
+    role: "admin"
   }
 ];
 
@@ -105,7 +105,7 @@ export default function ProfileSelectionPage() {
               <Button 
                 key={teacher.id} 
                 variant="outline" 
-                className="w-full justify-start text-base hover:bg-transparent hover:text-white"
+                className="w-full justify-start text-base hover:bg-transparent hover:text-white focus-visible:ring-0 focus-visible:ring-offset-0"
                 onClick={() => handleTeacherSelect(teacher)}
               >
                 {teacher.name}
