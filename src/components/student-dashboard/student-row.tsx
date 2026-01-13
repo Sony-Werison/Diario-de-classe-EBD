@@ -47,19 +47,19 @@ export function StudentRow({ student, onToggleCheck, onToggleDailyTask, trackedI
   return (
     <div className="bg-slate-800 p-2 border-b border-slate-700/50">
       <div className="flex items-center justify-between gap-3">
-        <div className="flex-1 space-y-1 min-w-0">
+        <div className="flex-1 space-y-2 min-w-0">
             <div>
                 <p className="text-sm font-semibold text-slate-200 truncate">{name}</p>
                 <p className="text-xs text-slate-400">{age !== null ? `${age} anos` : 'Idade não informada'}</p>
             </div>
              <div className="flex flex-col justify-center">
                 <div className="flex justify-between text-xs mb-0.5">
-                <span className={cn("font-bold", isComplete ? "text-yellow-400" : "text-primary")}>
+                <span className={cn("font-bold", isComplete ? "text-primary" : "text-yellow-400")}>
                     {Math.round(completionPercent)}%
                 </span>
                 <span className="text-slate-500">{checkedItemsCount}/{totalTrackedItems}</span>
                 </div>
-                <Progress value={completionPercent} className="h-1 bg-slate-900 border border-slate-700" indicatorClassName={cn(isComplete ? "bg-gradient-to-r from-yellow-400 to-yellow-600" : "bg-primary")} />
+                <Progress value={completionPercent} className="h-1 bg-slate-900 border border-slate-700" indicatorClassName={cn(isComplete ? "bg-primary" : "bg-gradient-to-r from-yellow-400 to-yellow-600")} />
             </div>
         </div>
 
