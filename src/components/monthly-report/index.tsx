@@ -182,9 +182,7 @@ export function MonthlyReport() {
                   <thead className="sticky top-0 z-10 bg-slate-900/80 backdrop-blur-sm">
                       <tr>
                           <th className="p-3 border-b border-r border-slate-700 text-left text-xs font-bold uppercase text-slate-400 sticky left-0 bg-slate-900/80 z-20 w-1/3 sm:w-auto">
-                            <div className="flex justify-center items-end" style={{ height: '60px'}}>
-                                <span className="w-10 text-center -rotate-90 origin-center whitespace-nowrap text-slate-400">Aluno</span>
-                            </div>
+                            Aluno
                           </th>
                           {sundaysInMonth.map(day => (
                               <th key={day.toISOString()} className="p-3 text-center border-b border-r border-slate-700 last:border-r-0 text-xs font-bold uppercase text-slate-400 w-16">

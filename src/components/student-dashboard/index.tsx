@@ -1,15 +1,20 @@
 "use client";
 
 import React, { useState, useMemo, useCallback, useEffect } from "react";
-import { initialClasses, POINTS, Student, CheckType, ClassConfig, DailyLesson, generateFullSimulatedData, SimulatedFullData } from "@/lib/data";
+import { initialClasses, POINTS, CheckType, ClassConfig, DailyLesson, generateFullSimulatedData, SimulatedFullData } from "@/lib/data";
 import { AppHeader } from "./app-header";
 import { StatCard } from "./stat-card";
 import { StudentListHeader, SortKey } from "./student-list-header";
 import { StudentRow } from "./student-row";
-import { CheckCircle, BookOpen, Pencil, Star, Users, Smile, Notebook } from "lucide-react";
+import { CheckCircle, BookOpen, Pencil, Star, Users, Smile, Notebook, Ban, Trash2 } from "lucide-react";
 import { startOfDay, format, parseISO } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from 'next/navigation';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "../ui/alert-dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
+import { Label } from "../ui/label";
+import { Textarea } from "../ui/textarea";
+import { Button } from "../ui/button";
 
 const calculateAge = (birthDateString: string) => {
     if (!birthDateString) return null;
@@ -34,6 +39,10 @@ export function StudentDashboard({ initialDate }: { initialDate?: string }) {
   const [simulatedData, setSimulatedData] = useState<SimulatedFullData>({ lessons: {}, studentRecords: {} });
   const { toast } = useToast();
   const [isClient, setIsClient] = useState(false);
+  const [isDeleteAlertOpen, setIsDeleteAlertOpen] = useState(false);
+  const [isCancelDialogValid, setIsCancelDialogValid] = useState(true);
+  const [isCancelDialogOpen, setIsCancelDialogOpen] = useState(false);
+  const [cancellationReason, setCancellationReason] = useState("");
   
   useEffect(() => {
     setIsClient(true);
@@ -55,7 +64,9 @@ export function StudentDashboard({ initialDate }: { initialDate?: string }) {
       return {
         teacherId: currentClass.teachers[0]?.id || "",
         title: "",
-      };
+        status: 'held',
+        cancellationReason: '',
+      } as DailyLesson;
     }
     return simulatedData.lessons[dateKey];
   }, [dateKey, simulatedData.lessons, currentClass.teachers, isClient]);
@@ -95,7 +106,7 @@ export function StudentDashboard({ initialDate }: { initialDate?: string }) {
       lessons: {
         ...prev.lessons,
         [dateKey]: {
-          ...(prev.lessons[dateKey] || { teacherId: currentClass.teachers[0]?.id || "", title: "" }),
+          ...(prev.lessons[dateKey] || { teacherId: currentClass.teachers[0]?.id || "", title: "", status: 'held' }),
           [field]: value,
         }
       }
@@ -120,6 +131,53 @@ export function StudentDashboard({ initialDate }: { initialDate?: string }) {
       description: `As informações da aula de ${format(currentDate, "dd/MM/yyyy")} foram salvas com sucesso.`,
     })
   }
+
+  const handleDeleteLesson = () => {
+    setSimulatedData(prev => {
+        const newLessons = { ...prev.lessons };
+        delete newLessons[dateKey];
+        
+        const newStudentRecords = { ...prev.studentRecords };
+        if(newStudentRecords[currentClassId]) {
+            delete newStudentRecords[currentClassId][dateKey];
+        }
+
+        return { lessons: newLessons, studentRecords: newStudentRecords };
+    });
+    toast({
+      title: "Aula Excluída",
+      description: `O registro da aula de ${format(currentDate, "dd/MM/yyyy")} foi removido.`,
+      variant: 'destructive',
+    })
+    setIsDeleteAlertOpen(false);
+    router.push('/');
+  }
+  
+  const handleCancelLesson = () => {
+      if(!cancellationReason.trim()) {
+        setIsCancelDialogValid(false);
+        return;
+      }
+      setIsCancelDialogValid(true);
+      setSimulatedData(prev => ({
+        ...prev,
+        lessons: {
+          ...prev.lessons,
+          [dateKey]: {
+            ...(prev.lessons[dateKey] || { teacherId: currentClass.teachers[0]?.id || "", title: "" }),
+            status: 'cancelled',
+            cancellationReason: cancellationReason,
+          }
+        }
+      }));
+      toast({
+        title: "Aula cancelada",
+        description: "A aula foi marcada como não realizada.",
+      })
+      setIsCancelDialogOpen(false);
+      setCancellationReason("");
+  }
+
 
   const handleSort = (key: SortKey) => {
     if (sortKey === key) {
@@ -227,6 +285,8 @@ export function StudentDashboard({ initialDate }: { initialDate?: string }) {
             dailyLesson={dailyLesson}
             onLessonDetailChange={handleLessonDetailChange}
             onSave={handleSave}
+            onOpenDeleteAlert={() => setIsDeleteAlertOpen(true)}
+            onOpenCancelDialog={() => setIsCancelDialogOpen(true)}
         />
         <main className="flex-1 p-3 sm:p-4 md:p-6 bg-background">
           <div className="bg-slate-800/50 rounded-t-xl">
@@ -303,6 +363,47 @@ export function StudentDashboard({ initialDate }: { initialDate?: string }) {
             />
           </div>
         </main>
+        
+        <AlertDialog open={isDeleteAlertOpen} onOpenChange={setIsDeleteAlertOpen}>
+            <AlertDialogContent>
+                <AlertDialogHeader>
+                <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
+                <AlertDialogDescription>
+                    Esta ação não pode ser desfeita. Todos os registros de presença e pontuação para esta aula serão perdidos permanentemente.
+                </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                <AlertDialogAction onClick={handleDeleteLesson} className="bg-destructive hover:bg-destructive/90">Excluir</AlertDialogAction>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
+
+        <Dialog open={isCancelDialogOpen} onOpenChange={setIsCancelDialogOpen}>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Marcar aula como não realizada</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4">
+                    <Label htmlFor="cancellation-reason">Motivo (Obrigatório)</Label>
+                    <Textarea 
+                        id="cancellation-reason"
+                        value={cancellationReason}
+                        onChange={(e) => {
+                            setCancellationReason(e.target.value)
+                            if (e.target.value.trim()) setIsCancelDialogValid(true);
+                        }}
+                        placeholder="Ex: Feriado, evento especial na igreja, etc."
+                        className={!isCancelDialogValid ? 'border-destructive' : ''}
+                    />
+                    {!isCancelDialogValid && <p className="text-xs text-destructive">O motivo é obrigatório.</p>}
+                </div>
+                <div className="flex justify-end gap-2 pt-4">
+                    <Button variant="ghost" onClick={() => setIsCancelDialogOpen(false)}>Cancelar</Button>
+                    <Button onClick={handleCancelLesson}>Confirmar</Button>
+                </div>
+            </DialogContent>
+        </Dialog>
       </div>
   );
 }

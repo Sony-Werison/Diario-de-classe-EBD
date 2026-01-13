@@ -31,14 +31,14 @@ export function StudentRow({ student, onToggleCheck, trackedItems }: StudentRowP
   return (
     <div className="bg-slate-800 p-3 flex flex-col sm:flex-row sm:items-center border-b border-slate-700/50 transition-colors hover:bg-slate-700/50 group">
         <div className="flex items-center w-full">
-            <div className="w-2/5 md:w-1/3 flex items-center gap-3">
+            <div className="w-1/3 flex items-center gap-3">
                 <div className="pl-2">
                   <p className="text-sm font-semibold text-slate-200 group-hover:text-white transition-colors">{name}</p>
                    <p className="text-xs text-slate-400">{age !== null ? `${age} anos` : 'Idade não informada'}</p>
                 </div>
             </div>
             
-            <div className="flex-1 flex justify-end sm:justify-center gap-2 sm:gap-4">
+            <div className="flex-1 flex justify-center gap-4">
                 {(Object.keys(checkConfig) as CheckType[]).map(type => {
                 if (!trackedItems[type]) return null;
                 const CheckIcon = checkConfig[type].Icon;

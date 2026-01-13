@@ -9,6 +9,9 @@ import {
   ChevronLeft,
   ChevronRight,
   Save,
+  MoreVertical,
+  Trash2,
+  Ban,
 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -18,6 +21,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import {
   Select,
@@ -29,6 +33,8 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
+import Link from "next/link";
+import { Badge } from "../ui/badge";
 
 interface AppHeaderProps {
   currentDate: Date;
@@ -40,6 +46,8 @@ interface AppHeaderProps {
   dailyLesson: DailyLesson | undefined;
   onLessonDetailChange: (field: keyof DailyLesson, value: string) => void;
   onSave: () => void;
+  onOpenDeleteAlert: () => void;
+  onOpenCancelDialog: () => void;
 }
 
 export function AppHeader({
@@ -52,6 +60,8 @@ export function AppHeader({
   dailyLesson,
   onLessonDetailChange,
   onSave,
+  onOpenDeleteAlert,
+  onOpenCancelDialog,
 }: AppHeaderProps) {
   const formattedDate = format(currentDate, "EEEE, dd 'de' MMMM", { locale: ptBR });
   const teacherName = currentClass.teachers.find(
@@ -116,12 +126,12 @@ export function AppHeader({
             <ChevronLeft size={16} />
           </Button>
           
-          <div className="flex items-center gap-2">
+          <Link href="/" className="flex items-center gap-2 hover:bg-slate-700/50 rounded-full px-3 py-1 transition-colors">
             <CalendarIcon size={16} className="text-indigo-400"/>
             <span className="text-sm font-semibold text-indigo-300 capitalize whitespace-nowrap">
                 {formattedDate}
             </span>
-          </div>
+          </Link>
           
           <Button
             variant="ghost"
@@ -132,41 +142,72 @@ export function AppHeader({
             <ChevronRight size={16} />
           </Button>
         </div>
+        
+        {dailyLesson?.status === 'cancelled' ? (
+          <div className="w-full bg-slate-900 border border-dashed border-yellow-600/50 rounded-md p-3 text-center">
+            <p className="text-sm font-semibold text-yellow-400">Aula não realizada</p>
+            <p className="text-xs text-slate-400 mt-1">{dailyLesson.cancellationReason}</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 w-full">
+            <div className="w-full sm:col-span-1">
+              <Label htmlFor="lesson-teacher" className="sr-only">Professor</Label>
+              <Select
+                value={dailyLesson?.teacherId}
+                onValueChange={(value) => onLessonDetailChange('teacherId', value)}
+              >
+                <SelectTrigger id="lesson-teacher" className="w-full bg-slate-900 border-slate-700">
+                  <SelectValue placeholder="Selecione o Professor" />
+                </SelectTrigger>
+                <SelectContent className="bg-card border-border text-white">
+                  {currentClass.teachers.map((teacher) => (
+                    <SelectItem key={teacher.id} value={teacher.id}>
+                      {teacher.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="w-full sm:col-span-2">
+              <Label htmlFor="lesson-title" className="sr-only">Título da Aula</Label>
+              <Input
+                id="lesson-title"
+                placeholder="Título da Aula do Dia"
+                className="bg-slate-900 border-slate-700"
+                value={dailyLesson?.title || ""}
+                onChange={(e) => onLessonDetailChange('title', e.target.value)}
+              />
+            </div>
+          </div>
+        )}
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 w-full">
-          <div className="w-full sm:col-span-1">
-            <Label htmlFor="lesson-teacher" className="sr-only">Professor</Label>
-            <Select
-              value={dailyLesson?.teacherId}
-              onValueChange={(value) => onLessonDetailChange('teacherId', value)}
-            >
-              <SelectTrigger id="lesson-teacher" className="w-full bg-slate-900 border-slate-700">
-                <SelectValue placeholder="Selecione o Professor" />
-              </SelectTrigger>
-              <SelectContent className="bg-card border-border text-white">
-                {currentClass.teachers.map((teacher) => (
-                  <SelectItem key={teacher.id} value={teacher.id}>
-                    {teacher.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="w-full sm:col-span-2">
-            <Label htmlFor="lesson-title" className="sr-only">Título da Aula</Label>
-            <Input
-              id="lesson-title"
-              placeholder="Título da Aula do Dia"
-              className="bg-slate-900 border-slate-700"
-              value={dailyLesson?.title || ""}
-              onChange={(e) => onLessonDetailChange('title', e.target.value)}
-            />
-          </div>
-        </div>
-         <Button onClick={onSave} className="bg-primary hover:bg-primary/90 w-full md:w-auto">
-          <Save size={16} className="mr-2" />
-          Salvar Aula
-        </Button>
+         <div className="flex gap-2 w-full md:w-auto">
+            {dailyLesson?.status !== 'cancelled' && (
+              <Button onClick={onSave} className="bg-primary hover:bg-primary/90 w-full md:w-auto">
+                <Save size={16} className="mr-2" />
+                Salvar Aula
+              </Button>
+            )}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="secondary" size="icon" className="w-10 h-10 shrink-0">
+                  <MoreVertical size={16} />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="bg-card border-border text-white">
+                <DropdownMenuItem onSelect={onOpenCancelDialog} className="cursor-pointer">
+                  <Ban className="mr-2"/>
+                  <span>Marcar como não realizada</span>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onSelect={onOpenDeleteAlert} className="text-red-400 focus:bg-red-900/50 focus:text-red-400 cursor-pointer">
+                  <Trash2 className="mr-2"/>
+                  <span>Excluir registro da aula</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+         </div>
+
       </div>
     </header>
   );

@@ -18,6 +18,8 @@ export type Teacher = {
 export type DailyLesson = {
   teacherId: string;
   title: string;
+  status?: 'held' | 'cancelled';
+  cancellationReason?: string;
 }
 
 export type ClassConfig = {
@@ -171,6 +173,7 @@ export const generateFullSimulatedData = (classes: ClassConfig[]): SimulatedFull
                         lessons[dateKey] = {
                             teacherId: classConfig.teachers[Math.floor(Math.random() * classConfig.teachers.length)]?.id || "",
                             title: `Aula sobre ${["Criação", "Patriarcas", "Êxodo", "Juízes", "Reis"][Math.floor(Math.random()*5)]}`,
+                            status: 'held',
                         };
                     }
 

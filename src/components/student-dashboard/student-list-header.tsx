@@ -44,10 +44,10 @@ export function StudentListHeader({ trackedItems, onSort, sortKey, sortDirection
 
   return (
     <div className="p-4 flex items-center text-xs font-bold text-slate-400 uppercase tracking-wider border-b border-slate-700">
-      <div className="w-2/5 md:w-1/3 pl-2">
-         <span className="flex items-center gap-1 group">Aluno</span>
+      <div className="w-1/3 flex justify-center items-end" style={{ height: '60px'}}>
+         <span className="w-10 text-center -rotate-90 origin-center whitespace-nowrap text-slate-400">Aluno</span>
       </div>
-      <div className="flex-1 flex justify-end sm:justify-center gap-2 sm:gap-4 text-center items-end" style={{ height: '60px'}}>
+      <div className="flex-1 flex justify-center gap-4 text-center items-end" style={{ height: '60px'}}>
         {orderedVisibleItems.map(item => (
             <span key={item} className="w-10 text-center -rotate-90 origin-center whitespace-nowrap text-slate-400" title={itemLabels[item]}>
                 {itemLabels[item]}
