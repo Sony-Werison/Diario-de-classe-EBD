@@ -211,25 +211,29 @@ export function ClassSettings() {
     const taskMode = formData.get("taskMode") as TaskMode;
     const teachers = editingClass.teachers
       .map(teacher => ({...teacher, name: (formData.get(`teacher-${teacher.id}`) as string)?.trim() }))
-      .filter(teacher => teacher.name); // Remove teachers with empty names
-
-    const finalClassData: ClassConfig = {
-        ...editingClass,
-        name,
-        color,
-        taskMode,
-        teachers: teachers.length > 0 ? teachers : [{id: `teacher-${Date.now()}`, name: ''}],
-    };
+      .filter(teacher => teacher.name);
 
     if (editingClass.id) { // Editing existing class
+      const finalClassData: ClassConfig = {
+          ...editingClass,
+          name,
+          color,
+          taskMode,
+          teachers: teachers.length > 0 ? teachers : [{id: `teacher-${Date.now()}`, name: ''}],
+      };
       updateAndSaveData(prev => ({
           ...prev!,
           classes: prev!.classes.map(c => c.id === editingClass.id ? finalClassData : c)
       }));
     } else { // Creating new class
       const newClass: ClassConfig = {
-        ...finalClassData,
+        ...editingClass,
         id: `class-${Date.now()}`,
+        name,
+        color,
+        taskMode,
+        students: [], // Ensure students array exists for new classes
+        teachers: teachers.length > 0 ? teachers : [{id: `teacher-${Date.now()}`, name: ''}],
       };
       const newData = updateAndSaveData(prev => ({ ...prev!, classes: [...prev!.classes, newClass] }));
       setCurrentClassId(newClass.id);
@@ -471,60 +475,88 @@ export function ClassSettings() {
 
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2">
-          <Card className="bg-card border-border">
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle>Alunos da Classe "{currentClass.name}"</CardTitle>
-              {!isViewer && <Button size="sm" onClick={openNewStudentDialog} className="bg-primary hover:bg-primary/90 text-white">
-                <PlusCircle size={16} className="mr-2" />
-                Adicionar Aluno
-              </Button>}
-            </CardHeader>
-            <CardContent>
-              <div className="border border-border rounded-lg overflow-hidden">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="border-border hover:bg-transparent">
-                      <TableHead className="text-white">Nome</TableHead>
-                      <TableHead className="text-white text-center w-24">
-                        Idade
-                      </TableHead>
-                      <TableHead className="text-right text-white w-28">
-                        Ações
-                      </TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {currentClass.students.map((student) => (
-                      <TableRow key={student.id} className="border-border hover:bg-transparent">
-                        <TableCell className="font-medium">
-                          {student.name}
-                        </TableCell>
-                        <TableCell className="text-center text-slate-400">
-                           {calculateAge(student.birthDate) !== null ? `${calculateAge(student.birthDate)} anos` : '-'}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex gap-2 justify-end">
-                            <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-white" onClick={() => handleEditStudent(student)} disabled={isViewer}>
-                                <Edit size={16}/>
-                            </Button>
-                            <Button variant="ghost" size="icon" className="h-8 w-8 text-red-500 hover:text-red-400" onClick={() => handleDeleteStudent(student.id)} disabled={isViewer}>
-                                <Trash2 size={16}/>
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-               {currentClass.students.length === 0 && (
-                <div className="text-center py-10 text-slate-500">
-                  <p>Nenhum aluno cadastrado nesta classe ainda.</p>
+        <div className="lg:col-span-2 space-y-6">
+            <Card className="bg-card border-border">
+                <CardHeader className="flex flex-row items-center justify-between">
+                <CardTitle>Alunos da Classe "{currentClass.name}"</CardTitle>
+                {!isViewer && <Button size="sm" onClick={openNewStudentDialog} className="bg-primary hover:bg-primary/90 text-white">
+                    <PlusCircle size={16} className="mr-2" />
+                    Adicionar Aluno
+                </Button>}
+                </CardHeader>
+                <CardContent>
+                <div className="border border-border rounded-lg overflow-hidden">
+                    <Table>
+                    <TableHeader>
+                        <TableRow className="border-border hover:bg-transparent">
+                        <TableHead className="text-white">Nome</TableHead>
+                        <TableHead className="text-white text-center w-24">
+                            Idade
+                        </TableHead>
+                        <TableHead className="text-right text-white w-28">
+                            Ações
+                        </TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {currentClass.students.map((student) => (
+                        <TableRow key={student.id} className="border-border hover:bg-transparent">
+                            <TableCell className="font-medium">
+                            {student.name}
+                            </TableCell>
+                            <TableCell className="text-center text-slate-400">
+                            {calculateAge(student.birthDate) !== null ? `${calculateAge(student.birthDate)} anos` : '-'}
+                            </TableCell>
+                            <TableCell className="text-right">
+                            <div className="flex gap-2 justify-end">
+                                <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-white" onClick={() => handleEditStudent(student)} disabled={isViewer}>
+                                    <Edit size={16}/>
+                                </Button>
+                                <Button variant="ghost" size="icon" className="h-8 w-8 text-red-500 hover:text-red-400" onClick={() => handleDeleteStudent(student.id)} disabled={isViewer}>
+                                    <Trash2 size={16}/>
+                                </Button>
+                            </div>
+                            </TableCell>
+                        </TableRow>
+                        ))}
+                    </TableBody>
+                    </Table>
                 </div>
-              )}
-            </CardContent>
-          </Card>
+                {currentClass.students.length === 0 && (
+                    <div className="text-center py-10 text-slate-500">
+                    <p>Nenhum aluno cadastrado nesta classe ainda.</p>
+                    </div>
+                )}
+                </CardContent>
+            </Card>
+             <Card className="bg-card border-border">
+                <CardHeader>
+                    <CardTitle>Professores da Classe "{currentClass.name}"</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <div className="border border-border rounded-lg overflow-hidden">
+                        <Table>
+                            <TableHeader>
+                                <TableRow className="border-border hover:bg-transparent">
+                                    <TableHead className="text-white">Nome</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {currentClass.teachers.map((teacher) => (
+                                    <TableRow key={teacher.id} className="border-border hover:bg-transparent">
+                                        <TableCell className="font-medium">{teacher.name}</TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    </div>
+                    {currentClass.teachers.length === 0 && (
+                        <div className="text-center py-10 text-slate-500">
+                            <p>Nenhum professor cadastrado nesta classe.</p>
+                        </div>
+                    )}
+                </CardContent>
+            </Card>
         </div>
 
         <div className="lg:col-span-1 space-y-6">
@@ -705,3 +737,5 @@ export function ClassSettings() {
     </div>
   );
 }
+
+    
