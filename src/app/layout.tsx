@@ -1,9 +1,10 @@
+
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
 import { cn } from "@/lib/utils";
-import { AppSidebar, AppBottomNav } from "@/components/student-dashboard/app-sidebar";
+import AppLayout from "./AppLayout";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
 
@@ -19,20 +20,14 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="pt-BR" className="dark">
-      <head>
-        
-      </head>
+      <head></head>
       <body
         className={cn(
           "min-h-screen bg-background font-sans antialiased",
           inter.variable
         )}
       >
-        <div className="flex h-screen">
-          <AppSidebar />
-          <main className="flex-1 overflow-y-auto bg-background pb-16 sm:pb-0">{children}</main>
-        </div>
-        <AppBottomNav />
+        <AppLayout>{children}</AppLayout>
         <Toaster />
       </body>
     </html>

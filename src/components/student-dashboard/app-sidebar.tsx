@@ -125,7 +125,7 @@ export function AppSidebar() {
         </TooltipProvider>
       )}
 
-      <div className="flex flex-col gap-4 my-auto">
+      <div className="flex flex-col gap-4">
         {navLinks.map(link => (
           <NavLink key={link.href} {...link} />
         ))}
