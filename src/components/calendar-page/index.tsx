@@ -112,9 +112,7 @@ export function CalendarPage() {
     <div className="p-4 sm:p-6 text-white bg-background flex-1 flex flex-col">
       <header className="mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center text-primary-foreground font-bold text-xl shrink-0 p-1.5 border border-primary/20">
-                <Image src="/logo.png" alt="Logo" width={32} height={32} />
-              </div>
+              <Image src="/logo.png" alt="Logo" width={40} height={40} className="rounded-lg" />
               <div>
                 <h1 className="text-2xl font-bold">Aulas</h1>
               </div>
