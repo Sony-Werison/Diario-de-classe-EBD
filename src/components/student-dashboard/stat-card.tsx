@@ -12,7 +12,7 @@ interface StatCardProps {
   Icon: LucideIcon;
   progress: number;
   trendText?: string;
-  color: 'blue' | 'yellow' | 'purple' | 'emerald' | 'pink' | 'indigo';
+  color: 'blue' | 'yellow' | 'purple' | 'emerald' | 'pink' | 'indigo' | 'custom';
 }
 
 const colorClasses = {
@@ -45,6 +45,11 @@ const colorClasses = {
     border: "hover:border-indigo-500",
     icon: "text-indigo-500",
     progress: "bg-indigo-500",
+  },
+  custom: {
+    border: "hover:border-[var(--class-color)]",
+    icon: "text-[var(--class-color)]",
+    progress: "bg-[var(--class-color)]",
   }
 }
 

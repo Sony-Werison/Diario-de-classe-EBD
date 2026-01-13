@@ -51,7 +51,12 @@ export function StudentDashboard({ initialDate }: { initialDate?: string }) {
   const currentClass = useMemo(() => classes.find(c => c.id === currentClassId) || classes[0], [classes, currentClassId]);
 
   useEffect(() => {
+    const data = getSimulatedData();
+    setClasses(data.classes);
     setIsClient(true);
+  }, []);
+
+  useEffect(() => {
     // On mount or date change, load data from our central source
     if (initialDate) {
         const dateFromUrl = parseISO(initialDate);
@@ -71,7 +76,7 @@ export function StudentDashboard({ initialDate }: { initialDate?: string }) {
         setDailyLesson(lesson as DailyLesson);
         setDailyStudentChecks(checks);
     } else {
-      router.push('/');
+      router.push('/calendar');
     }
   }, [initialDate, currentClass.teachers, currentClassId, router]);
 
@@ -148,7 +153,7 @@ export function StudentDashboard({ initialDate }: { initialDate?: string }) {
     saveSimulatedData(data);
   
     // Redirect after mutation, which will re-load data
-    router.push('/');
+    router.push('/calendar');
     
     toast({
       title: "Aula Excluída",
@@ -162,6 +167,7 @@ export function StudentDashboard({ initialDate }: { initialDate?: string }) {
         setIsCancelDialogVali(false);
         return;
       }
+      setIsCancelDialogOpen(false);
       
       const updatedLesson: DailyLesson = {
           ...(dailyLesson || { teacherId: currentClass.teachers[0]?.id || "", title: "" }),
@@ -176,7 +182,6 @@ export function StudentDashboard({ initialDate }: { initialDate?: string }) {
       
       // Update local state immediately for UI feedback
       setDailyLesson(updatedLesson); 
-      setIsCancelDialogOpen(false);
       setCancellationReason("");
 
       toast({
@@ -282,7 +287,7 @@ export function StudentDashboard({ initialDate }: { initialDate?: string }) {
   }
   
   return (
-      <div className="flex flex-1 flex-col">
+      <div className="flex flex-1 flex-col" style={{'--class-color': currentClass.color} as React.CSSProperties}>
         <AppHeader 
             currentDate={currentDate}
             onPrevSunday={() => handleSundayNavigation('prev')}
@@ -370,7 +375,7 @@ export function StudentDashboard({ initialDate }: { initialDate?: string }) {
               unit="pts"
               Icon={Star}
               progress={(totalScore / (currentClass.students.length * 100))}
-              color="indigo"
+              color="custom"
             />
           </div>
         </main>
@@ -418,5 +423,3 @@ export function StudentDashboard({ initialDate }: { initialDate?: string }) {
       </div>
   );
 }
-
-    

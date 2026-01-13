@@ -1,5 +1,5 @@
-import { CalendarPage } from "@/components/calendar-page";
+import { redirect } from 'next/navigation';
 
 export default function Home() {
-  return <CalendarPage />;
+  redirect('/calendar');
 }

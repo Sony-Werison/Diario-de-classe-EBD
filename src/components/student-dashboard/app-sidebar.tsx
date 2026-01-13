@@ -12,8 +12,8 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
 const navLinks = [
-  { href: "/", icon: LayoutGrid, label: "Aulas" },
   { href: "/calendar", icon: Calendar, label: "Calendário" },
+  { href: "/", icon: LayoutGrid, label: "Aulas" },
   { href: "/report", icon: FileText, label: "Relatório" },
   { href: "/settings", icon: Settings, label: "Ajustes" },
 ];

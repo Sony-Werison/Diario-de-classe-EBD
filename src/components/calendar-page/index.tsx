@@ -15,38 +15,36 @@ import {
 import { ptBR } from 'date-fns/locale';
 import { ChevronLeft, ChevronRight, Church, Ban, CheckCircle, ChevronDown, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { getSimulatedData, DailyLesson, ClassConfig, initialClasses, Teacher } from '@/lib/data';
+import { getSimulatedData, DailyLesson, ClassConfig, saveSimulatedData } from '@/lib/data';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 
 export function CalendarPage() {
   const [currentMonth, setCurrentMonth] = useState(startOfMonth(new Date()));
-  const [dailyLessons, setDailyLessons] = useState<Record<string, DailyLesson>>({});
+  const [fullData, setFullData] = useState(getSimulatedData());
   const [isClient, setIsClient] = useState(false);
-  const [classes] = useState<ClassConfig[]>(initialClasses);
-  const [currentClassId, setCurrentClassId] = useState<string>(initialClasses[0].id);
+  const [currentClassId, setCurrentClassId] = useState<string>("");
+
+  const { classes, lessons: dailyLessons } = fullData;
 
   const currentClass = useMemo(() => classes.find(c => c.id === currentClassId) || classes[0], [classes, currentClassId]);
 
   useEffect(() => {
-    const data = getSimulatedData();
-    setDailyLessons(data.lessons);
     setIsClient(true);
-  }, []);
-  
-  useEffect(() => {
+    if (classes.length > 0 && !currentClassId) {
+        setCurrentClassId(classes[0].id);
+    }
     const handleStorageChange = () => {
       const data = getSimulatedData();
-      setDailyLessons(data.lessons);
+      setFullData(data);
     };
     window.addEventListener('storage', handleStorageChange);
     return () => {
       window.removeEventListener('storage', handleStorageChange);
     };
-  }, []);
-
-
+  }, [classes, currentClassId]);
+  
   const sundays = useMemo(() => {
     const monthStart = startOfMonth(currentMonth);
     const monthEnd = endOfMonth(currentMonth);
@@ -62,11 +60,12 @@ export function CalendarPage() {
     setCurrentMonth(addMonths(currentMonth, 1));
   };
   
-  const getTeacherName = (teacherId: string, teachers: Teacher[]): string => {
-    return teachers.find(t => t.id === teacherId)?.name || "Professor(a) não definido";
+  const getTeacherName = (teacherId: string, currentClass: ClassConfig): string => {
+    if (!currentClass) return "Professor(a) não definido";
+    return currentClass.teachers.find(t => t.id === teacherId)?.name || "Professor(a) não definido";
   }
 
-  if (!isClient) {
+  if (!isClient || !currentClass) {
     return null; // Or a loading skeleton
   }
 
@@ -85,7 +84,10 @@ export function CalendarPage() {
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
                 <Button variant="outline" className="w-full sm:w-60 justify-between bg-card border-border hover:bg-secondary">
-                <span className="truncate">{currentClass.name}</span>
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 rounded-full" style={{backgroundColor: currentClass.color}}/>
+                    <span className="truncate">{currentClass.name}</span>
+                  </div>
                 <ChevronDown className="h-4 w-4 shrink-0" />
                 </Button>
             </DropdownMenuTrigger>
@@ -103,6 +105,7 @@ export function CalendarPage() {
                         currentClassId === c.id ? "opacity-100" : "opacity-0"
                     )}
                     />
+                     <div className="w-3 h-3 rounded-full mr-2" style={{backgroundColor: c.color}}/>
                     {c.name}
                 </DropdownMenuItem>
                 ))}
@@ -130,12 +133,14 @@ export function CalendarPage() {
             const dateKey = format(day, 'yyyy-MM-dd');
             const lesson = dailyLessons[dateKey];
             const isToday = isSameDay(day, new Date());
-            const teacherName = lesson ? getTeacherName(lesson.teacherId, currentClass.teachers) : null;
+            const teacherName = lesson ? getTeacherName(lesson.teacherId, currentClass) : null;
+            const hasRecord = !!fullData.studentRecords[currentClass.id]?.[dateKey];
+
 
             return (
                 <Link
                     key={day.toString()}
-                    href={`/dashboard/${dateKey}`}
+                    href={`/dashboard/${dateKey}?classId=${currentClass.id}`}
                     className={cn(
                         'flex items-center justify-between p-4 rounded-lg transition-colors',
                         'hover:bg-secondary',
@@ -181,7 +186,7 @@ export function CalendarPage() {
                            {lesson.status === 'cancelled' ? (
                                 <Ban className="w-5 h-5 text-yellow-500" title="Aula não realizada"/>
                            ) : (
-                                <CheckCircle className="w-5 h-5 text-green-500" title="Aula registrada"/>
+                              hasRecord && <CheckCircle className="w-5 h-5 text-green-500" title="Aula registrada"/>
                            )}
                         </div>
                     )}

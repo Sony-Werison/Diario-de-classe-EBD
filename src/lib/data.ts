@@ -45,7 +45,7 @@ export const initialClasses: ClassConfig[] = [
     id: "maternal",
     name: "Maternal",
     color: "hsl(340, 80%, 60%)",
-    teachers: [{id: 'teacher-1', name: "Tia Ana"}],
+    teachers: [{id: 'teacher-1', name: "Ana"}],
     trackedItems: { presence: true, task: false, verse: false, behavior: false, material: false },
     students: [
       { id: "m-1", name: "Júlia Pereira", birthDate: "2021-03-10", checks: {} as any, totalXp: 50 },
@@ -56,7 +56,7 @@ export const initialClasses: ClassConfig[] = [
     id: "infantil",
     name: "Infantil",
     color: "hsl(45, 90%, 50%)",
-    teachers: [{id: 'teacher-2', name: "Tia Maria"}],
+    teachers: [{id: 'teacher-2', name: "Maria"}],
     trackedItems: { presence: true, task: true, verse: true, behavior: true, material: false },
     students: [
        { id: "i-1", name: "Sofia Rodrigues", birthDate: "2019-05-15", checks: {} as any, totalXp: 150 },
@@ -113,6 +113,7 @@ export type SimulatedStudentData = {
 }
 
 export type SimulatedFullData = {
+  classes: ClassConfig[];
   lessons: Record<string, DailyLesson>;
   studentRecords: Record<string, Record<string, Record<string, Record<CheckType, boolean>>>>; // [classId][dateKey][studentId] -> checks
 }
@@ -162,7 +163,7 @@ export const generateSimulatedDataForStudent = (studentId: string, month: Date, 
     return { studentId, monthData };
 };
 
-export const generateFullSimulatedData = (classes: ClassConfig[]): SimulatedFullData => {
+export const generateFullSimulatedData = (classes: ClassConfig[]): Omit<SimulatedFullData, 'classes'> => {
     const lessons: Record<string, DailyLesson> = {};
     const studentRecords: SimulatedFullData['studentRecords'] = {};
     const today = new Date();
@@ -184,18 +185,23 @@ export const generateFullSimulatedData = (classes: ClassConfig[]): SimulatedFull
                     
                     // Create lesson if it doesn't exist
                     if (!lessons[dateKey]) {
+                         const randomTeacherIndex = Math.floor(Math.random() * classConfig.teachers.length);
+                         const isCancelled = Math.random() < 0.05; // 5% chance of cancellation
                         lessons[dateKey] = {
-                            teacherId: classConfig.teachers[Math.floor(Math.random() * classConfig.teachers.length)]?.id || "",
+                            teacherId: classConfig.teachers[randomTeacherIndex]?.id || "",
                             title: `Aula sobre ${["Criação", "Patriarcas", "Êxodo", "Juízes", "Reis"][Math.floor(Math.random()*5)]}`,
-                            status: 'held',
+                            status: isCancelled ? 'cancelled' : 'held',
+                            cancellationReason: isCancelled ? 'Evento especial na igreja' : undefined,
                         };
                     }
 
-                    // Create student record for the day
-                    if (!studentRecords[classConfig.id][dateKey]) {
-                        studentRecords[classConfig.id][dateKey] = {};
+                    // Create student record for the day only if the lesson was held
+                    if (lessons[dateKey].status === 'held') {
+                        if (!studentRecords[classConfig.id][dateKey]) {
+                            studentRecords[classConfig.id][dateKey] = {};
+                        }
+                        studentRecords[classConfig.id][dateKey][student.id] = dayData.checks;
                     }
-                    studentRecords[classConfig.id][dateKey][student.id] = dayData.checks;
                 });
             });
         });
@@ -206,21 +212,28 @@ export const generateFullSimulatedData = (classes: ClassConfig[]): SimulatedFull
 // Centralized functions to get and save data from localStorage
 export const getSimulatedData = (): SimulatedFullData => {
   if (typeof window === 'undefined') {
-    return { lessons: {}, studentRecords: {} };
+    return { classes: initialClasses, lessons: {}, studentRecords: {} };
   }
   try {
     const savedData = localStorage.getItem(SIMULATED_DATA_KEY);
     if (savedData) {
-      return JSON.parse(savedData);
+      const parsedData = JSON.parse(savedData);
+      // Ensure classes are part of the saved data, if not, add them.
+      if (!parsedData.classes) {
+        parsedData.classes = initialClasses;
+      }
+      return parsedData;
     } else {
-      const newData = generateFullSimulatedData(initialClasses);
+      const { lessons, studentRecords } = generateFullSimulatedData(initialClasses);
+      const newData = { classes: initialClasses, lessons, studentRecords };
       localStorage.setItem(SIMULATED_DATA_KEY, JSON.stringify(newData));
       return newData;
     }
   } catch (error) {
     console.error("Failed to read from localStorage", error);
     // Fallback to generating fresh data if localStorage fails
-    return generateFullSimulatedData(initialClasses);
+    const { lessons, studentRecords } = generateFullSimulatedData(initialClasses);
+    return { classes: initialClasses, lessons, studentRecords };
   }
 };
 
@@ -240,5 +253,3 @@ export const saveSimulatedData = (data: SimulatedFullData) => {
     console.error("Failed to save to localStorage", error);
   }
 };
-
-    
