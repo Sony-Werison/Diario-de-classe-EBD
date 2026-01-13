@@ -41,61 +41,19 @@ const weekDays: { key: keyof DailyTasks, label: string }[] = [
 
 export function StudentRow({ student, onToggleCheck, onToggleDailyTask, trackedItems, taskMode, isLessonCancelled }: StudentRowProps) {
   const { id, name, checks, dailyScore, age, completionPercent, checkedItemsCount, totalTrackedItems } = student;
-  const singleItem = totalTrackedItems <= 1 && taskMode === 'unique';
   
   return (
-    <div className={cn("bg-slate-800 p-3 flex flex-col sm:flex-row sm:items-center border-b border-slate-700/50 transition-colors hover:bg-slate-700/50 group", taskMode === 'daily' && 'gap-3')}>
-        <div className="flex items-center w-full">
-            <div className="w-1/3">
-                <div className="pl-2">
-                  <p className="text-sm font-semibold text-slate-200 group-hover:text-white transition-colors">{name}</p>
-                   <p className="text-xs text-slate-400">{age !== null ? `${age} anos` : 'Idade não informada'}</p>
-                </div>
-            </div>
-            
-            <div className="flex-1 flex justify-center items-center gap-4">
-                {(Object.keys(checkConfig) as (CheckType | 'task')[]).map(type => {
-                    if (!trackedItems[type] || (type === 'task' && taskMode === 'daily')) return null;
-
-                    let isDisabled = !checks.presence && ['material', 'verse', 'behavior'].includes(type);
-                    if (isLessonCancelled || type === 'task') isDisabled = false;
-
-                    const CheckIcon = checkConfig[type].Icon;
-                    return (
-                        <div key={type} className="flex flex-col items-center gap-1">
-                            <button
-                            onClick={() => onToggleCheck(id, type)}
-                            className={cn(
-                                "w-10 h-10 rounded-lg flex items-center justify-center transition-all duration-200 border",
-                                (checks as any)[type] ? checkConfig[type].activeClass : checkConfig[type].inactiveClass,
-                                isDisabled ? 'opacity-50 cursor-not-allowed' : 'hover:border-slate-500',
-                            )}
-                            aria-label={`Marcar ${type} para ${name}`}
-                            disabled={isDisabled}
-                            >
-                            {isLessonCancelled && !(checks as any)[type] && type !== 'task' ? <Ban size={20} className="text-yellow-500"/> : <CheckIcon size={20} />}
-                            </button>
-                            <span className="text-[10px] text-slate-500 font-semibold">{checkConfig[type].label}</span>
-                        </div>
-                    )
-                })}
-            </div>
-
-            {(!singleItem || taskMode === 'daily') && (
-                <div className="w-1/4 pl-4 pr-2 flex-col justify-center hidden sm:flex">
-                    <div className="flex justify-between text-xs mb-1">
-                    <span className={cn("font-bold", dailyScore > 0 ? "text-[var(--class-color)]" : "text-slate-400")}>
-                        {Math.round(completionPercent)}%
-                    </span>
-                    <span className="text-slate-500">{checkedItemsCount}/{totalTrackedItems}</span>
-                    </div>
-                    <Progress value={completionPercent} className="h-2 bg-slate-900 border border-slate-700" indicatorClassName={cn(completionPercent === 100 ? "bg-gradient-to-r from-yellow-400 to-yellow-600" : "bg-[var(--class-color)]")} />
-                </div>
-            )}
-        </div>
-        
-        {trackedItems.task && taskMode === 'daily' && (
-            <div className="flex flex-col items-center gap-1 w-full pt-2 sm:pt-0 sm:w-auto">
+    <div className={cn("bg-slate-800 p-3 border-b border-slate-700/50 transition-colors group")}>
+      <div className="flex items-start justify-between gap-3">
+        {/* Coluna Esquerda: Nome, Idade e Tarefas Diárias */}
+        <div className="flex-1 space-y-2">
+          <div>
+            <p className="text-sm font-semibold text-slate-200 transition-colors">{name}</p>
+            <p className="text-xs text-slate-400">{age !== null ? `${age} anos` : 'Idade não informada'}</p>
+          </div>
+          
+          {trackedItems.task && taskMode === 'daily' && (
+            <div className="flex flex-col items-start gap-1 pt-1">
                 <div className="flex items-center justify-center gap-1 border border-slate-700 rounded-lg p-1 bg-slate-700/50">
                     {weekDays.map(day => (
                         <button
@@ -103,33 +61,60 @@ export function StudentRow({ student, onToggleCheck, onToggleDailyTask, trackedI
                             onClick={() => onToggleDailyTask(id, day.key)}
                             className={cn(
                                 "w-7 h-8 rounded-md flex items-center justify-center transition-all duration-200 text-xs font-bold",
-                                (checks.dailyTasks as any)?.[day.key] ? checkConfig.task.activeClass : 'text-slate-400 bg-slate-700/50',
+                                checks.dailyTasks?.[day.key] ? checkConfig.task.activeClass : 'text-slate-400 bg-slate-700/50',
                                 'hover:border-slate-500' // Always allow hover for tasks
                             )}
                             aria-label={`Marcar tarefa de ${day.label} para ${name}`}
                             >
-                            {isLessonCancelled && !(checks.dailyTasks as any)?.[day.key] ? <Ban size={16} className="text-yellow-500/80"/> : day.label}
+                            {isLessonCancelled && !checks.dailyTasks?.[day.key] ? <Ban size={16} className="text-yellow-500/80"/> : day.label}
                         </button>
                     ))}
                 </div>
-                <span className="text-[10px] text-slate-500 font-semibold">{checkConfig.task.label}</span>
+                <span className="text-[10px] text-slate-500 font-semibold pl-1">{checkConfig.task.label}</span>
             </div>
-        )}
-
-      {(!singleItem || taskMode === 'daily') && (
-        <div className="w-full sm:hidden mt-3 sm:mt-0 sm:pl-4 sm:pr-2 flex flex-col justify-center">
-            <div className="flex justify-between text-xs mb-1">
-            <span className={cn("font-bold", dailyScore > 0 ? "text-[var(--class-color)]" : "text-slate-400")}>
-                {Math.round(completionPercent)}%
-            </span>
-            <span className="text-slate-500">{checkedItemsCount}/{totalTrackedItems}</span>
-            </div>
-            <Progress value={completionPercent} className="h-2 bg-slate-900 border border-slate-700" indicatorClassName={cn(completionPercent === 100 ? "bg-gradient-to-r from-yellow-400 to-yellow-600" : "bg-[var(--class-color)]")} />
+          )}
         </div>
-      )}
 
+        {/* Coluna Direita: Checks Únicos */}
+        <div className="flex justify-end items-start gap-2 flex-wrap max-w-[180px]">
+          {(Object.keys(checkConfig) as (CheckType | 'task')[]).map(type => {
+              if (!trackedItems[type] || (type === 'task' && taskMode === 'daily')) return null;
+
+              let isDisabled = !checks.presence && ['material', 'verse', 'behavior'].includes(type);
+              if (isLessonCancelled || type === 'task') isDisabled = false;
+
+              const CheckIcon = checkConfig[type].Icon;
+              return (
+                  <div key={type} className="flex flex-col items-center gap-1">
+                      <button
+                      onClick={() => onToggleCheck(id, type)}
+                      className={cn(
+                          "w-10 h-10 rounded-lg flex items-center justify-center transition-all duration-200 border",
+                          checks[type] ? checkConfig[type].activeClass : checkConfig[type].inactiveClass,
+                          isDisabled ? 'opacity-50 cursor-not-allowed' : 'hover:border-slate-500',
+                      )}
+                      aria-label={`Marcar ${type} para ${name}`}
+                      disabled={isDisabled}
+                      >
+                      {isLessonCancelled && !checks[type] && type !== 'task' ? <Ban size={20} className="text-yellow-500"/> : <CheckIcon size={20} />}
+                      </button>
+                      <span className="text-[10px] text-slate-500 font-semibold">{checkConfig[type].label}</span>
+                  </div>
+              )
+          })}
+        </div>
+      </div>
+      
+      {/* Barra de Progresso */}
+      <div className="mt-3 flex flex-col justify-center">
+          <div className="flex justify-between text-xs mb-1">
+          <span className={cn("font-bold", dailyScore > 0 ? "text-[var(--class-color)]" : "text-slate-400")}>
+              {Math.round(completionPercent)}%
+          </span>
+          <span className="text-slate-500">{checkedItemsCount}/{totalTrackedItems}</span>
+          </div>
+          <Progress value={completionPercent} className="h-2 bg-slate-900 border border-slate-700" indicatorClassName={cn(completionPercent === 100 ? "bg-gradient-to-r from-yellow-400 to-yellow-600" : "bg-[var(--class-color)]")} />
+      </div>
     </div>
   );
 }
-
-    
