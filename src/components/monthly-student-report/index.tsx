@@ -235,7 +235,7 @@ export function MonthlyStudentReport() {
                                         </div>}
                                     </div>
                                     <div className="flex flex-col items-end gap-1">
-                                        <div className="flex justify-end items-start gap-2 flex-wrap max-w-[180px]">
+                                        <div className="grid grid-cols-6 gap-1">
                                             {(Object.keys(checkConfig) as (CheckType | 'task')[]).map(type => {
                                                 if (!currentClass.trackedItems[type] || (type === 'task' && currentClass.taskMode === 'daily')) return null;
 
@@ -244,13 +244,13 @@ export function MonthlyStudentReport() {
                                                 <div key={type} className="flex flex-col items-center gap-1">
                                                     <div
                                                     className={cn(
-                                                        "w-9 h-9 rounded-lg flex items-center justify-center transition-all duration-200 border",
+                                                        "w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200 border",
                                                         checks?.[type] ? checkConfig[type].activeClass : checkConfig[type].inactiveClass,
                                                     )}
                                                     >
-                                                    {isLessonCancelled && !checks?.[type] && type !== 'task' ? <Ban size={18} className="text-yellow-500" /> : <CheckIcon size={18} />}
+                                                    {isLessonCancelled && !checks?.[type] && type !== 'task' ? <Ban size={16} className="text-yellow-500" /> : <CheckIcon size={16} />}
                                                     </div>
-                                                    <span className="text-[10px] text-slate-500 font-semibold">{checkConfig[type].label}</span>
+                                                    <span className="text-[9px] text-slate-500 font-semibold">{checkConfig[type].label}</span>
                                                 </div>
                                                 )
                                             })}
@@ -259,18 +259,18 @@ export function MonthlyStudentReport() {
                                             <div className="flex flex-col items-center gap-1 self-center mt-1">
                                                 <div className="flex items-center justify-center gap-1 border border-slate-700 rounded-lg p-1 bg-slate-700/50">
                                                     {weekDays.map(day => (
-                                                        <div
+                                                        <button
                                                             key={day.key}
                                                             className={cn(
-                                                                "w-6 h-7 rounded-md flex items-center justify-center transition-all duration-200 text-xs font-bold",
-                                                                checks?.dailyTasks?.[day.key] ? checkConfig.task.activeClass : 'text-slate-400 bg-slate-700/50',
+                                                                "w-5 h-6 rounded-md flex items-center justify-center transition-all duration-200 text-[10px] font-bold",
+                                                                checks?.dailyTasks?.[day.key] ? checkConfig.task.activeClass : 'text-slate-400 bg-slate-700/50'
                                                             )}
                                                             >
-                                                            {isLessonCancelled && !checks?.dailyTasks?.[day.key] ? <Ban size={14} className="text-yellow-500/80"/> : day.label}
-                                                        </div>
+                                                            {isLessonCancelled && !checks?.dailyTasks?.[day.key] ? <Ban size={12} className="text-yellow-500/80"/> : day.label}
+                                                        </button>
                                                     ))}
                                                 </div>
-                                                <span className="text-[10px] text-slate-500 font-semibold">{checkConfig.task.label}</span>
+                                                <span className="text-[9px] text-slate-500 font-semibold">{checkConfig.task.label}</span>
                                             </div>
                                         )}
                                     </div>

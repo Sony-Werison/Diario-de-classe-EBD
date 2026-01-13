@@ -270,18 +270,6 @@ export function StudentDashboard({ initialDate, classId: initialClassId }: { ini
 
     const studentsWithScores = students.map(student => {
       const studentChecks = dailyStudentChecks[student.id] || defaultChecks;
-
-      const dailyScore = (Object.keys(POINTS) as (CheckType | 'task')[]).reduce((acc, key) => {
-        if ((studentChecks as any)[key] && currentClass.trackedItems[key]) {
-           // These criteria only count if the student is present
-          if (['behavior', 'verse', 'material', 'inClassTask'].includes(key) && !studentChecks.presence) {
-            return acc;
-          }
-          return acc + (POINTS[key] || 0);
-        }
-        return acc;
-      }, 0);
-
       const age = calculateAge(student.birthDate);
 
       const activeTrackedItems = (Object.keys(currentClass.trackedItems) as (CheckType | 'task')[]).filter(
@@ -312,7 +300,7 @@ export function StudentDashboard({ initialDate, classId: initialClassId }: { ini
         ? (checkedItemsCount / totalItemsForPercentage) * 100
         : 0;
 
-      return { ...student, checks: studentChecks, dailyScore, age, completionPercent, checkedItemsCount, totalTrackedItems: totalItemsForPercentage };
+      return { ...student, checks: studentChecks, age, completionPercent, checkedItemsCount, totalTrackedItems: totalItemsForPercentage };
     }).sort((a, b) => {
         return a.name.localeCompare(b.name);
     });

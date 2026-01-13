@@ -9,7 +9,6 @@ import { CheckCircle, Notebook, Pencil, BookOpen, Smile, Ban, ClipboardCheck } f
 
 interface StudentRowProps {
   student: Student & { 
-    dailyScore: number; 
     age: number | null,
     completionPercent: number;
     checkedItemsCount: number;
@@ -41,7 +40,7 @@ const weekDays: { key: keyof DailyTasks, label: string }[] = [
 ];
 
 export function StudentRow({ student, onToggleCheck, onToggleDailyTask, trackedItems, taskMode, isLessonCancelled }: StudentRowProps) {
-  const { id, name, checks, dailyScore, age, completionPercent, checkedItemsCount, totalTrackedItems } = student;
+  const { id, name, checks, age, completionPercent, checkedItemsCount, totalTrackedItems } = student;
   
   return (
     <div className="bg-slate-800 p-2 border-b border-slate-700/50">
@@ -65,7 +64,7 @@ export function StudentRow({ student, onToggleCheck, onToggleDailyTask, trackedI
 
         {/* Coluna Direita: Checks e Progresso */}
         <div className="flex flex-col items-center gap-1.5">
-            <div className="flex justify-end items-start gap-1 flex-wrap max-w-[180px]">
+            <div className="grid grid-cols-6 gap-1">
                 {(Object.keys(checkConfig) as (CheckType | 'task')[]).map(type => {
                     if (!trackedItems[type] || (type === 'task' && taskMode === 'daily')) return null;
 
