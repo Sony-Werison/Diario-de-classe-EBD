@@ -136,6 +136,7 @@ export function MonthlyReport() {
 
   useEffect(() => {
     setIsClient(true);
+    setCurrentMonth(startOfMonth(new Date()));
   }, []);
 
   useEffect(() => {
@@ -192,6 +193,10 @@ export function MonthlyReport() {
         })}
     </div>
   )
+
+  if (!isClient) {
+    return null;
+  }
 
   return (
     <div className="p-4 sm:p-6 text-white bg-background flex-1 flex flex-col">
@@ -289,7 +294,7 @@ export function MonthlyReport() {
                                       const dayData = getStudentDataForDay(student.id, day);
                                       return (
                                           <td key={day.toISOString()} className="text-center border-b border-r border-slate-700 last:border-r-0 h-full p-2">
-                                              {isClient && dayData ? (
+                                              {dayData ? (
                                               <TooltipProvider>
                                                   <Tooltip>
                                                       <TooltipTrigger asChild>

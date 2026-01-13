@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo, useCallback } from "react";
+import React, { useState, useMemo, useCallback, useEffect } from "react";
 import { initialClasses, POINTS, Student, CheckType, ClassConfig, DailyLesson } from "@/lib/data";
 import { AppHeader } from "./app-header";
 import { StatCard } from "./stat-card";
@@ -27,18 +27,23 @@ const calculateAge = (birthDateString: string) => {
 export function StudentDashboard() {
   const [classes, setClasses] = useState<ClassConfig[]>(initialClasses);
   const [currentClassId, setCurrentClassId] = useState<string>(initialClasses[0].id);
-  const [currentDate, setCurrentDate] = useState(startOfDay(new Date()));
+  const [currentDate, setCurrentDate] = useState<Date | undefined>(undefined);
   const [sortKey, setSortKey] = useState<SortKey>("name");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
   const [dailyLessons, setDailyLessons] = useState<Record<string, DailyLesson>>({});
   const { toast } = useToast();
+  
+  useEffect(() => {
+    setCurrentDate(startOfDay(new Date()));
+  }, []);
+
 
   const currentClass = useMemo(() => classes.find(c => c.id === currentClassId) || classes[0], [classes, currentClassId]);
 
-  const dateKey = useMemo(() => format(currentDate, "yyyy-MM-dd"), [currentDate]);
+  const dateKey = useMemo(() => currentDate ? format(currentDate, "yyyy-MM-dd") : '', [currentDate]);
 
   const dailyLesson = useMemo(() => {
-     if (!dailyLessons[dateKey]) {
+     if (!dateKey || !dailyLessons[dateKey]) {
       return {
         teacherId: currentClass.teachers[0]?.id || "",
         title: "",
@@ -89,6 +94,7 @@ export function StudentDashboard() {
   
   const handleSundayNavigation = (direction: 'prev' | 'next') => {
      setCurrentDate(prevDate => {
+      if (!prevDate) return startOfDay(new Date());
       let newDate = new Date(prevDate);
       const dayOfWeek = newDate.getDay();
       const offset = direction === 'next' ? (7 - dayOfWeek) % 7 || 7 : - (dayOfWeek || 7);
@@ -98,6 +104,7 @@ export function StudentDashboard() {
   }
 
   const handleSave = () => {
+    if (!currentDate) return;
     // Here you would typically save to a database.
     // For now, we just show a confirmation.
     setDailyLessons(prev => ({ ...prev, [dateKey]: dailyLesson as DailyLesson }));
@@ -196,6 +203,10 @@ export function StudentDashboard() {
   }, [currentClass, sortKey, sortDirection]);
 
   const trackedItems = currentClass.trackedItems;
+
+  if (!currentDate) {
+    return null; // or a loading spinner
+  }
   
   return (
       <div className="flex flex-1 flex-col overflow-hidden">
