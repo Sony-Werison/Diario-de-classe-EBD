@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useMemo, useCallback, useEffect } from "react";
@@ -47,6 +48,7 @@ export function StudentDashboard({ initialDate }: { initialDate?: string }) {
   const [dailyLesson, setDailyLesson] = useState<DailyLesson | undefined>();
   const [dailyStudentChecks, setDailyStudentChecks] = useState<Record<number, Record<CheckType, boolean>>>({});
 
+  const currentClass = useMemo(() => classes.find(c => c.id === currentClassId) || classes[0], [classes, currentClassId]);
 
   useEffect(() => {
     setIsClient(true);
@@ -75,7 +77,6 @@ export function StudentDashboard({ initialDate }: { initialDate?: string }) {
   }, [initialDate, currentClass.teachers, currentClassId, router]);
 
 
-  const currentClass = useMemo(() => classes.find(c => c.id === currentClassId) || classes[0], [classes, currentClassId]);
   const dateKey = useMemo(() => currentDate ? format(currentDate, "yyyy-MM-dd") : '', [currentDate]);
 
 
