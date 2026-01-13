@@ -23,26 +23,30 @@ export async function GET(request: NextRequest) {
     const data = await blob.json();
     return NextResponse.json(data, { status: 200 });
   } catch (error: unknown) {
-    const vercelError = error as VercelBlobError;
-
-    if (vercelError.code === 'not_found') {
-      console.log("Blob não encontrado. Criando com dados iniciais.");
-      try {
-          const initialData = getInitialData();
-          await put(DATA_BLOB_KEY, JSON.stringify(initialData), { 
-              access: 'protected', 
-              token
-          });
-          return NextResponse.json(initialData, { status: 200 });
-      } catch (putError: unknown) {
-           const putVercelError = putError as VercelBlobError;
-           console.error("Erro ao criar o blob inicial:", putVercelError);
-           return NextResponse.json({ message: "Erro interno ao criar os dados iniciais.", error: putVercelError.message }, { status: 500 });
-      }
+    // Check if the error is a Vercel Blob error and has a 'code' property
+    if (error && typeof error === 'object' && 'code' in error) {
+        const vercelError = error as VercelBlobError;
+        if (vercelError.code === 'not_found') {
+            console.log("Blob não encontrado. Criando com dados iniciais.");
+            try {
+                const initialData = getInitialData();
+                await put(DATA_BLOB_KEY, JSON.stringify(initialData), { 
+                    access: 'protected', 
+                    token
+                });
+                return NextResponse.json(initialData, { status: 200 });
+            } catch (putError: unknown) {
+                const putVercelError = putError as VercelBlobError;
+                console.error("Erro ao criar o blob inicial:", putVercelError);
+                return NextResponse.json({ message: "Erro interno ao criar os dados iniciais.", error: putVercelError.message }, { status: 500 });
+            }
+        }
     }
     
-    console.error("Erro ao buscar os dados do Blob:", vercelError);
-    return NextResponse.json({ message: "Erro interno ao buscar os dados.", error: vercelError.message || 'Erro desconhecido' }, { status: 500 });
+    // Handle generic errors
+    console.error("Erro ao buscar os dados do Blob:", error);
+    const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
+    return NextResponse.json({ message: "Erro interno ao buscar os dados.", error: errorMessage }, { status: 500 });
   }
 }
 
