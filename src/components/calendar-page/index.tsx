@@ -78,7 +78,7 @@ export function CalendarPage() {
                 <Church size={24} />
               </div>
               <div>
-                <h1 className="text-2xl font-bold">Calendário de Aulas</h1>
+                <h1 className="text-2xl font-bold">Aulas</h1>
                 <p className="text-slate-400">Selecione um domingo para ver os detalhes da aula.</p>
               </div>
           </div>
@@ -155,7 +155,13 @@ export function CalendarPage() {
                             </span>
                            {lesson && (
                              <div className="text-sm text-slate-400 mt-1 space-y-1">
-                                <p className='truncate max-w-xs sm:max-w-sm md:max-w-md'>{lesson.title || "Aula sem título"}</p>
+                                <p className='truncate max-w-xs sm:max-w-sm md:max-w-md'>
+                                  {lesson.status === 'cancelled' ? (
+                                    <span className="text-yellow-400">{lesson.cancellationReason || "Aula não realizada"}</span>
+                                  ) : (
+                                    lesson.title || "Aula sem título"
+                                  )}
+                                </p>
                                 <p className="font-medium text-slate-500">{teacherName}</p>
                              </div>
                            )}

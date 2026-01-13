@@ -70,7 +70,6 @@ export function StudentDashboard({ initialDate }: { initialDate?: string }) {
 
         setDailyLesson(lesson as DailyLesson);
         setDailyStudentChecks(checks);
-
     } else {
       router.push('/');
     }
@@ -139,21 +138,27 @@ export function StudentDashboard({ initialDate }: { initialDate?: string }) {
   const handleDeleteLesson = () => {
     setIsDeleteAlertOpen(false);
     if (!currentDate) return;
+  
+    // Clear local component state before potentially unmounting
+    setDailyLesson(undefined);
+    setDailyStudentChecks({});
 
+    // Perform data mutation
     const data = getSimulatedData();
     delete data.lessons[dateKey];
     if (data.studentRecords[currentClassId]) {
       delete data.studentRecords[currentClassId][dateKey];
     }
     saveSimulatedData(data);
-
+  
+    // Redirect after mutation
+    router.push('/');
+    
     toast({
       title: "Aula Excluída",
       description: `O registro da aula de ${format(currentDate, "dd/MM/yyyy")} foi removido.`,
       variant: 'destructive',
     });
-
-    router.push('/');
   }
   
   const handleCancelLesson = () => {
@@ -161,7 +166,6 @@ export function StudentDashboard({ initialDate }: { initialDate?: string }) {
         setIsCancelDialogVali(false);
         return;
       }
-      setIsCancelDialogOpen(false);
       
       const updatedLesson: DailyLesson = {
           ...(dailyLesson || { teacherId: currentClass.teachers[0]?.id || "", title: "" }),
@@ -169,17 +173,20 @@ export function StudentDashboard({ initialDate }: { initialDate?: string }) {
           cancellationReason: cancellationReason,
       };
 
+      // Update data source
       const data = getSimulatedData();
       data.lessons[dateKey] = updatedLesson;
       saveSimulatedData(data);
       
-      setDailyLesson(updatedLesson); // Update local state immediately for UI feedback
+      // Update local state immediately for UI feedback
+      setDailyLesson(updatedLesson); 
+      setIsCancelDialogOpen(false);
+      setCancellationReason("");
 
       toast({
         title: "Aula cancelada",
         description: "A aula foi marcada como não realizada.",
       });
-      setCancellationReason("");
   }
 
 

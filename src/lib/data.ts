@@ -1,3 +1,4 @@
+
 import { format, getDaysInMonth, getDay } from "date-fns";
 
 export type CheckType = 'presence' | 'task' | 'verse' | 'behavior' | 'material';
@@ -52,7 +53,7 @@ export const initialClasses: ClassConfig[] = [
   {
     id: "juniors-2",
     name: "Júniors 2",
-    teachers: [{id: 'teacher-1', name: "Prof. Carlos"}, {id: 'teacher-2', name: "Profª. Daniela"}],
+    teachers: [{id: 'teacher-1', name: "Carlos Andrade"}, {id: 'teacher-2', name: "Daniela Souza"}],
     trackedItems: {
       presence: true,
       task: true,
@@ -65,7 +66,7 @@ export const initialClasses: ClassConfig[] = [
     {
     id: "primarios-1",
     name: "Primários 1",
-    teachers: [{id: 'teacher-3', name: "Profª. Ana"}],
+    teachers: [{id: 'teacher-3', name: "Ana Paula"}],
     trackedItems: {
       presence: true,
       task: true,

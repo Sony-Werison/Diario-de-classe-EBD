@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from "react";
@@ -312,7 +313,7 @@ export function ClassSettings() {
             </div>
             <div>
               <Label htmlFor="teacher">Professor(a)</Label>
-              <Input id="teacher" name="teacher" defaultValue={editingClass?.teachers[0]?.name} className="bg-secondary border-border" placeholder="Ex: Profª. Ana" />
+              <Input id="teacher" name="teacher" defaultValue={editingClass?.teachers[0]?.name} className="bg-secondary border-border" placeholder="Ex: Ana Maria" />
             </div>
             <div className="flex justify-end gap-2 pt-4">
                  <Button type="button" variant="secondary" onClick={() => setIsClassDialogOpen(false)}>Cancelar</Button>
