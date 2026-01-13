@@ -105,7 +105,7 @@ export default function ProfileSelectionPage() {
               <Button 
                 key={teacher.id} 
                 variant="outline" 
-                className="w-full justify-start text-base"
+                className="w-full justify-start text-base hover:bg-transparent hover:text-white"
                 onClick={() => handleTeacherSelect(teacher)}
               >
                 {teacher.name}
