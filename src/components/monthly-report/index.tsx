@@ -136,7 +136,7 @@ export function MonthlyReport() {
             <DropdownMenuTrigger asChild>
                 <Button
                 variant="outline"
-                className="w-full sm:w-60 justify-between bg-card border-border hover:bg-card"
+                className="w-auto sm:w-60 justify-between bg-card border-border hover:bg-card"
                 >
                 <div className="flex items-center gap-2">
                     <div className="w-3 h-3 rounded-full" style={{backgroundColor: currentClass.color}}/>
@@ -145,7 +145,7 @@ export function MonthlyReport() {
                 <ChevronDown className="h-4 w-4 shrink-0" />
                 </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent className="w-full sm:w-60 bg-card border-border text-white">
+            <DropdownMenuContent className="w-[var(--radix-dropdown-menu-trigger-width)] bg-card border-border text-white">
                 {classes.map((c) => (
                 <DropdownMenuItem
                     key={c.id}
@@ -257,5 +257,3 @@ export function MonthlyReport() {
     </div>
   );
 }
-
-    
