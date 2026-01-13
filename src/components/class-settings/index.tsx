@@ -21,7 +21,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { PlusCircle, Trash2, Edit, ChevronDown, Check, User } from "lucide-react";
+import { PlusCircle, Trash2, Edit, ChevronDown, Check, User, ArrowUp, ArrowDown } from "lucide-react";
 import { Student, ClassConfig, TaskMode, Teacher, SimulatedFullData, CheckType } from "@/lib/data";
 import {
   DropdownMenu,
@@ -65,6 +65,9 @@ const colorPresets = [
   "hsl(25, 90%, 55%)",
 ];
 
+type SortKey = 'name' | 'age';
+type SortDirection = 'asc' | 'desc';
+
 
 export function ClassSettings() {
   const dataContext = useContext(DataContext);
@@ -79,6 +82,8 @@ export function ClassSettings() {
   const [userRole, setUserRole] = useState<string>('');
   const [isClient, setIsClient] = useState(false);
   const isReadOnly = userRole === 'viewer';
+  const [sortKey, setSortKey] = useState<SortKey>('name');
+  const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
 
 
   useEffect(() => {
@@ -109,6 +114,38 @@ export function ClassSettings() {
     }
     return [];
   }, [data, userRole]);
+
+  const currentClass = availableClasses.find(c => c.id === currentClassId);
+
+  const sortedStudents = useMemo(() => {
+    if (!currentClass) return [];
+    
+    return [...currentClass.students].sort((a, b) => {
+        if (sortKey === 'name') {
+            const nameA = a.name.toLowerCase();
+            const nameB = b.name.toLowerCase();
+            if (nameA < nameB) return sortDirection === 'asc' ? -1 : 1;
+            if (nameA > nameB) return sortDirection === 'asc' ? 1 : -1;
+            return 0;
+        } else { // sort by age
+            const ageA = calculateAge(a.birthDate) ?? -1;
+            const ageB = calculateAge(b.birthDate) ?? -1;
+            if (ageA < ageB) return sortDirection === 'asc' ? -1 : 1;
+            if (ageA > ageB) return sortDirection === 'asc' ? 1 : -1;
+            return 0;
+        }
+    });
+
+  }, [currentClass, sortKey, sortDirection]);
+
+  const handleSort = (key: SortKey) => {
+    if (sortKey === key) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortKey(key);
+      setSortDirection('asc');
+    }
+  };
 
 
   const handleTrackedItemToggle = (item: CheckType | 'task') => {
@@ -295,8 +332,6 @@ export function ClassSettings() {
   if (!isClient || isLoading || !data) {
     return <div className="p-4 sm:p-6 text-white flex-1 flex flex-col items-center justify-center"><div className="text-slate-500">Carregando dados...</div></div>;
   }
-
-  const currentClass = availableClasses.find(c => c.id === currentClassId);
 
   if (!currentClass) {
      return (
@@ -485,17 +520,29 @@ export function ClassSettings() {
                     <Table>
                     <TableHeader>
                         <TableRow className="border-border hover:bg-transparent">
-                        <TableHead className="text-white">Nome</TableHead>
-                        <TableHead className="text-white text-center w-24">
-                            Idade
-                        </TableHead>
-                        <TableHead className="text-right text-white w-28">
-                            Ações
-                        </TableHead>
+                            <TableHead className="text-white">
+                                <Button variant="ghost" onClick={() => handleSort('name')} className="px-0 hover:bg-transparent text-white hover:text-primary">
+                                    Nome
+                                    {sortKey === 'name' && (
+                                        sortDirection === 'asc' ? <ArrowUp size={14} className="ml-2"/> : <ArrowDown size={14} className="ml-2"/>
+                                    )}
+                                </Button>
+                            </TableHead>
+                            <TableHead className="text-white text-center w-24">
+                                 <Button variant="ghost" onClick={() => handleSort('age')} className="px-0 hover:bg-transparent text-white hover:text-primary">
+                                    Idade
+                                     {sortKey === 'age' && (
+                                        sortDirection === 'asc' ? <ArrowUp size={14} className="ml-2"/> : <ArrowDown size={14} className="ml-2"/>
+                                    )}
+                                </Button>
+                            </TableHead>
+                            <TableHead className="text-right text-white w-28">
+                                Ações
+                            </TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {currentClass.students.map((student) => {
+                        {sortedStudents.map((student) => {
                           const age = calculateAge(student.birthDate);
                           return (
                             <TableRow key={student.id} className="border-border hover:bg-transparent">
@@ -681,3 +728,5 @@ export function ClassSettings() {
     </div>
   );
 }
+
+    
