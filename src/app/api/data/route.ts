@@ -9,22 +9,18 @@ const DATA_BLOB_KEY = 'data.json';
 export async function GET(request: NextRequest) {
   try {
     const blob = await get(DATA_BLOB_KEY);
-    if (!blob) {
-      // If the blob doesn't exist, return the initial data structure.
-      return NextResponse.json(getInitialData(), { status: 200 });
-    }
     const data = await blob.json();
     return NextResponse.json(data, { status: 200 });
   } catch (error: any) {
-    // The `get` method throws a `BlobNotFoundError` if the file doesn't exist.
+    // O método `get` lança um erro com `code: 'NOT_FOUND'` se o arquivo não existir.
     if (error.code === 'NOT_FOUND') {
         const initialData = getInitialData();
-        // Also save the initial data to the blob for future requests.
+        // Também salva os dados iniciais no blob para futuras requisições.
         await put(DATA_BLOB_KEY, JSON.stringify(initialData), { access: 'protected' });
         return NextResponse.json(initialData, { status: 200 });
     }
     console.error(error);
-    return NextResponse.json({ message: "Error fetching data", error: error.message }, { status: 500 });
+    return NextResponse.json({ message: "Erro ao buscar os dados", error: error.message }, { status: 500 });
   }
 }
 
@@ -33,9 +29,9 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const dataString = JSON.stringify(body);
     await put(DATA_BLOB_KEY, dataString, { access: 'protected' });
-    return NextResponse.json({ message: "Data saved successfully" }, { status: 200 });
+    return NextResponse.json({ message: "Dados salvos com sucesso" }, { status: 200 });
   } catch (error: any) {
     console.error(error);
-    return NextResponse.json({ message: "Error saving data", error: error.message }, { status: 500 });
+    return NextResponse.json({ message: "Erro ao salvar os dados", error: error.message }, { status: 500 });
   }
 }
