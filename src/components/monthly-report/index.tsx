@@ -130,13 +130,13 @@ export function MonthlyReport() {
 
   return (
     <div className="text-white bg-background flex-1 flex flex-col" style={{'--class-color': currentClass.color} as React.CSSProperties}>
-      <div className="mb-6 flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-        <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
+      <div className="mb-6 flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-start">
+        <div className="flex flex-wrap items-center gap-4">
             <DropdownMenu>
             <DropdownMenuTrigger asChild>
                 <Button
                 variant="outline"
-                className="w-auto sm:w-60 justify-between bg-card border-border hover:bg-card"
+                className="sm:w-60 justify-between bg-card border-border hover:bg-card"
                 >
                 <div className="flex items-center gap-2">
                     <div className="w-3 h-3 rounded-full" style={{backgroundColor: currentClass.color}}/>
@@ -166,7 +166,7 @@ export function MonthlyReport() {
             </DropdownMenuContent>
             </DropdownMenu>
             
-            <div className="flex items-center gap-2 bg-card border border-border px-2 py-1 rounded-md w-full sm:w-auto justify-between">
+            <div className="flex items-center gap-2 bg-card border border-border px-2 py-1 rounded-md justify-between">
                 <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleMonthChange('prev')}>
                     <ChevronLeft size={16} />
                 </Button>
