@@ -37,15 +37,15 @@ const StatItem: React.FC<{ Icon: React.ElementType, label: string, value: string
     </div>
 );
 
-const AgeStat: React.FC<{ Icon: React.ElementType, label: string, studentName: string, age: number }> = ({ Icon, label, studentName, age }) => (
+const AgeStat: React.FC<{ Icon: React.ElementType, label: string, studentName: string, age: number, iconColor?: string }> = ({ Icon, label, studentName, age, iconColor = 'text-slate-400' }) => (
     <div className="flex items-center justify-between text-xs p-1 px-2 bg-slate-800/50 rounded-md">
         <div className="flex items-center gap-1.5">
-            <Icon size={12} className="text-slate-400" />
+            <Icon size={12} className={iconColor} />
             <span className="text-slate-400">{label}</span>
         </div>
         <div className="text-right">
             <span className="font-semibold text-slate-200 block truncate max-w-[100px]">{studentName}</span>
-            <span className="text-slate-400">{age} anos</span>
+            <span className="text-slate-400">{age} {age === 1 ? 'ano' : 'anos'}</span>
         </div>
     </div>
 );
@@ -260,8 +260,8 @@ export function OverviewReport() {
                             <div className="grid grid-cols-2 gap-2">
                                 {classData.stats.totalStudents > 0 ? (
                                     <>
-                                        <AgeStat Icon={ArrowDown} label="Mais Novo" studentName={classData.stats.minAgeStudent.name} age={classData.stats.minAgeStudent.age} />
-                                        <AgeStat Icon={ArrowUp} label="Mais Velho" studentName={classData.stats.maxAgeStudent.name} age={classData.stats.maxAgeStudent.age} />
+                                        <AgeStat Icon={ArrowDown} label="Mais Novo" studentName={classData.stats.minAgeStudent.name} age={classData.stats.minAgeStudent.age} iconColor="text-blue-400" />
+                                        <AgeStat Icon={ArrowUp} label="Mais Velho" studentName={classData.stats.maxAgeStudent.name} age={classData.stats.maxAgeStudent.age} iconColor="text-orange-400" />
                                     </>
                                 ) : (
                                     <div className="col-span-2 text-center text-xs text-slate-500 py-2">Sem alunos para calcular idade.</div>

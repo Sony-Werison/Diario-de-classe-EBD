@@ -495,26 +495,29 @@ export function ClassSettings() {
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {currentClass.students.map((student) => (
-                        <TableRow key={student.id} className="border-border hover:bg-transparent">
-                            <TableCell className="font-medium">
-                            {student.name}
-                            </TableCell>
-                            <TableCell className="text-center text-slate-400">
-                            {calculateAge(student.birthDate) !== null ? `${calculateAge(student.birthDate)} anos` : '-'}
-                            </TableCell>
-                            <TableCell className="text-right">
-                            <div className="flex gap-2 justify-end">
-                                <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-white" onClick={() => handleEditStudent(student)} disabled={isReadOnly}>
-                                    <Edit size={16}/>
-                                </Button>
-                                <Button variant="ghost" size="icon" className="h-8 w-8 text-red-500 hover:text-red-400" onClick={() => handleDeleteStudent(student.id)} disabled={isReadOnly}>
-                                    <Trash2 size={16}/>
-                                </Button>
-                            </div>
-                            </TableCell>
-                        </TableRow>
-                        ))}
+                        {currentClass.students.map((student) => {
+                          const age = calculateAge(student.birthDate);
+                          return (
+                            <TableRow key={student.id} className="border-border hover:bg-transparent">
+                                <TableCell className="font-medium">
+                                {student.name}
+                                </TableCell>
+                                <TableCell className="text-center text-slate-400">
+                                  {age !== null ? `${age} ${age === 1 ? 'ano' : 'anos'}` : '-'}
+                                </TableCell>
+                                <TableCell className="text-right">
+                                <div className="flex gap-2 justify-end">
+                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-white" onClick={() => handleEditStudent(student)} disabled={isReadOnly}>
+                                        <Edit size={16}/>
+                                    </Button>
+                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-red-500 hover:text-red-400" onClick={() => handleDeleteStudent(student.id)} disabled={isReadOnly}>
+                                        <Trash2 size={16}/>
+                                    </Button>
+                                </div>
+                                </TableCell>
+                            </TableRow>
+                          );
+                        })}
                     </TableBody>
                     </Table>
                 </div>

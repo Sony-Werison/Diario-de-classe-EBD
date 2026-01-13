@@ -51,7 +51,7 @@ export function StudentRow({ student, onToggleCheck, onToggleDailyTask, trackedI
         <div className="flex-1 space-y-2 min-w-0">
             <div>
                 <p className="text-sm font-semibold text-slate-200 truncate">{name}</p>
-                <p className="text-xs text-slate-400">{age !== null ? `${age} anos` : 'Idade não informada'}</p>
+                <p className="text-xs text-slate-400">{age !== null ? `${age} ${age === 1 ? 'ano' : 'anos'}` : 'Idade não informada'}</p>
             </div>
              <div className="flex flex-col justify-center">
                 <div className="flex justify-between text-xs mb-0.5">
