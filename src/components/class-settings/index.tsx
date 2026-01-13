@@ -22,7 +22,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { PlusCircle, Trash2, Edit, ChevronDown, Check, Palette } from "lucide-react";
-import { initialClasses, CheckType, Student, ClassConfig, TaskMode } from "@/lib/data";
+import { initialClasses, CheckType, Student, ClassConfig, TaskMode, Teacher } from "@/lib/data";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -138,24 +138,30 @@ export function ClassSettings() {
 
   const handleSaveClass = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    if (!editingClass) return;
+
     const formData = new FormData(e.currentTarget);
     const name = formData.get("name") as string;
-    const teacherName = formData.get("teacher") as string;
-    const color = (e.target as any).color.value; // Access color from form elements directly
+    const color = formData.get("color") as string;
     const taskMode = formData.get("taskMode") as TaskMode;
+    const teachers = editingClass.teachers
+      .map(teacher => ({...teacher, name: (formData.get(`teacher-${teacher.id}`) as string)?.trim() }))
+      .filter(teacher => teacher.name); // Remove teachers with empty names
 
-
-    if (editingClass) {
-      setClasses(prev => prev.map(c => c.id === editingClass.id ? {...c, name, color, teachers: [{id: `teacher-${Date.now()}`, name: teacherName}], taskMode} : c));
-    } else {
-      const newClass: ClassConfig = {
-        id: `class-${Date.now()}`,
+    const finalClassData = {
+        ...editingClass,
         name,
         color,
-        teachers: [{id: `teacher-${Date.now()}`, name: teacherName}],
-        trackedItems: { presence: true, task: true, verse: false, behavior: false, material: false },
         taskMode,
-        students: []
+        teachers: teachers.length > 0 ? teachers : [{id: `teacher-${Date.now()}`, name: ''}],
+    };
+
+    if (editingClass.id) { // Editing existing class
+      setClasses(prev => prev.map(c => c.id === editingClass.id ? finalClassData : c));
+    } else { // Creating new class
+      const newClass: ClassConfig = {
+        ...finalClassData,
+        id: `class-${Date.now()}`,
       };
       setClasses(prev => [...prev, newClass]);
       setCurrentClassId(newClass.id);
@@ -167,10 +173,10 @@ export function ClassSettings() {
 
   const openNewClassDialog = () => {
     setEditingClass({
-        id: '',
+        id: '', // Empty ID signifies a new class
         name: '',
         color: colorPresets[0],
-        teachers: [{id: '', name: ''}],
+        teachers: [{id: `new-teacher-${Date.now()}`, name: ''}],
         trackedItems: { presence: true, task: true, verse: false, behavior: false, material: false },
         taskMode: 'unique',
         students: []
@@ -181,6 +187,36 @@ export function ClassSettings() {
   const openEditClassDialog = () => {
     setEditingClass(currentClass);
     setIsClassDialogOpen(true);
+  }
+  
+  const handleTeacherNameChange = (teacherId: string, newName: string) => {
+    setEditingClass(prev => {
+        if (!prev) return null;
+        return {
+            ...prev,
+            teachers: prev.teachers.map(t => t.id === teacherId ? {...t, name: newName} : t)
+        }
+    })
+  }
+
+  const addTeacher = () => {
+    setEditingClass(prev => {
+        if (!prev) return null;
+        return {
+            ...prev,
+            teachers: [...prev.teachers, { id: `new-teacher-${Date.now()}`, name: '' }]
+        }
+    });
+  }
+
+  const removeTeacher = (teacherId: string) => {
+     setEditingClass(prev => {
+        if (!prev) return null;
+        return {
+            ...prev,
+            teachers: prev.teachers.filter(t => t.id !== teacherId)
+        }
+    });
   }
 
 
@@ -372,8 +408,25 @@ export function ClassSettings() {
                 <Input id="name" name="name" defaultValue={editingClass.name} className="bg-secondary border-border" required placeholder="Ex: Primários" />
                 </div>
                 <div>
-                <Label htmlFor="teacher">Professor(a)</Label>
-                <Input id="teacher" name="teacher" defaultValue={editingClass.teachers[0]?.name} className="bg-secondary border-border" placeholder="Ex: Ana Maria" />
+                    <Label>Professor(es)</Label>
+                    <div className="space-y-2">
+                        {editingClass.teachers.map((teacher, index) => (
+                             <div key={teacher.id} className="flex items-center gap-2">
+                                <Input 
+                                    name={`teacher-${teacher.id}`} 
+                                    defaultValue={teacher.name} 
+                                    className="bg-secondary border-border" 
+                                    placeholder={`Nome do Professor ${index + 1}`} 
+                                />
+                                <Button type="button" variant="ghost" size="icon" className="h-9 w-9 text-red-500 hover:text-red-400" onClick={() => removeTeacher(teacher.id)} disabled={editingClass.teachers.length <= 1}>
+                                    <Trash2 size={16} />
+                                </Button>
+                            </div>
+                        ))}
+                    </div>
+                    <Button type="button" size="sm" variant="outline" onClick={addTeacher} className="mt-2">
+                        <PlusCircle size={16} className="mr-2" /> Adicionar Professor
+                    </Button>
                 </div>
                  <div>
                     <Label>Modo de Tarefa</Label>
@@ -416,3 +469,5 @@ export function ClassSettings() {
     </div>
   );
 }
+
+    
