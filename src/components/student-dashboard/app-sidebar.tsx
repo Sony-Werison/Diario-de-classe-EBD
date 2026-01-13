@@ -8,7 +8,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
-import { LogOut, Settings, FileText, Calendar, User } from "lucide-react";
+import { LogOut, Settings, FileText, Calendar, User, ClipboardEdit } from "lucide-react";
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState, useContext } from "react";
@@ -17,14 +17,15 @@ import { DataContext } from "@/contexts/DataContext";
 const navLinks = [
   { href: "/calendar", icon: Calendar, label: "Calendário" },
   { href: "/report", icon: FileText, label: "Relatório" },
-  { href: "/settings", icon: Settings, label: "Ajustes" },
+  { href: "/settings", icon: ClipboardEdit, label: "Cadastro" },
+  { href: "/configuracoes", icon: Settings, label: "Configurações" },
 ];
 
 const mobileNavLinks = [
   { href: "/calendar", icon: Calendar, label: "Calendário" },
   { href: "/report", icon: FileText, label: "Relatório" },
-  { href: "/settings", icon: Settings, label: "Ajustes" },
-  { href: "/", icon: LogOut, label: "Sair" },
+  { href: "/settings", icon: ClipboardEdit, label: "Cadastro" },
+  { href: "/configuracoes", icon: Settings, label: "Configurações" },
 ]
 
 const NavLink = ({
@@ -143,11 +144,16 @@ export function AppSidebar() {
 }
 
 export function AppBottomNav() {
+  const pathname = usePathname();
+  // Filter out "Sair" for the bottom nav
+  const linksForBottomNav = mobileNavLinks.filter(l => l.href !== '/');
+
   return (
     <nav className="sm:hidden fixed bottom-0 left-0 right-0 bg-card border-t border-border h-16 flex items-center justify-around z-50">
-        {mobileNavLinks.map(link => (
+        {linksForBottomNav.map(link => (
           <NavLink key={link.href} {...link} isMobile />
         ))}
+         <NavLink href="/" icon={LogOut} label="Sair" isMobile />
     </nav>
   )
 }

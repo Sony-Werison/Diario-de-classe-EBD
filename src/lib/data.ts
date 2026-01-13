@@ -16,6 +16,7 @@ export type Student = {
   id: string;
   name: string;
   birthDate: string; // YYYY-MM-DD
+  photoUrl: string;
   checks: StudentChecks;
   totalXp: number;
 };
@@ -23,6 +24,7 @@ export type Student = {
 export type Teacher = {
   id: string;
   name: string;
+  photoUrl: string;
 }
 
 export type DailyLesson = {
@@ -57,14 +59,14 @@ export const initialClasses: ClassConfig[] = [
     name: "Primários",
     color: "hsl(150, 78%, 35%)",
     teachers: [
-      { id: 'teacher-1', name: 'Tia Joana' },
-      { id: 'teacher-2', name: 'Tio Pedro' }
+      { id: 'teacher-1', name: 'Tia Joana', photoUrl: '' },
+      { id: 'teacher-2', name: 'Tio Pedro', photoUrl: '' }
     ],
     trackedItems: { presence: true, material: true, inClassTask: true, task: true, verse: true, behavior: true },
     taskMode: 'daily',
     students: [
-      { id: 'student-1', name: 'Alice', birthDate: '2016-05-10', totalXp: 0, checks: { presence: false, material: false, inClassTask: false, verse: false, behavior: false, task: false, dailyTasks: {} } },
-      { id: 'student-2', name: 'Bruno', birthDate: '2015-08-22', totalXp: 0, checks: { presence: false, material: false, inClassTask: false, verse: false, behavior: false, task: false, dailyTasks: {} } },
+      { id: 'student-1', name: 'Alice', birthDate: '2016-05-10', photoUrl: '', totalXp: 0, checks: { presence: false, material: false, inClassTask: false, verse: false, behavior: false, task: false, dailyTasks: {} } },
+      { id: 'student-2', name: 'Bruno', birthDate: '2015-08-22', photoUrl: '', totalXp: 0, checks: { presence: false, material: false, inClassTask: false, verse: false, behavior: false, task: false, dailyTasks: {} } },
     ]
   },
   {
@@ -72,13 +74,13 @@ export const initialClasses: ClassConfig[] = [
     name: "Juniores",
     color: "hsl(210, 80%, 55%)",
     teachers: [
-      { id: 'teacher-3', name: 'Irmã Maria' }
+      { id: 'teacher-3', name: 'Irmã Maria', photoUrl: '' }
     ],
     trackedItems: { presence: true, material: true, inClassTask: true, task: true, verse: true, behavior: false },
     taskMode: 'unique',
     students: [
-      { id: 'student-3', name: 'Carlos', birthDate: '2013-02-15', totalXp: 0, checks: { presence: false, material: false, inClassTask: false, verse: false, behavior: false, task: false, dailyTasks: {} } },
-      { id: 'student-4', name: 'Daniela', birthDate: '2014-11-30', totalXp: 0, checks: { presence: false, material: false, inClassTask: false, verse: false, behavior: false, task: false, dailyTasks: {} } },
+      { id: 'student-3', name: 'Carlos', birthDate: '2013-02-15', photoUrl: '', totalXp: 0, checks: { presence: false, material: false, inClassTask: false, verse: false, behavior: false, task: false, dailyTasks: {} } },
+      { id: 'student-4', name: 'Daniela', birthDate: '2014-11-30', photoUrl: '', totalXp: 0, checks: { presence: false, material: false, inClassTask: false, verse: false, behavior: false, task: false, dailyTasks: {} } },
     ]
   }
 ];

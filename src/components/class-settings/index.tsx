@@ -21,7 +21,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { PlusCircle, Trash2, Edit, ChevronDown, Check, Upload, Download, User } from "lucide-react";
+import { PlusCircle, Trash2, Edit, ChevronDown, Check, Upload, User, Image as ImageIcon } from "lucide-react";
 import { saveSimulatedData, CheckType, Student, ClassConfig, TaskMode, Teacher, SimulatedFullData } from "@/lib/data";
 import {
   DropdownMenu,
@@ -154,6 +154,7 @@ export function ClassSettings() {
                     id: `student-${Date.now()}`,
                     name,
                     birthDate,
+                    photoUrl: '',
                     totalXp: 0,
                     checks: { presence: false, task: false, inClassTask: false, verse: false, behavior: false, material: false, dailyTasks: {} }
                 };
@@ -210,7 +211,7 @@ export function ClassSettings() {
           name,
           color,
           taskMode,
-          teachers: teachers.length > 0 ? teachers : [{id: `teacher-${Date.now()}`, name: ''}],
+          teachers: teachers.length > 0 ? teachers : [{id: `teacher-${Date.now()}`, name: '', photoUrl: ''}],
       };
       updateAndSaveData(prev => ({
           ...prev!,
@@ -224,12 +225,10 @@ export function ClassSettings() {
         color,
         taskMode,
         students: [], // Ensure students array exists for new classes
-        teachers: teachers.length > 0 ? teachers : [{id: `teacher-${Date.now()}`, name: ''}],
+        teachers: teachers.length > 0 ? teachers : [{id: `teacher-${Date.now()}`, name: '', photoUrl: ''}],
       };
-      const newData = updateAndSaveData(prev => ({ ...prev!, classes: [...prev!.classes, newClass] }));
-      if (newData) {
-        setCurrentClassId(newClass.id);
-      }
+      updateAndSaveData(prev => ({ ...prev!, classes: [...prev!.classes, newClass] }));
+      setCurrentClassId(newClass.id);
     }
 
     setEditingClass(null);
@@ -242,7 +241,7 @@ export function ClassSettings() {
         id: '', // Empty ID signifies a new class
         name: '',
         color: colorPresets[0],
-        teachers: [{id: `new-teacher-${Date.now()}`, name: ''}],
+        teachers: [{id: `new-teacher-${Date.now()}`, name: '', photoUrl: ''}],
         trackedItems: { presence: true, task: true, verse: false, behavior: false, material: false, inClassTask: true },
         taskMode: 'unique',
         students: []
@@ -262,7 +261,7 @@ export function ClassSettings() {
         if (!prev) return null;
         return {
             ...prev,
-            teachers: [...prev.teachers, { id: `new-teacher-${Date.now()}`, name: '' }]
+            teachers: [...prev.teachers, { id: `new-teacher-${Date.now()}`, name: '', photoUrl: '' }]
         }
     });
   }
@@ -274,7 +273,7 @@ export function ClassSettings() {
         const newTeachers = prev.teachers.filter(t => t.id !== teacherId);
          // Prevent removing the last input field
         if (newTeachers.length === 0) {
-            newTeachers.push({ id: `new-teacher-${Date.now()}`, name: '' });
+            newTeachers.push({ id: `new-teacher-${Date.now()}`, name: '', photoUrl: '' });
         }
         return { ...prev, teachers: newTeachers };
     });
@@ -295,57 +294,6 @@ export function ClassSettings() {
         )
     }));
   }
-
-  const handleExportData = async () => {
-    if (!data) return;
-    const dataStr = JSON.stringify(data, null, 2);
-    const blob = new Blob([dataStr], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    const date = new Date().toISOString().split('T')[0];
-    link.download = `ebd_tracker_backup_${date}.json`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-    toast({ title: "Backup exportado com sucesso!" });
-  };
-
-  const handleImportClick = () => {
-    if(isViewer) return;
-    fileInputRef.current?.click();
-  };
-
-  const handleImportData = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file || isViewer || !updateAndSaveData) return;
-
-    const reader = new FileReader();
-    reader.onload = async (e) => {
-      try {
-        const text = e.target?.result as string;
-        const importedData = JSON.parse(text);
-        
-        // Basic validation
-        if (importedData && importedData.classes && importedData.lessons && importedData.studentRecords) {
-          updateAndSaveData(() => importedData);
-          setCurrentClassId(importedData.classes[0]?.id || '');
-          toast({ title: "Backup importado com sucesso!", description: "Os dados foram restaurados." });
-        } else {
-          throw new Error("Formato de arquivo inválido.");
-        }
-      } catch (error) {
-        console.error("Erro ao importar backup:", error);
-        toast({ title: "Erro na importação", description: "O arquivo de backup é inválido ou está corrompido.", variant: "destructive" });
-      }
-    };
-    reader.readAsText(file);
-    // Reset file input
-    if(fileInputRef.current) {
-        fileInputRef.current.value = "";
-    }
-  };
 
   if (!isClient || isLoading || !data) {
     return <div className="p-4 sm:p-6 text-white flex-1 flex flex-col items-center justify-center"><div className="text-slate-500">Carregando dados...</div></div>;
@@ -386,12 +334,18 @@ export function ClassSettings() {
                             <div className="space-y-2">
                                 {editingClass.teachers.map((teacher, index) => (
                                     <div key={teacher.id} className="flex items-center gap-2">
-                                        <Input 
-                                            name={`teacher-${teacher.id}`} 
-                                            defaultValue={teacher.name} 
-                                            className="bg-input border-border" 
-                                            placeholder={`Nome do Professor ${index + 1}`} 
-                                        />
+                                        <div className="flex-1 space-y-2">
+                                            <Input 
+                                                name={`teacher-${teacher.id}`} 
+                                                defaultValue={teacher.name} 
+                                                className="bg-input border-border" 
+                                                placeholder={`Nome do Professor ${index + 1}`} 
+                                            />
+                                            <Button type="button" variant="outline" className="w-full text-xs" disabled>
+                                                <ImageIcon size={14} className="mr-2"/>
+                                                {teacher.photoUrl ? 'Alterar Foto' : 'Adicionar Foto'}
+                                            </Button>
+                                        </div>
                                         <Button type="button" variant="ghost" size="icon" className="h-9 w-9 text-red-500 hover:text-red-400 shrink-0" onClick={() => removeTeacher(teacher.id)}>
                                             <Trash2 size={16} />
                                         </Button>
@@ -445,7 +399,7 @@ export function ClassSettings() {
   return (
     <div className="p-4 sm:p-6 text-white" style={{'--class-color': currentClass.color} as React.CSSProperties}>
       <header className="mb-6">
-        <h1 className="text-2xl font-bold">Personalização</h1>
+        <h1 className="text-2xl font-bold">Cadastro</h1>
       </header>
       
       <div className="mb-6 flex flex-col sm:flex-row gap-4 items-start sm:items-center">
@@ -632,33 +586,6 @@ export function ClassSettings() {
             </Card>
           )}
 
-          <Card className="bg-card border-border">
-            <CardHeader>
-              <CardTitle>Backup e Restauração</CardTitle>
-            </CardHeader>
-            <CardContent>
-               <p className="text-sm text-slate-400 mb-4">Exporte ou importe todos os dados do aplicativo, incluindo classes, alunos e registros.</p>
-               <div className="flex flex-col sm:flex-row gap-2">
-                  <Button onClick={handleExportData} variant="outline" className="w-full">
-                    <Download size={16} className="mr-2"/>
-                    Exportar Backup
-                  </Button>
-                  <Button onClick={handleImportClick} variant="outline" className="w-full" disabled={isViewer}>
-                    <Upload size={16} className="mr-2"/>
-                    Importar Backup
-                  </Button>
-                  <input 
-                    type="file" 
-                    ref={fileInputRef}
-                    className="hidden"
-                    accept=".json"
-                    onChange={handleImportData}
-                    disabled={isViewer}
-                  />
-               </div>
-            </CardContent>
-          </Card>
-
         </div>
       </div>
       
@@ -676,6 +603,14 @@ export function ClassSettings() {
                 <div>
                   <Label htmlFor="birthDate">Data de Nascimento</Label>
                   <Input id="birthDate" name="birthDate" type="date" defaultValue={editingStudent?.birthDate} className="bg-input border-border" required />
+                </div>
+                <div>
+                    <Label htmlFor="photo">Foto do Aluno</Label>
+                    <Button type="button" variant="outline" className="w-full mt-1 text-sm" disabled>
+                        <ImageIcon size={16} className="mr-2" />
+                        {editingStudent?.photoUrl ? "Alterar Foto" : "Adicionar Foto"}
+                    </Button>
+                    <p className="text-xs text-slate-500 mt-2">O upload de fotos estará disponível em breve.</p>
                 </div>
                 {!isViewer && <div className="flex justify-end gap-2 pt-4">
                      <Button type="button" variant="secondary" onClick={() => setIsStudentDialogOpen(false)}>Cancelar</Button>
@@ -703,12 +638,18 @@ export function ClassSettings() {
                         <div className="space-y-2">
                             {editingClass.teachers.map((teacher, index) => (
                                  <div key={teacher.id} className="flex items-center gap-2">
-                                    <Input 
-                                        name={`teacher-${teacher.id}`} 
-                                        defaultValue={teacher.name} 
-                                        className="bg-input border-border" 
-                                        placeholder={`Nome do Professor ${index + 1}`} 
-                                    />
+                                    <div className="flex-1 space-y-2">
+                                        <Input 
+                                            name={`teacher-${teacher.id}`} 
+                                            defaultValue={teacher.name} 
+                                            className="bg-input border-border" 
+                                            placeholder={`Nome do Professor ${index + 1}`} 
+                                        />
+                                        <Button type="button" variant="outline" className="w-full text-xs" disabled>
+                                            <ImageIcon size={14} className="mr-2" />
+                                            {teacher.photoUrl ? 'Alterar Foto' : 'Adicionar Foto'}
+                                        </Button>
+                                    </div>
                                     <Button type="button" variant="ghost" size="icon" className="h-9 w-9 text-red-500 hover:text-red-400 shrink-0" onClick={() => removeTeacher(teacher.id)}>
                                         <Trash2 size={16} />
                                     </Button>
