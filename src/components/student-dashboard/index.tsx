@@ -27,14 +27,15 @@ const calculateAge = (birthDateString: string) => {
 export function StudentDashboard() {
   const [classes, setClasses] = useState<ClassConfig[]>(initialClasses);
   const [currentClassId, setCurrentClassId] = useState<string>(initialClasses[0].id);
-  const [currentDate, setCurrentDate] = useState<Date | undefined>(undefined);
+  const [currentDate, setCurrentDate] = useState<Date>(startOfDay(new Date()));
   const [sortKey, setSortKey] = useState<SortKey>("name");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
   const [dailyLessons, setDailyLessons] = useState<Record<string, DailyLesson>>({});
   const { toast } = useToast();
+  const [isClient, setIsClient] = useState(false);
   
   useEffect(() => {
-    setCurrentDate(startOfDay(new Date()));
+    setIsClient(true);
   }, []);
 
 
@@ -204,7 +205,7 @@ export function StudentDashboard() {
 
   const trackedItems = currentClass.trackedItems;
 
-  if (!currentDate) {
+  if (!isClient) {
     return null; // or a loading spinner
   }
   

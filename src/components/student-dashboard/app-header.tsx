@@ -68,7 +68,8 @@ export function AppHeader({
     (t) => t.id === dailyLesson?.teacherId
   )?.name;
   
-  const recordedDays = Object.keys(dailyLessons).map(dateStr => new Date(dateStr));
+  const recordedDays = Object.keys(dailyLessons).map(dateStr => new Date(dateStr.replace(/-/g, '/')));
+
 
   return (
     <header className="bg-slate-800 border-b border-slate-700 p-3 flex flex-col shadow-lg z-10 shrink-0 gap-4">
@@ -146,13 +147,13 @@ export function AppHeader({
                 locale={ptBR}
                 modifiers={{ recorded: recordedDays }}
                 modifiersClassNames={{
-                  recorded: 'day-recorded'
+                  recorded: 'day-recorded',
+                  today: 'day-today'
                 }}
                 className="bg-card text-white"
                 classNames={{
                   day_selected:
                     "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground",
-                  day_today: "bg-accent text-accent-foreground",
                 }}
               />
             </PopoverContent>
