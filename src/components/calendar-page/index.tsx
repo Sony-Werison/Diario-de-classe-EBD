@@ -33,7 +33,7 @@ export function CalendarPage() {
     const data = getSimulatedData();
     setDailyLessons(data.lessons);
     setIsClient(true);
-  }, [currentMonth, currentClassId]);
+  }, []);
   
   useEffect(() => {
     const handleStorageChange = () => {
@@ -153,17 +153,26 @@ export function CalendarPage() {
                             <span className={cn('font-semibold', isToday ? 'text-primary' : 'text-white')}>
                                 {format(day, "d 'de' MMMM", { locale: ptBR })}
                             </span>
-                           {lesson && (
+                           {lesson ? (
                              <div className="text-sm text-slate-400 mt-1 space-y-1">
                                 <p className='truncate max-w-xs sm:max-w-sm md:max-w-md'>
                                   {lesson.status === 'cancelled' ? (
-                                    <span className="text-yellow-400">{lesson.cancellationReason || "Aula não realizada"}</span>
+                                    <span className="text-yellow-400 italic">{lesson.cancellationReason || "Aula não realizada"}</span>
                                   ) : (
-                                    lesson.title || "Aula sem título"
+                                    <>
+                                      <span>{lesson.title || "Aula sem título"}</span>
+                                      {teacherName && <span className="ml-2 text-slate-500 font-medium hidden sm:inline">- {teacherName}</span>}
+                                    </>
                                   )}
                                 </p>
-                                <p className="font-medium text-slate-500">{teacherName}</p>
+                                {lesson.status !== 'cancelled' && teacherName && (
+                                  <p className="font-medium text-slate-500 sm:hidden">{teacherName}</p>
+                                )}
                              </div>
+                           ) : (
+                              <div className="text-sm text-slate-500 mt-1">
+                                <p>Nenhuma aula registrada.</p>
+                              </div>
                            )}
                        </div>
                     </div>

@@ -9,21 +9,28 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Check, ChevronDown, Award, Star, User, TrendingUp } from "lucide-react";
-import { initialClasses, ClassConfig, getSimulatedData, SimulatedFullData, POINTS, Student } from "@/lib/data";
+import { Check, ChevronDown, User, TrendingUp } from "lucide-react";
+import { initialClasses, ClassConfig, getSimulatedData, SimulatedFullData, CheckType } from "@/lib/data";
 import { cn } from "@/lib/utils";
-import { format, parseISO } from 'date-fns';
+import { format, parseISO, startOfMonth, endOfMonth } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip } from "recharts";
-import { itemIcons, itemLabels, CheckType } from "../report-helpers";
+import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip, Legend } from "recharts";
+import { itemLabels } from "../report-helpers";
+
+type PerformanceMetric = {
+  name: string;
+  student: number;
+  class: number;
+};
 
 export function IndividualReport() {
-  const [classes, setClasses] = useState<ClassConfig[]>(initialClasses);
+  const [classes] = useState<ClassConfig[]>(initialClasses);
   const [currentClassId, setCurrentClassId] = useState<string>(initialClasses[0].id);
   const [selectedStudentId, setSelectedStudentId] = useState<number | null>(null);
   const [simulatedData, setSimulatedData] = useState<SimulatedFullData>({ lessons: {}, studentRecords: {} });
   const [isClient, setIsClient] = useState(false);
+  const [currentMonth, setCurrentMonth] = useState(startOfMonth(new Date()));
 
   const currentClass = useMemo(() => classes.find((c) => c.id === currentClassId) || classes[0], [classes, currentClassId]);
   const selectedStudent = useMemo(() => currentClass.students.find(s => s.id === selectedStudentId), [currentClass.students, selectedStudentId]);
@@ -33,53 +40,114 @@ export function IndividualReport() {
     const data = getSimulatedData();
     setSimulatedData(data);
     if (currentClass.students.length > 0) {
-        setSelectedStudentId(currentClass.students[0].id);
+      setSelectedStudentId(currentClass.students[0].id);
     }
   }, []);
 
   useEffect(() => {
     setSelectedStudentId(currentClass.students[0]?.id || null);
   }, [currentClassId, currentClass.students]);
+  
+  const handleMonthChange = (direction: 'prev' | 'next') => {
+      const newMonth = direction === 'next' ? new Date(currentMonth.setMonth(currentMonth.getMonth() + 1)) : new Date(currentMonth.setMonth(currentMonth.getMonth() - 1));
+      setCurrentMonth(newMonth);
+  }
 
-  const studentPerformanceData = useMemo(() => {
-    if (!selectedStudentId || !simulatedData.studentRecords[currentClassId]) {
-      return { monthlyScores: [], totalPoints: 0, attendanceCount: 0, totalSundays: 0 };
+  const performanceData = useMemo((): PerformanceMetric[] => {
+    if (!selectedStudentId || !simulatedData.studentRecords[currentClassId] || !isClient) {
+      return [];
     }
 
-    const records = simulatedData.studentRecords[currentClassId];
-    const scoresByMonth: Record<string, number> = {};
-    let totalPoints = 0;
-    let attendanceCount = 0;
-    let totalSundays = 0;
-
-    Object.keys(records).sort().forEach(dateKey => {
-        const studentDayRecord = records[dateKey][selectedStudentId];
-        const monthKey = format(parseISO(dateKey), "MMM/yy", { locale: ptBR });
-        
-        if (!scoresByMonth[monthKey]) scoresByMonth[monthKey] = 0;
-        
-        totalSundays++;
-        if (studentDayRecord) {
-            if (studentDayRecord.presence) attendanceCount++;
-            let dayScore = 0;
-            for (const key in studentDayRecord) {
-                const checkType = key as CheckType;
-                if (studentDayRecord[checkType] && currentClass.trackedItems[checkType]) {
-                    dayScore += POINTS[checkType] || 0;
-                }
-            }
-            scoresByMonth[monthKey] += dayScore;
-            totalPoints += dayScore;
-        }
+    const classRecords = simulatedData.studentRecords[currentClassId];
+    const monthStart = startOfMonth(currentMonth);
+    const monthEnd = endOfMonth(currentMonth);
+    
+    const sundaysInMonth: string[] = [];
+    const studentCheckCounts: Record<CheckType, number> = { presence: 0, material: 0, task: 0, verse: 0, behavior: 0 };
+    const classCheckCounts: Record<CheckType, number> = { presence: 0, material: 0, task: 0, verse: 0, behavior: 0 };
+    
+    // Find all Sundays in the month with records
+    Object.keys(classRecords).forEach(dateKey => {
+      const recordDate = parseISO(dateKey);
+      if (recordDate >= monthStart && recordDate <= monthEnd && recordDate.getDay() === 0) {
+        sundaysInMonth.push(dateKey);
+      }
     });
 
-    const monthlyScores = Object.keys(scoresByMonth).map(month => ({
-      month,
-      total: scoresByMonth[month],
-    })).slice(-6); // Last 6 months
+    const totalSundays = sundaysInMonth.length;
+    if (totalSundays === 0) return [];
+    
+    let totalClassAttendances = 0;
+    
+    // Aggregate class data first
+    currentClass.students.forEach(student => {
+        let studentAttended = false;
+        sundaysInMonth.forEach(dateKey => {
+            const dayRecord = classRecords[dateKey]?.[student.id];
+            if(dayRecord?.presence) {
+                studentAttended = true;
+            }
+        });
+        if(studentAttended) totalClassAttendances++;
+    });
 
-    return { monthlyScores, totalPoints, attendanceCount, totalSundays };
-  }, [selectedStudentId, currentClassId, simulatedData, currentClass.trackedItems]);
+    // Aggregate checks for student and class
+    sundaysInMonth.forEach(dateKey => {
+      // Student Data
+      const studentDayRecord = classRecords[dateKey]?.[selectedStudentId];
+      if (studentDayRecord) {
+        for (const key in studentDayRecord) {
+          if (studentDayRecord[key as CheckType]) {
+            studentCheckCounts[key as CheckType]++;
+          }
+        }
+      }
+      
+      // Class Data
+      currentClass.students.forEach(student => {
+        const classStudentDayRecord = classRecords[dateKey]?.[student.id];
+        if (classStudentDayRecord) {
+          for (const key in classStudentDayRecord) {
+            if (classStudentDayRecord[key as CheckType]) {
+              classCheckCounts[key as CheckType]++;
+            }
+          }
+        }
+      });
+    });
+
+    const studentAttendanceCount = studentCheckCounts.presence;
+
+    const metrics: PerformanceMetric[] = [];
+
+    (Object.keys(itemLabels) as CheckType[]).forEach(key => {
+      if(currentClass.trackedItems[key]) {
+        const studentAvg = studentAttendanceCount > 0 ? (studentCheckCounts[key] / studentAttendanceCount) * 100 : 0;
+        const classTotalChecks = classCheckCounts[key];
+        const classTotalPresences = classCheckCounts.presence;
+        const classAvg = classTotalPresences > 0 ? (classTotalChecks / classTotalPresences) * 100 : 0;
+        
+        // For presence, the average is out of total sundays, not attendances
+        if (key === 'presence') {
+           const studentPresenceAvg = totalSundays > 0 ? (studentCheckCounts[key] / totalSundays) * 100 : 0;
+           const classPresenceAvg = totalSundays > 0 ? (classCheckCounts[key] / (totalSundays * currentClass.students.length)) * 100 : 0;
+            metrics.push({
+                name: itemLabels[key],
+                student: Math.round(studentPresenceAvg),
+                class: Math.round(classPresenceAvg),
+            });
+        } else {
+             metrics.push({
+                name: itemLabels[key],
+                student: Math.round(studentAvg),
+                class: Math.round(classAvg),
+            });
+        }
+      }
+    });
+
+    return metrics;
+  }, [selectedStudentId, currentClass, simulatedData, currentMonth, isClient]);
 
 
   if (!isClient) return null;
@@ -125,55 +193,35 @@ export function IndividualReport() {
         </div>
 
         {selectedStudent ? (
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div className="lg:col-span-2">
-                    <Card className="bg-card border-border">
-                        <CardHeader>
-                            <CardTitle className="flex items-center gap-2">
-                                <TrendingUp size={20} />
-                                Desempenho Mensal (Pontos)
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent className="h-64">
-                             <ResponsiveContainer width="100%" height="100%">
-                                <BarChart data={studentPerformanceData.monthlyScores}>
-                                    <XAxis dataKey="month" stroke="#888888" fontSize={12} tickLine={false} axisLine={false}/>
-                                    <YAxis stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
-                                    <Tooltip
-                                        cursor={{ fill: 'hsl(var(--secondary))', radius: 8 }}
-                                        contentStyle={{ backgroundColor: 'hsl(var(--card))', border: '1px solid hsl(var(--border))' }}
-                                    />
-                                    <Bar dataKey="total" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
-                                </BarChart>
-                            </ResponsiveContainer>
-                        </CardContent>
-                    </Card>
-                </div>
-                <div className="space-y-4">
-                    <Card className="bg-card border-border">
-                         <CardHeader className="flex flex-row items-center justify-between pb-2">
-                            <CardTitle className="text-sm font-medium text-slate-400">Pontuação Total</CardTitle>
-                             <Star className="w-4 h-4 text-yellow-400" />
-                         </CardHeader>
-                         <CardContent>
-                             <div className="text-2xl font-bold">{studentPerformanceData.totalPoints}</div>
-                             <p className="text-xs text-slate-500">Acumulado em todo o período</p>
-                         </CardContent>
-                    </Card>
-                     <Card className="bg-card border-border">
-                         <CardHeader className="flex flex-row items-center justify-between pb-2">
-                            <CardTitle className="text-sm font-medium text-slate-400">Frequência</CardTitle>
-                             <Award className="w-4 h-4 text-emerald-400" />
-                         </CardHeader>
-                         <CardContent>
-                             <div className="text-2xl font-bold">
-                                {studentPerformanceData.totalSundays > 0 ? Math.round((studentPerformanceData.attendanceCount / studentPerformanceData.totalSundays) * 100) : 0}%
-                             </div>
-                             <p className="text-xs text-slate-500">{studentPerformanceData.attendanceCount} de {studentPerformanceData.totalSundays} aulas</p>
-                         </CardContent>
-                    </Card>
-                </div>
-            </div>
+            <Card className="bg-card border-border">
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2 justify-between">
+                        <div className='flex items-center gap-2'>
+                            <TrendingUp size={20} />
+                            Desempenho Mensal (%)
+                        </div>
+                        <div className="text-sm font-semibold capitalize">
+                            {format(currentMonth, "MMMM yyyy", { locale: ptBR })}
+                        </div>
+                    </CardTitle>
+                </CardHeader>
+                <CardContent className="h-96">
+                        <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={performanceData} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
+                            <XAxis dataKey="name" stroke="#888888" fontSize={12} tickLine={false} axisLine={false} interval={0} />
+                            <YAxis stroke="#888888" fontSize={12} tickLine={false} axisLine={false} unit="%" />
+                            <Tooltip
+                                cursor={{ fill: 'hsl(var(--secondary))', radius: 8 }}
+                                contentStyle={{ backgroundColor: 'hsl(var(--card))', border: '1px solid hsl(var(--border))' }}
+                                formatter={(value: number) => `${value}%`}
+                            />
+                            <Legend wrapperStyle={{fontSize: "0.8rem"}} />
+                            <Bar dataKey="student" name={selectedStudent.name} fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                            <Bar dataKey="class" name="Média da Turma" fill="hsl(var(--accent))" radius={[4, 4, 0, 0]} />
+                        </BarChart>
+                    </ResponsiveContainer>
+                </CardContent>
+            </Card>
         ) : (
              <div className="flex-1 flex items-center justify-center bg-card border border-border rounded-xl">
                 <div className="text-center text-slate-500">
