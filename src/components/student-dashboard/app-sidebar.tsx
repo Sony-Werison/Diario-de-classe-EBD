@@ -8,7 +8,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
-import { LayoutGrid, LogOut, Settings, FileText, Calendar } from "lucide-react";
+import { LogOut, Settings, FileText, Calendar } from "lucide-react";
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
@@ -36,7 +36,13 @@ const NavLink = ({
   isMobile?: boolean;
 }) => {
   const pathname = usePathname();
-  const active = pathname === href || (href === '/' && pathname.startsWith('/dashboard'));
+  let active = pathname.startsWith(href) && (href !== '/' || pathname === '/');
+  
+  // Specific check for dashboard pages to highlight the calendar icon
+  if(href === '/calendar' && pathname.startsWith('/dashboard')) {
+    active = true;
+  }
+
 
   if (isMobile) {
     return (
@@ -81,17 +87,11 @@ const NavLink = ({
 };
 
 export function AppSidebar() {
-  const pathname = usePathname();
-  const isDashboard = pathname.startsWith('/dashboard');
-
   return (
     <aside className="w-20 bg-card border-r border-border flex-col items-center py-6 gap-4 shrink-0 hidden sm:flex">
       {navLinks.map(link => (
         <NavLink key={link.href} {...link} />
       ))}
-       {isDashboard && (
-        <NavLink href="/" icon={LayoutGrid} label="Aulas" />
-      )}
       <div className="mt-auto">
         <NavLink href="/logout" icon={LogOut} label="Sair" />
       </div>

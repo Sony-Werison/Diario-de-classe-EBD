@@ -3,7 +3,7 @@
 "use client";
 
 import React, { useState, useMemo, useCallback, useEffect } from "react";
-import { POINTS, CheckType, ClassConfig, DailyLesson, getSimulatedData, saveSimulatedData, StudentChecks } from "@/lib/data";
+import { POINTS, CheckType, ClassConfig, DailyLesson, getSimulatedData, saveSimulatedData, StudentChecks, DailyTasks } from "@/lib/data";
 import { AppHeader } from "./app-header";
 import { StatCard } from "./stat-card";
 import { StudentListHeader } from "./student-list-header";
@@ -329,10 +329,9 @@ export function StudentDashboard({ initialDate, classId: initialClassId }: { ini
     inClassTaskPercent,
     behaviorPercent,
     materialPercent,
-    totalScore
   } = useMemo(() => {
     if (!currentClass || currentClass.students.length === 0 || !isClient) {
-        return { presencePercent: 0, versePercent: 0, taskPercent: 0, inClassTaskPercent: 0, behaviorPercent: 0, materialPercent: 0, totalScore: 0 };
+        return { presencePercent: 0, versePercent: 0, taskPercent: 0, inClassTaskPercent: 0, behaviorPercent: 0, materialPercent: 0 };
     }
     
     let presenceCount = 0;
@@ -341,10 +340,8 @@ export function StudentDashboard({ initialDate, classId: initialClassId }: { ini
     let inClassTaskCount = 0;
     let behaviorCount = 0;
     let materialCount = 0;
-    let totalScore = 0;
 
     studentsWithScores.forEach(student => {
-        totalScore += student.dailyScore;
         const checks = student.checks;
         if(checks.presence) presenceCount++;
         if(checks.task) taskCount++;
@@ -366,7 +363,6 @@ export function StudentDashboard({ initialDate, classId: initialClassId }: { ini
         inClassTaskPercent: presentStudentsCount > 0 ? Math.round((inClassTaskCount / presentStudentsCount) * 100) : 0,
         behaviorPercent: presentStudentsCount > 0 ? Math.round((behaviorCount / presentStudentsCount) * 100) : 0,
         materialPercent: presentStudentsCount > 0 ? Math.round((materialCount / presentStudentsCount) * 100) : 0,
-        totalScore
     }
   }, [currentClass, studentsWithScores, isClient]);
 
@@ -465,14 +461,6 @@ export function StudentDashboard({ initialDate, classId: initialClassId }: { ini
               progress={behaviorPercent}
               color="emerald"
             />}
-            <StatCard 
-              title="Pontos do Dia"
-              value={totalScore.toString()}
-              unit="pts"
-              Icon={Star}
-              progress={(totalScore / (currentClass.students.length * 100))}
-              color="custom"
-            />
           </div>
         </main>
         

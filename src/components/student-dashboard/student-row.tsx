@@ -44,7 +44,7 @@ export function StudentRow({ student, onToggleCheck, onToggleDailyTask, trackedI
   const { id, name, checks, dailyScore, age, completionPercent, checkedItemsCount, totalTrackedItems } = student;
   
   return (
-    <div className={cn("bg-slate-800 p-2 border-b border-slate-700/50")}>
+    <div className="bg-slate-800 p-2 border-b border-slate-700/50">
       <div className="flex items-center justify-between gap-3">
         {/* Coluna Esquerda: Nome e Idade */}
         <div className="flex-1 space-y-1">
@@ -64,13 +64,14 @@ export function StudentRow({ student, onToggleCheck, onToggleDailyTask, trackedI
         </div>
 
         {/* Coluna Direita: Checks e Progresso */}
-        <div className="flex flex-col items-end gap-1">
-            <div className="flex justify-end items-start gap-2 flex-wrap max-w-[180px]">
+        <div className="flex flex-col items-center gap-1.5">
+            <div className="flex justify-end items-start gap-1 flex-wrap max-w-[180px]">
                 {(Object.keys(checkConfig) as (CheckType | 'task')[]).map(type => {
                     if (!trackedItems[type] || (type === 'task' && taskMode === 'daily')) return null;
 
                     let isDisabled = !checks.presence && ['material', 'verse', 'behavior', 'inClassTask'].includes(type);
-                    if (isLessonCancelled || type === 'task') isDisabled = false;
+                    if (isLessonCancelled) isDisabled = false;
+                     if(type === 'task') isDisabled = false;
 
                     const CheckIcon = checkConfig[type].Icon;
                     return (
@@ -78,16 +79,16 @@ export function StudentRow({ student, onToggleCheck, onToggleDailyTask, trackedI
                             <button
                             onClick={() => onToggleCheck(id, type)}
                             className={cn(
-                                "w-9 h-9 rounded-lg flex items-center justify-center transition-all duration-200 border",
+                                "w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200 border",
                                 checks[type] ? checkConfig[type].activeClass : checkConfig[type].inactiveClass,
-                                isDisabled ? 'opacity-50 cursor-not-allowed' : 'hover:border-slate-500',
+                                isDisabled ? 'opacity-50 cursor-not-allowed' : '',
                             )}
                             aria-label={`Marcar ${type} para ${name}`}
                             disabled={isDisabled}
                             >
-                            {isLessonCancelled && !checks[type] && type !== 'task' ? <Ban size={18} className="text-yellow-500"/> : <CheckIcon size={18} />}
+                            {isLessonCancelled && !checks[type] && type !== 'task' ? <Ban size={16} className="text-yellow-500"/> : <CheckIcon size={16} />}
                             </button>
-                            <span className="text-[10px] text-slate-500 font-semibold">{checkConfig[type].label}</span>
+                            <span className="text-[9px] text-slate-500 font-semibold">{checkConfig[type].label}</span>
                         </div>
                     )
                 })}
@@ -101,17 +102,16 @@ export function StudentRow({ student, onToggleCheck, onToggleDailyTask, trackedI
                                 key={day.key}
                                 onClick={() => onToggleDailyTask(id, day.key)}
                                 className={cn(
-                                    "w-6 h-7 rounded-md flex items-center justify-center transition-all duration-200 text-xs font-bold",
-                                    checks.dailyTasks?.[day.key] ? checkConfig.task.activeClass : 'text-slate-400 bg-slate-700/50',
-                                    'hover:border-slate-500' // Always allow hover for tasks
+                                    "w-5 h-6 rounded-md flex items-center justify-center transition-all duration-200 text-[10px] font-bold",
+                                    checks.dailyTasks?.[day.key] ? checkConfig.task.activeClass : 'text-slate-400 bg-slate-700/50'
                                 )}
                                 aria-label={`Marcar tarefa de ${day.label} para ${name}`}
                                 >
-                                {isLessonCancelled && !checks.dailyTasks?.[day.key] ? <Ban size={14} className="text-yellow-500/80"/> : day.label}
+                                {isLessonCancelled && !checks.dailyTasks?.[day.key] ? <Ban size={12} className="text-yellow-500/80"/> : day.label}
                             </button>
                         ))}
                     </div>
-                    <span className="text-[10px] text-slate-500 font-semibold">{checkConfig.task.label}</span>
+                    <span className="text-[9px] text-slate-500 font-semibold">{checkConfig.task.label}</span>
                 </div>
             )}
         </div>
