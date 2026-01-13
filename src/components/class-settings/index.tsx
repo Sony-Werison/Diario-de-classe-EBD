@@ -96,7 +96,7 @@ export function ClassSettings() {
   }, []);
 
   const updateAndSaveData = (updater: (prev: typeof data) => typeof data) => {
-    const newData = updater(data);
+    const newData = updater(data!);
     setData(newData);
     saveSimulatedData(newData as SimulatedFullData);
     return newData;
@@ -105,7 +105,7 @@ export function ClassSettings() {
   const handleTrackedItemToggle = (item: CheckType | 'task') => {
     if (!currentClass) return;
     updateAndSaveData(prev => ({
-        ...prev,
+        ...prev!,
         classes: prev!.classes.map(c =>
             c.id === currentClassId
                 ? { ...c, trackedItems: { ...c.trackedItems, [item]: !c.trackedItems[item] } }
@@ -116,7 +116,7 @@ export function ClassSettings() {
   
     const handleTaskModeChange = (mode: TaskMode) => {
         updateAndSaveData(prev => ({
-            ...prev,
+            ...prev!,
             classes: prev!.classes.map(c =>
                 c.id === currentClassId ? { ...c, taskMode: mode } : c
             )
@@ -148,7 +148,7 @@ export function ClassSettings() {
             }
             return { ...c, students: newStudents };
         });
-        return { ...prev, classes: newClasses };
+        return { ...prev!, classes: newClasses };
     });
     
     setEditingStudent(null);
@@ -162,7 +162,7 @@ export function ClassSettings() {
 
   const handleDeleteStudent = (studentId: string) => {
     updateAndSaveData(prev => ({
-        ...prev,
+        ...prev!,
         classes: prev!.classes.map(c =>
             c.id === currentClassId
                 ? { ...c, students: c.students.filter(s => s.id !== studentId) }
@@ -198,7 +198,7 @@ export function ClassSettings() {
 
     if (editingClass.id) { // Editing existing class
       updateAndSaveData(prev => ({
-          ...prev,
+          ...prev!,
           classes: prev!.classes.map(c => c.id === editingClass.id ? finalClassData : c)
       }));
     } else { // Creating new class
@@ -206,7 +206,7 @@ export function ClassSettings() {
         ...finalClassData,
         id: `class-${Date.now()}`,
       };
-      const newData = updateAndSaveData(prev => ({ ...prev, classes: [...prev!.classes, newClass] }));
+      const newData = updateAndSaveData(prev => ({ ...prev!, classes: [...prev!.classes, newClass] }));
       setCurrentClassId(newClass.id);
     }
 
@@ -314,7 +314,85 @@ export function ClassSettings() {
   const currentClass = classes.find(c => c.id === currentClassId);
 
   if (!currentClass) {
-     return null;
+     return (
+        <div className="p-4 sm:p-6 text-white flex flex-col items-center justify-center h-full">
+            <div className="text-center">
+                <h1 className="text-2xl font-bold mb-4">Bem-vindo!</h1>
+                <p className="text-slate-400 mb-6">Parece que você ainda não tem nenhuma classe. Crie uma para começar.</p>
+                <Button onClick={openNewClassDialog} className="bg-primary hover:bg-primary/90 text-white">
+                    <PlusCircle size={16} className="mr-2" />
+                    Criar Primeira Classe
+                </Button>
+            </div>
+            <Dialog open={isClassDialogOpen} onOpenChange={setIsClassDialogOpen}>
+            <DialogContent className="bg-card border-border text-white">
+            <DialogHeader>
+                <DialogTitle>{!editingClass?.id ? "Criar Nova Classe" : "Editar Classe"}</DialogTitle>
+            </DialogHeader>
+            {editingClass && (
+                <form onSubmit={handleSaveClass} className="space-y-4">
+                    <div>
+                    <Label htmlFor="class-name">Nome da Classe</Label>
+                    <Input id="class-name" name="name" defaultValue={editingClass.name} className="bg-input border-border" required placeholder="Ex: Primários" />
+                    </div>
+                    <div>
+                        <Label>Professor(es)</Label>
+                        <div className="space-y-2">
+                            {editingClass.teachers.map((teacher, index) => (
+                                <div key={teacher.id} className="flex items-center gap-2">
+                                    <Input 
+                                        name={`teacher-${teacher.id}`} 
+                                        defaultValue={teacher.name} 
+                                        className="bg-input border-border" 
+                                        placeholder={`Nome do Professor ${index + 1}`} 
+                                    />
+                                    <Button type="button" variant="ghost" size="icon" className="h-9 w-9 text-red-500 hover:text-red-400 shrink-0" onClick={() => removeTeacher(teacher.id)}>
+                                        <Trash2 size={16} />
+                                    </Button>
+                                </div>
+                            ))}
+                        </div>
+                        <Button type="button" size="sm" variant="outline" onClick={addTeacher} className="mt-2">
+                            <PlusCircle size={16} className="mr-2" /> Adicionar Professor
+                        </Button>
+                    </div>
+                    <div>
+                        <Label>Modo de Tarefa de Casa</Label>
+                        <RadioGroup name="taskMode" defaultValue={editingClass.taskMode} className="mt-2 space-y-2">
+                            <div className="flex items-center space-x-2">
+                                <RadioGroupItem value="unique" id="edit-unique" />
+                                <Label htmlFor="edit-unique">Tarefa Única</Label>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                                <RadioGroupItem value="daily" id="edit-daily" />
+                                <Label htmlFor="edit-daily">Tarefa Diária</Label>
+                            </div>
+                        </RadioGroup>
+                    </div>
+                    <div>
+                        <Label>Cor da Classe</Label>
+                        <div className="flex items-center gap-2 mt-2">
+                            {colorPresets.map(color => (
+                                <button
+                                    key={color}
+                                    type="button"
+                                    className={cn("w-7 h-7 rounded-full border-2 transition-all", editingClass.color === color ? 'border-white ring-2 ring-white/50' : 'border-transparent hover:border-white/50')}
+                                    style={{backgroundColor: color}}
+                                    onClick={() => setEditingClass(prev => prev ? {...prev, color} : null)}
+                                />
+                            ))}
+                        </div>
+                    </div>
+                    <div className="flex justify-end gap-2 pt-4">
+                        <Button type="button" variant="secondary" onClick={() => setIsClassDialogOpen(false)}>Cancelar</Button>
+                        <Button type="submit" className="bg-primary hover:bg-primary/90">{editingClass.id ? "Salvar Alterações" : "Criar Classe"}</Button>
+                    </div>
+                </form>
+            )}
+            </DialogContent>
+        </Dialog>
+     </div>
+     );
   }
 
   return (
@@ -348,7 +426,7 @@ export function ClassSettings() {
           </DropdownMenuContent>
         </DropdownMenu>
         <div className="flex gap-2 w-full sm:w-auto">
-            <Button onClick={openNewClassDialog} className="w-full sm:w-auto bg-primary hover:bg-primary/90 text-white">
+            <Button onClick={openNewClassDialog} className="bg-primary hover:bg-primary/90 text-white">
                 <PlusCircle size={16} className="mr-2" />
                 Criar Classe
             </Button>
@@ -361,6 +439,62 @@ export function ClassSettings() {
 
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2">
+          <Card className="bg-card border-border">
+            <CardHeader className="flex flex-row items-center justify-between">
+              <CardTitle>Alunos da Classe "{currentClass.name}"</CardTitle>
+               <Button size="sm" onClick={openNewStudentDialog} className="bg-primary hover:bg-primary/90 text-white">
+                <PlusCircle size={16} className="mr-2" />
+                Adicionar Aluno
+              </Button>
+            </CardHeader>
+            <CardContent>
+              <div className="border border-border rounded-lg overflow-hidden">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="border-border hover:bg-transparent">
+                      <TableHead className="text-white">Nome</TableHead>
+                      <TableHead className="text-white text-center w-24">
+                        Idade
+                      </TableHead>
+                      <TableHead className="text-right text-white w-28">
+                        Ações
+                      </TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {currentClass.students.map((student) => (
+                      <TableRow key={student.id} className="border-border hover:bg-transparent">
+                        <TableCell className="font-medium">
+                          {student.name}
+                        </TableCell>
+                        <TableCell className="text-center text-slate-400">
+                           {calculateAge(student.birthDate) !== null ? `${calculateAge(student.birthDate)} anos` : '-'}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex gap-2 justify-end">
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-white" onClick={() => handleEditStudent(student)}>
+                                <Edit size={16}/>
+                            </Button>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-red-500 hover:text-red-400" onClick={() => handleDeleteStudent(student.id)}>
+                                <Trash2 size={16}/>
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+               {currentClass.students.length === 0 && (
+                <div className="text-center py-10 text-slate-500">
+                  <p>Nenhum aluno cadastrado nesta classe ainda.</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+
         <div className="lg:col-span-1 space-y-6">
           <Card className="bg-card border-border">
             <CardHeader>
@@ -438,62 +572,6 @@ export function ClassSettings() {
             </CardContent>
           </Card>
 
-        </div>
-
-        <div className="lg:col-span-2">
-          <Card className="bg-card border-border">
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle>Alunos da Classe "{currentClass.name}"</CardTitle>
-               <Button size="sm" onClick={openNewStudentDialog} className="bg-primary hover:bg-primary/90 text-white">
-                <PlusCircle size={16} className="mr-2" />
-                Adicionar Aluno
-              </Button>
-            </CardHeader>
-            <CardContent>
-              <div className="border border-border rounded-lg overflow-hidden">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="border-border hover:bg-transparent">
-                      <TableHead className="text-white">Nome</TableHead>
-                      <TableHead className="text-white text-center w-24">
-                        Idade
-                      </TableHead>
-                      <TableHead className="text-right text-white w-28">
-                        Ações
-                      </TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {currentClass.students.map((student) => (
-                      <TableRow key={student.id} className="border-border hover:bg-transparent">
-                        <TableCell className="font-medium">
-                          {student.name}
-                        </TableCell>
-                        <TableCell className="text-center text-slate-400">
-                           {calculateAge(student.birthDate) !== null ? `${calculateAge(student.birthDate)} anos` : '-'}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex gap-2 justify-end">
-                            <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-white" onClick={() => handleEditStudent(student)}>
-                                <Edit size={16}/>
-                            </Button>
-                            <Button variant="ghost" size="icon" className="h-8 w-8 text-red-500 hover:text-red-400" onClick={() => handleDeleteStudent(student.id)}>
-                                <Trash2 size={16}/>
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-               {currentClass.students.length === 0 && (
-                <div className="text-center py-10 text-slate-500">
-                  <p>Nenhum aluno cadastrado nesta classe ainda.</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
         </div>
       </div>
       
@@ -589,5 +667,3 @@ export function ClassSettings() {
     </div>
   );
 }
-
-    
