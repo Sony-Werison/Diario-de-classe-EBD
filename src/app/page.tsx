@@ -77,13 +77,13 @@ export default function ProfileSelectionPage() {
             <button
               key={profile.name}
               onClick={() => handleProfileSelect(profile.role)}
-              className="group w-full bg-card border border-border rounded-lg p-4 text-left hover:border-primary hover:bg-primary/10 transition-all duration-200"
+              className="group w-full bg-card border border-border rounded-lg p-4 text-left transition-all duration-200"
             >
               <div className="flex items-center justify-between mb-2">
                 <div className="p-2 bg-slate-800 border border-slate-700 rounded-md">
                     <Icon size={20} className="text-primary" />
                 </div>
-                 <ArrowRight size={18} className="text-slate-600 group-hover:text-primary transition-transform group-hover:translate-x-1" />
+                 <ArrowRight size={18} className="text-slate-600 transition-transform" />
               </div>
               <h2 className="text-md font-semibold text-white">{profile.name}</h2>
               <p className="text-xs text-slate-400 mt-1">{profile.description}</p>

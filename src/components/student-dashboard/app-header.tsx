@@ -77,14 +77,14 @@ export function AppHeader({
     <header className="bg-card border-b border-border p-3 flex flex-col shadow-lg z-10 shrink-0 gap-4" style={{'--class-color': currentClass.color} as React.CSSProperties}>
       <div className="flex items-center justify-between w-full">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 bg-[var(--class-color)] rounded-lg flex items-center justify-center text-white font-bold text-xl shrink-0">
+          <div className="w-8 h-8 bg-[var(--class-color)] rounded-lg flex items-center justify-center text-white font-bold text-xl shrink-0 sm:hidden">
             <Church size={20} />
           </div>
           <DropdownMenu>
             <DropdownMenuTrigger asChild disabled={classes.length <= 1}>
               <Button
                 variant="ghost"
-                className="p-0 h-auto font-bold text-base text-white tracking-wide hover:bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 -ml-1 disabled:opacity-100"
+                className="p-0 h-auto font-bold text-base text-white tracking-wide hover:bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 disabled:opacity-100"
               >
                 <span className="truncate max-w-28 sm:max-w-xs">
                   {currentClass.name}
@@ -114,7 +114,7 @@ export function AppHeader({
           </DropdownMenu>
         </div>
 
-        <div className="text-right">
+        <div className="text-right sm:hidden">
            <div className="flex items-center gap-2 justify-end">
               <User size={12} className="text-slate-400"/>
               <p className="text-xs text-slate-400 font-medium truncate capitalize">

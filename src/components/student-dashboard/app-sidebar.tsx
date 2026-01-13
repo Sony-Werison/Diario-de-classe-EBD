@@ -8,9 +8,11 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
-import { LogOut, Settings, FileText, Calendar } from "lucide-react";
+import { LogOut, Settings, FileText, Calendar, User } from "lucide-react";
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useEffect, useState } from "react";
+import { getSimulatedData } from "@/lib/data";
 
 const navLinks = [
   { href: "/calendar", icon: Calendar, label: "Calendário" },
@@ -39,7 +41,6 @@ const NavLink = ({
   const pathname = usePathname();
   let active = pathname.startsWith(href) && (href !== '/' || pathname === '/');
   
-  // Specific check for dashboard pages to highlight the calendar icon
   if(href === '/calendar' && pathname.startsWith('/dashboard')) {
     active = true;
   }
@@ -88,11 +89,48 @@ const NavLink = ({
 };
 
 export function AppSidebar() {
+  const [currentUser, setCurrentUser] = useState('');
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+    const role = sessionStorage.getItem('userRole') || 'admin';
+    const teacherId = sessionStorage.getItem('teacherId');
+    let currentUserName = role;
+     if (role === 'teacher' && teacherId) {
+        const data = getSimulatedData();
+        const allTeachers = data.classes.flatMap(c => c.teachers);
+        const teacher = allTeachers.find(t => t.id === teacherId);
+        if (teacher) {
+            currentUserName = teacher.name;
+        }
+    }
+    setCurrentUser(currentUserName);
+  }, []);
+
   return (
     <aside className="w-20 bg-card border-r border-border flex-col items-center py-6 gap-4 shrink-0 hidden sm:flex">
-      {navLinks.map(link => (
-        <NavLink key={link.href} {...link} />
-      ))}
+      {isClient && (
+        <TooltipProvider delayDuration={0}>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-slate-800 border border-slate-700">
+                <User size={24} className="text-slate-400" />
+              </div>
+            </TooltipTrigger>
+            <TooltipContent side="right" className="bg-card border-border text-white">
+              <p className="capitalize">{currentUser}</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      )}
+
+      <div className="flex flex-col gap-4 my-auto">
+        {navLinks.map(link => (
+          <NavLink key={link.href} {...link} />
+        ))}
+      </div>
+      
       <div className="mt-auto">
         <NavLink href="/" icon={LogOut} label="Sair" />
       </div>
