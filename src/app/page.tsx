@@ -77,7 +77,7 @@ export default function ProfileSelectionPage() {
             <button
               key={profile.name}
               onClick={() => handleProfileSelect(profile.role)}
-              className="w-full bg-card border border-border rounded-lg p-4 text-left transition-all duration-200"
+              className="w-full bg-card border border-border rounded-lg p-4 text-left"
             >
               <div className="flex items-center justify-between mb-2">
                 <div className="p-2 bg-slate-800 border border-slate-700 rounded-md">

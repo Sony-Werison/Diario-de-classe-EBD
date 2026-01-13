@@ -97,7 +97,7 @@ export function AppHeader({
                 <DropdownMenuItem
                   key={c.id}
                   onSelect={() => onClassChange(c.id)}
-                  className="cursor-pointer hover:bg-secondary focus:bg-secondary"
+                  className="cursor-pointer"
                 >
                   <Check
                     size={16}
