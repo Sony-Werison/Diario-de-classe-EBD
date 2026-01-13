@@ -1,3 +1,4 @@
+
 "use client";
 import React, { useState, useMemo, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
@@ -14,36 +15,12 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 
-import { Check, ChevronDown, ChevronLeft, ChevronRight, Users, CheckCircle, Notebook, Pencil, BookOpen, Smile } from "lucide-react";
-import { initialClasses, ClassConfig, CheckType, generateFullSimulatedData, SimulatedFullData } from "@/lib/data";
+import { Check, ChevronDown, ChevronLeft, ChevronRight, Users } from "lucide-react";
+import { initialClasses, ClassConfig, getSimulatedData, SimulatedFullData } from "@/lib/data";
 import { cn } from "@/lib/utils";
 import { format, getDaysInMonth, startOfMonth, addMonths, subMonths, getDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
-
-
-const itemIcons: Record<CheckType, React.ElementType> = {
-  presence: CheckCircle,
-  material: Notebook,
-  task: Pencil,
-  verse: BookOpen,
-  behavior: Smile,
-};
-
-const itemLabels: Record<CheckType, string> = {
-  presence: "Presença",
-  material: "Material",
-  task: "Tarefa",
-  verse: "Versículo",
-  behavior: "Comportamento",
-};
-
-const itemColors: Record<CheckType, string> = {
-    presence: 'text-blue-400',
-    material: 'text-pink-400',
-    task: 'text-purple-400',
-    verse: 'text-yellow-400',
-    behavior: 'text-emerald-400',
-}
+import { itemIcons, itemLabels, itemColors, CheckType } from "../report-helpers";
 
 export function MonthlyReport() {
   const [classes, setClasses] = useState<ClassConfig[]>(initialClasses);
@@ -54,8 +31,18 @@ export function MonthlyReport() {
 
   useEffect(() => {
     setIsClient(true);
-    setSimulatedData(generateFullSimulatedData(initialClasses));
+    // Load data once on mount
+    const handleStorageChange = () => {
+        const data = getSimulatedData();
+        setSimulatedData(data);
+    };
+    handleStorageChange(); // Initial load
+    window.addEventListener('storage', handleStorageChange);
+    return () => {
+        window.removeEventListener('storage', handleStorageChange);
+    };
   }, []);
+
 
   const currentClass = useMemo(
     () => classes.find((c) => c.id === currentClassId) || classes[0],
@@ -104,7 +91,7 @@ export function MonthlyReport() {
   }
   
   const Legend = () => (
-    <div className="flex flex-wrap gap-x-4 gap-y-1 items-center px-4 py-2 border-b border-slate-700 bg-slate-800 rounded-t-xl">
+    <div className="flex flex-wrap gap-x-4 gap-y-1 items-center px-4 py-2 border-b border-border bg-card">
         <span className="text-xs font-bold text-slate-400 uppercase">Legenda:</span>
         {orderedVisibleItems.map(item => {
             const Icon = itemIcons[item];
@@ -123,11 +110,7 @@ export function MonthlyReport() {
   }
 
   return (
-    <div className="p-4 sm:p-6 text-white bg-background flex-1 flex flex-col">
-      <header className="mb-6">
-        <h1 className="text-2xl font-bold">Relatório Mensal</h1>
-      </header>
-
+    <div className="text-white bg-background flex-1 flex flex-col">
       <div className="mb-6 flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
         <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
             <DropdownMenu>
@@ -175,17 +158,17 @@ export function MonthlyReport() {
 
       </div>
 
-      <div className="flex-1 flex flex-col min-h-0">
+      <div className="flex-1 flex flex-col min-h-0 bg-card border border-border rounded-xl">
           <Legend />
-          <div className="overflow-auto border border-slate-700 border-t-0 rounded-b-xl" ref={reportRef}>
+          <div className="overflow-auto rounded-b-xl" ref={reportRef}>
               <table className="w-full border-collapse table-fixed">
-                  <thead className="sticky top-0 z-10 bg-slate-900/80 backdrop-blur-sm">
+                  <thead className="sticky top-0 z-10 bg-card/80 backdrop-blur-sm">
                       <tr>
-                          <th className="p-3 border-b border-r border-slate-700 text-left text-xs font-bold uppercase text-slate-400 sticky left-0 bg-slate-900/80 z-20 w-1/3 sm:w-auto">
+                          <th className="p-3 border-b border-r border-border text-left text-xs font-bold uppercase text-slate-400 sticky left-0 bg-card/80 z-20 w-1/3 sm:w-auto">
                             Aluno
                           </th>
                           {sundaysInMonth.map(day => (
-                              <th key={day.toISOString()} className="p-3 text-center border-b border-r border-slate-700 last:border-r-0 text-xs font-bold uppercase text-slate-400 w-16">
+                              <th key={day.toISOString()} className="p-3 text-center border-b border-r border-border last:border-r-0 text-xs font-bold uppercase text-slate-400 w-16">
                                   {format(day, 'dd')}
                               </th>
                           ))}
@@ -194,12 +177,12 @@ export function MonthlyReport() {
                   <tbody>
                       {currentClass.students.map(student => {
                           return (
-                              <tr key={student.id} className="text-sm hover:bg-slate-800/50">
-                                  <td className="p-2 whitespace-nowrap overflow-hidden text-ellipsis border-b border-r border-slate-700 font-medium text-slate-200 sticky left-0 bg-slate-800/50 z-10">{student.name}</td>
+                              <tr key={student.id} className="text-sm hover:bg-secondary/50">
+                                  <td className="p-2 whitespace-nowrap overflow-hidden text-ellipsis border-b border-r border-border font-medium text-slate-200 sticky left-0 bg-card/50 backdrop-blur-sm z-10">{student.name}</td>
                                   {sundaysInMonth.map(day => {
                                       const studentChecks = getStudentChecksForDay(student.id, day);
                                       return (
-                                          <td key={day.toISOString()} className="text-center border-b border-r border-slate-700 last:border-r-0 h-full p-2">
+                                          <td key={day.toISOString()} className="text-center border-b border-r border-border last:border-r-0 h-full p-2">
                                               {studentChecks ? (
                                               <TooltipProvider>
                                                   <Tooltip>
@@ -238,7 +221,7 @@ export function MonthlyReport() {
                   </tbody>
               </table>
               {currentClass.students.length === 0 && (
-                  <div className="text-center py-16 text-slate-500 rounded-b-xl bg-slate-800">
+                  <div className="text-center py-16 text-slate-500 rounded-b-xl bg-card">
                       <Users size={40} className="mx-auto mb-2" />
                       <h3 className="font-bold">Nenhum aluno nesta classe</h3>
                       <p className="text-sm">Vá para as configurações para adicionar alunos.</p>
