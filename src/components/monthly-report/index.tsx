@@ -136,7 +136,7 @@ export function MonthlyReport() {
             <DropdownMenuTrigger asChild>
                 <Button
                 variant="outline"
-                className="w-full sm:w-60 justify-between bg-card border-border"
+                className="w-full sm:w-60 justify-between bg-card border-border hover:bg-card"
                 >
                 <div className="flex items-center gap-2">
                     <div className="w-3 h-3 rounded-full" style={{backgroundColor: currentClass.color}}/>
