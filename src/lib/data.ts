@@ -81,6 +81,7 @@ export const initialClasses: ClassConfig[] = [
 ];
 
 // --- SIMULATED DATA GENERATION ---
+const SIMULATED_DATA_KEY = 'ebd-junior-tracker-data';
 
 export type SimulatedDayData = {
   date: Date;
@@ -141,16 +142,9 @@ export const generateSimulatedDataForStudent = (studentId: number, month: Date, 
     return { studentId, monthData };
 };
 
-let memoizedData: SimulatedFullData | null = null;
-
 export const generateFullSimulatedData = (classes: ClassConfig[]): SimulatedFullData => {
-    if (memoizedData) {
-        return memoizedData;
-    }
-
     const lessons: Record<string, DailyLesson> = {};
     const studentRecords: SimulatedFullData['studentRecords'] = {};
-
     const today = new Date();
     
     // Generate for a wider range of months to ensure data consistency
@@ -186,6 +180,43 @@ export const generateFullSimulatedData = (classes: ClassConfig[]): SimulatedFull
             });
         });
     }
-    memoizedData = { lessons, studentRecords };
-    return memoizedData;
+    return { lessons, studentRecords };
+};
+
+// Centralized functions to get and save data from localStorage
+export const getSimulatedData = (): SimulatedFullData => {
+  if (typeof window === 'undefined') {
+    return { lessons: {}, studentRecords: {} };
+  }
+  try {
+    const savedData = localStorage.getItem(SIMULATED_DATA_KEY);
+    if (savedData) {
+      return JSON.parse(savedData);
+    } else {
+      const newData = generateFullSimulatedData(initialClasses);
+      localStorage.setItem(SIMULATED_DATA_KEY, JSON.stringify(newData));
+      return newData;
+    }
+  } catch (error) {
+    console.error("Failed to read from localStorage", error);
+    // Fallback to generating fresh data if localStorage fails
+    return generateFullSimulatedData(initialClasses);
+  }
+};
+
+export const saveSimulatedData = (data: SimulatedFullData) => {
+  if (typeof window === 'undefined') {
+    return;
+  }
+  try {
+    const dataString = JSON.stringify(data);
+    localStorage.setItem(SIMULATED_DATA_KEY, dataString);
+    // Dispatch a storage event to notify other tabs/windows
+    window.dispatchEvent(new StorageEvent('storage', {
+      key: SIMULATED_DATA_KEY,
+      newValue: dataString,
+    }));
+  } catch (error) {
+    console.error("Failed to save to localStorage", error);
+  }
 };

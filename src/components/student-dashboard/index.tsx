@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useMemo, useCallback, useEffect } from "react";
-import { initialClasses, POINTS, CheckType, ClassConfig, DailyLesson, generateFullSimulatedData, SimulatedFullData } from "@/lib/data";
+import { initialClasses, POINTS, CheckType, ClassConfig, DailyLesson, getSimulatedData, saveSimulatedData } from "@/lib/data";
 import { AppHeader } from "./app-header";
 import { StatCard } from "./stat-card";
 import { StudentListHeader, SortKey } from "./student-list-header";
@@ -36,93 +36,74 @@ export function StudentDashboard({ initialDate }: { initialDate?: string }) {
   const [currentDate, setCurrentDate] = useState<Date>(() => initialDate ? startOfDay(parseISO(initialDate)) : startOfDay(new Date()));
   const [sortKey, setSortKey] = useState<SortKey>("progress");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
-  const [simulatedData, setSimulatedData] = useState<SimulatedFullData>({ lessons: {}, studentRecords: {} });
   const { toast } = useToast();
   const [isClient, setIsClient] = useState(false);
   const [isDeleteAlertOpen, setIsDeleteAlertOpen] = useState(false);
-  const [isCancelDialogVali, setIsCancelDialogValid] = useState(true);
+  const [isCancelDialogVali, setIsCancelDialogVali] = useState(true);
   const [isCancelDialogOpen, setIsCancelDialogOpen] = useState(false);
   const [cancellationReason, setCancellationReason] = useState("");
   
-  useEffect(() => {
-    setIsClient(true);
-    // This check prevents client-side state from being overwritten on navigation
-    if (Object.keys(simulatedData.lessons).length === 0) {
-      setSimulatedData(generateFullSimulatedData(initialClasses));
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  // These states hold the current data for the dashboard
+  const [dailyLesson, setDailyLesson] = useState<DailyLesson | undefined>();
+  const [dailyStudentChecks, setDailyStudentChecks] = useState<Record<number, Record<CheckType, boolean>>>({});
+
 
   useEffect(() => {
+    setIsClient(true);
+    // On mount or date change, load data from our central source
     if (initialDate) {
-      const dateFromUrl = parseISO(initialDate);
-      setCurrentDate(startOfDay(dateFromUrl));
-    } else if (isClient) {
+        const dateFromUrl = parseISO(initialDate);
+        setCurrentDate(startOfDay(dateFromUrl));
+        
+        const dateKey = format(dateFromUrl, "yyyy-MM-dd");
+        const data = getSimulatedData();
+
+        const lesson = data.lessons[dateKey] || {
+          teacherId: currentClass.teachers[0]?.id || "",
+          title: "",
+          status: 'held',
+          cancellationReason: '',
+        };
+        const checks = data.studentRecords[currentClassId]?.[dateKey] || {};
+
+        setDailyLesson(lesson as DailyLesson);
+        setDailyStudentChecks(checks);
+
+    } else {
       router.push('/');
     }
-  }, [initialDate, isClient, router]);
+  }, [initialDate, currentClass.teachers, currentClassId, router]);
 
 
   const currentClass = useMemo(() => classes.find(c => c.id === currentClassId) || classes[0], [classes, currentClassId]);
-
   const dateKey = useMemo(() => currentDate ? format(currentDate, "yyyy-MM-dd") : '', [currentDate]);
-
-  const dailyLesson = useMemo(() => {
-     if (!isClient || !dateKey || !simulatedData.lessons[dateKey]) {
-      return {
-        teacherId: currentClass.teachers[0]?.id || "",
-        title: "",
-        status: 'held',
-        cancellationReason: '',
-      } as DailyLesson;
-    }
-    return simulatedData.lessons[dateKey];
-  }, [dateKey, simulatedData.lessons, currentClass.teachers, isClient]);
-  
-  const dailyStudentChecks = useMemo(() => {
-    if (!isClient) return {};
-    return simulatedData.studentRecords[currentClassId]?.[dateKey] || {};
-  }, [simulatedData.studentRecords, currentClassId, dateKey, isClient]);
 
 
   const handleToggleCheck = useCallback((studentId: number, type: CheckType) => {
-    setSimulatedData(prevData => {
-        const newStudentRecords = { ...prevData.studentRecords };
-        if (!newStudentRecords[currentClassId]) newStudentRecords[currentClassId] = {};
-        if (!newStudentRecords[currentClassId][dateKey]) newStudentRecords[currentClassId][dateKey] = {};
+    setDailyStudentChecks(prevChecks => {
+        const newChecksForStudent = { ...(prevChecks[studentId] || { presence: false, task: false, verse: false, behavior: false, material: false }) };
+        newChecksForStudent[type] = !newChecksForStudent[type];
 
-        const currentChecks = newStudentRecords[currentClassId][dateKey]?.[studentId] || { presence: false, task: false, verse: false, behavior: false, material: false };
-        const newChecks = { ...currentChecks, [type]: !currentChecks[type] };
-
-        if (type === 'presence' && !newChecks.presence) {
-            Object.keys(newChecks).forEach(key => {
-                if (key !== 'presence') {
-                    newChecks[key as CheckType] = false;
-                }
+        // If un-checking presence, un-check everything else
+        if (type === 'presence' && !newChecksForStudent.presence) {
+            Object.keys(newChecksForStudent).forEach(key => {
+                newChecksForStudent[key as CheckType] = false;
             });
         }
         
-        if (!newStudentRecords[currentClassId][dateKey]) {
-           newStudentRecords[currentClassId][dateKey] = {};
-        }
-        newStudentRecords[currentClassId][dateKey][studentId] = newChecks;
-        
-        return { ...prevData, studentRecords: newStudentRecords };
+        return {
+            ...prevChecks,
+            [studentId]: newChecksForStudent
+        };
     });
-  }, [currentClassId, dateKey]);
+  }, []);
 
   const handleLessonDetailChange = useCallback((field: keyof DailyLesson, value: string) => {
-    setSimulatedData(prev => ({
-      ...prev,
-      lessons: {
-        ...prev.lessons,
-        [dateKey]: {
-          ...(prev.lessons[dateKey] || { teacherId: currentClass.teachers[0]?.id || "", title: "", status: 'held' }),
-          [field]: value,
-        }
-      }
-    }));
-  }, [dateKey, currentClass.teachers]);
+    setDailyLesson(prev => ({
+      ...(prev || { teacherId: currentClass.teachers[0]?.id || "", title: "", status: 'held' }),
+      [field]: value,
+    }) as DailyLesson);
+  }, [currentClass.teachers]);
   
   const handleSundayNavigation = (direction: 'prev' | 'next') => {
     const newDate = new Date(currentDate);
@@ -135,10 +116,18 @@ export function StudentDashboard({ initialDate }: { initialDate?: string }) {
   const handleSave = () => {
     if (!currentDate) return;
     
-    // Make sure lesson is marked as 'held' when saved, unless it was cancelled.
-    if(dailyLesson.status !== 'cancelled') {
-        handleLessonDetailChange('status', 'held');
+    const data = getSimulatedData();
+    
+    // Ensure lesson is marked as 'held' unless already cancelled
+    const finalLesson = { ...dailyLesson, status: dailyLesson?.status === 'cancelled' ? 'cancelled' : 'held' };
+
+    data.lessons[dateKey] = finalLesson as DailyLesson;
+    if (!data.studentRecords[currentClassId]) {
+        data.studentRecords[currentClassId] = {};
     }
+    data.studentRecords[currentClassId][dateKey] = dailyStudentChecks;
+    
+    saveSimulatedData(data);
 
     toast({
       title: "Aula Salva!",
@@ -148,53 +137,49 @@ export function StudentDashboard({ initialDate }: { initialDate?: string }) {
 
   const handleDeleteLesson = () => {
     setIsDeleteAlertOpen(false);
+    // IMPORTANT: Navigate away BEFORE changing the data
     router.push('/');
-
-    setSimulatedData(prev => {
-        const newLessons = { ...prev.lessons };
-        delete newLessons[dateKey];
-        
-        const newStudentRecords = { ...prev.studentRecords };
-        if(newStudentRecords[currentClassId]) {
-            delete newStudentRecords[currentClassId][dateKey];
+    
+    // Use a timeout to allow navigation to complete before data mutation
+    setTimeout(() => {
+        const data = getSimulatedData();
+        delete data.lessons[dateKey];
+        if (data.studentRecords[currentClassId]) {
+            delete data.studentRecords[currentClassId][dateKey];
         }
-
-        return { lessons: newLessons, studentRecords: newStudentRecords };
-    });
-    toast({
-      title: "Aula Excluída",
-      description: `O registro da aula de ${format(currentDate, "dd/MM/yyyy")} foi removido.`,
-      variant: 'destructive',
-    })
+        saveSimulatedData(data);
+        
+        toast({
+          title: "Aula Excluída",
+          description: `O registro da aula de ${format(currentDate, "dd/MM/yyyy")} foi removido.`,
+          variant: 'destructive',
+        });
+    }, 50); // 50ms delay is usually enough
   }
   
   const handleCancelLesson = () => {
       if(!cancellationReason.trim()) {
-        setIsCancelDialogValid(false);
+        setIsCancelDialogVali(false);
         return;
       }
-      setIsCancelDialogValid(true);
       setIsCancelDialogOpen(false);
+      
+      const updatedLesson: DailyLesson = {
+          ...(dailyLesson || { teacherId: currentClass.teachers[0]?.id || "", title: "" }),
+          status: 'cancelled',
+          cancellationReason: cancellationReason,
+      };
 
-      setSimulatedData(prev => {
-        const updatedLesson: DailyLesson = {
-            ...(prev.lessons[dateKey] || { teacherId: currentClass.teachers[0]?.id || "", title: "" }),
-            status: 'cancelled',
-            cancellationReason: cancellationReason,
-        };
+      setDailyLesson(updatedLesson); // Update local state immediately for UI feedback
 
-        return {
-          ...prev,
-          lessons: {
-            ...prev.lessons,
-            [dateKey]: updatedLesson,
-          }
-        };
-      });
+      const data = getSimulatedData();
+      data.lessons[dateKey] = updatedLesson;
+      saveSimulatedData(data);
+
       toast({
         title: "Aula cancelada",
         description: "A aula foi marcada como não realizada.",
-      })
+      });
       setCancellationReason("");
   }
 
@@ -289,7 +274,7 @@ export function StudentDashboard({ initialDate }: { initialDate?: string }) {
 
   const trackedItems = currentClass.trackedItems;
 
-  if (!isClient || !initialDate) {
+  if (!isClient || !initialDate || !dailyLesson) {
     return null; // or a loading spinner
   }
   
@@ -411,7 +396,7 @@ export function StudentDashboard({ initialDate }: { initialDate?: string }) {
                         value={cancellationReason}
                         onChange={(e) => {
                             setCancellationReason(e.target.value)
-                            if (e.target.value.trim()) setIsCancelDialogValid(true);
+                            if (e.target.value.trim()) setIsCancelDialogVali(true);
                         }}
                         placeholder="Ex: Feriado, evento especial na igreja, etc."
                         className={!isCancelDialogVali ? 'border-destructive' : ''}

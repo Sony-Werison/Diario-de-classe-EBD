@@ -15,19 +15,34 @@ import {
 import { ptBR } from 'date-fns/locale';
 import { ChevronLeft, ChevronRight, Church, CalendarCheck, CheckCircle, Ban } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { initialClasses, generateFullSimulatedData, SimulatedFullData } from '@/lib/data';
+import { getSimulatedData, DailyLesson } from '@/lib/data';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 
 export function CalendarPage() {
   const [currentMonth, setCurrentMonth] = useState(startOfMonth(new Date()));
-  const [simulatedData, setSimulatedData] = useState<SimulatedFullData>({ lessons: {}, studentRecords: {} });
+  const [dailyLessons, setDailyLessons] = useState<Record<string, DailyLesson>>({});
   const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
+    // This effect runs on mount and whenever the month changes
+    const data = getSimulatedData();
+    setDailyLessons(data.lessons);
     setIsClient(true);
-    setSimulatedData(generateFullSimulatedData(initialClasses));
+  }, [currentMonth]);
+  
+  // This effect listens for storage changes from other tabs, not strictly necessary but good practice
+  useEffect(() => {
+    const handleStorageChange = () => {
+      const data = getSimulatedData();
+      setDailyLessons(data.lessons);
+    };
+    window.addEventListener('storage', handleStorageChange);
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+    };
   }, []);
+
 
   const sundays = useMemo(() => {
     const monthStart = startOfMonth(currentMonth);
@@ -35,11 +50,6 @@ export function CalendarPage() {
     const daysInMonth = eachDayOfInterval({ start: monthStart, end: monthEnd });
     return daysInMonth.filter(day => getDay(day) === 0);
   }, [currentMonth]);
-  
-  const dailyLessons = useMemo(() => {
-    if (!isClient) return {};
-    return simulatedData.lessons;
-  }, [isClient, simulatedData.lessons]);
 
   const handlePrevMonth = () => {
     setCurrentMonth(subMonths(currentMonth, 1));
@@ -102,7 +112,7 @@ export function CalendarPage() {
                        <CalendarCheck className={cn("w-6 h-6", isToday ? "text-primary" : "text-slate-500")} />
                        <div>
                             <span className={cn('font-semibold', isToday ? 'text-primary' : 'text-white')}>
-                                {format(day, 'd \'de\' MMMM', { locale: ptBR })}
+                                {format(day, "d 'de' MMMM", { locale: ptBR })}
                             </span>
                             <span className="text-sm text-slate-400 ml-2">
                                 (Domingo)
