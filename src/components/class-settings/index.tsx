@@ -280,6 +280,22 @@ export function ClassSettings() {
     });
   }
 
+  const handleDeleteTeacher = (teacherId: string) => {
+    if (isViewer || !updateAndSaveData || !currentClass) return;
+     if (currentClass.teachers.length <= 1) {
+        toast({ title: "Ação não permitida", description: "A classe deve ter pelo menos um professor.", variant: "destructive" });
+        return;
+    }
+    updateAndSaveData(prev => ({
+        ...prev!,
+        classes: prev!.classes.map(c =>
+            c.id === currentClassId
+                ? { ...c, teachers: c.teachers.filter(t => t.id !== teacherId) }
+                : c
+        )
+    }));
+  }
+
   const handleExportData = async () => {
     if (!data) return;
     const dataStr = JSON.stringify(data, null, 2);
@@ -469,6 +485,47 @@ export function ClassSettings() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
             <Card className="bg-card border-border">
+                <CardHeader>
+                    <CardTitle>Professores da Classe "{currentClass.name}"</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <div className="border border-border rounded-lg overflow-hidden">
+                        <Table>
+                            <TableHeader>
+                                <TableRow className="border-border hover:bg-transparent">
+                                    <TableHead className="text-white">Nome</TableHead>
+                                    <TableHead className="text-right text-white w-28">
+                                        Ações
+                                    </TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {currentClass.teachers.map((teacher) => (
+                                    <TableRow key={teacher.id} className="border-border hover:bg-transparent">
+                                        <TableCell className="font-medium">{teacher.name}</TableCell>
+                                        <TableCell className="text-right">
+                                            <div className="flex gap-2 justify-end">
+                                                <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-white" onClick={openEditClassDialog} disabled={isViewer}>
+                                                    <Edit size={16}/>
+                                                </Button>
+                                                <Button variant="ghost" size="icon" className="h-8 w-8 text-red-500 hover:text-red-400" onClick={() => handleDeleteTeacher(teacher.id)} disabled={isViewer}>
+                                                    <Trash2 size={16}/>
+                                                </Button>
+                                            </div>
+                                        </TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    </div>
+                    {currentClass.teachers.length === 0 && (
+                        <div className="text-center py-10 text-slate-500">
+                            <p>Nenhum professor cadastrado nesta classe.</p>
+                        </div>
+                    )}
+                </CardContent>
+            </Card>
+            <Card className="bg-card border-border">
                 <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle>Alunos da Classe "{currentClass.name}"</CardTitle>
                 {!isViewer && <Button size="sm" onClick={openNewStudentDialog} className="bg-primary hover:bg-primary/90 text-white">
@@ -519,34 +576,6 @@ export function ClassSettings() {
                     <p>Nenhum aluno cadastrado nesta classe ainda.</p>
                     </div>
                 )}
-                </CardContent>
-            </Card>
-             <Card className="bg-card border-border">
-                <CardHeader>
-                    <CardTitle>Professores da Classe "{currentClass.name}"</CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <div className="border border-border rounded-lg overflow-hidden">
-                        <Table>
-                            <TableHeader>
-                                <TableRow className="border-border hover:bg-transparent">
-                                    <TableHead className="text-white">Nome</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {currentClass.teachers.map((teacher) => (
-                                    <TableRow key={teacher.id} className="border-border hover:bg-transparent">
-                                        <TableCell className="font-medium">{teacher.name}</TableCell>
-                                    </TableRow>
-                                ))}
-                            </TableBody>
-                        </Table>
-                    </div>
-                    {currentClass.teachers.length === 0 && (
-                        <div className="text-center py-10 text-slate-500">
-                            <p>Nenhum professor cadastrado nesta classe.</p>
-                        </div>
-                    )}
                 </CardContent>
             </Card>
         </div>
@@ -729,3 +758,5 @@ export function ClassSettings() {
     </div>
   );
 }
+
+    
