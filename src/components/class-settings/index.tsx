@@ -66,7 +66,7 @@ const colorPresets = [
 
 export function ClassSettings() {
   const [data, setData] = useState(getSimulatedData());
-  const [currentClassId, setCurrentClassId] = useState<string>(data.classes[0].id);
+  const [currentClassId, setCurrentClassId] = useState<string>('');
   const [isStudentDialogOpen, setIsStudentDialogOpen] = useState(false);
   const [isClassDialogOpen, setIsClassDialogOpen] = useState(false);
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
@@ -74,10 +74,16 @@ export function ClassSettings() {
   const [isClient, setIsClient] = useState(false);
 
   const { classes } = data;
-  const currentClass = classes.find(c => c.id === currentClassId) || classes[0];
+  const currentClass = classes.find(c => c.id === currentClassId);
 
   useEffect(() => {
     setIsClient(true);
+    const savedData = getSimulatedData();
+    setData(savedData);
+    if(savedData.classes.length > 0) {
+      setCurrentClassId(savedData.classes[0].id);
+    }
+    
     const handleStorageChange = () => {
       setData(getSimulatedData());
     };
@@ -218,6 +224,7 @@ export function ClassSettings() {
   }
 
   const openEditClassDialog = () => {
+    if(!currentClass) return;
     setEditingClass(currentClass);
     setIsClassDialogOpen(true);
   }
@@ -244,8 +251,8 @@ export function ClassSettings() {
     });
   }
 
-  if (!isClient) {
-    return null; // Render nothing on the server
+  if (!isClient || !currentClass) {
+    return null; // Render nothing on the server until client is ready
   }
 
   return (
@@ -370,7 +377,7 @@ export function ClassSettings() {
                   </TableHeader>
                   <TableBody>
                     {currentClass.students.map((student) => (
-                      <TableRow key={student.id} className="border-border hover:bg-secondary/50">
+                      <TableRow key={student.id} className="border-border">
                         <TableCell className="font-medium">
                           {student.name}
                         </TableCell>

@@ -186,7 +186,7 @@ export function MonthlyReport() {
                   <tbody>
                       {currentClass.students.map(student => {
                           return (
-                              <tr key={student.id} className="text-sm hover:bg-secondary/50">
+                              <tr key={student.id} className="text-sm">
                                   <td className="p-2 whitespace-nowrap overflow-hidden text-ellipsis border-b border-r border-border font-medium text-slate-200 sticky left-0 bg-card/50 backdrop-blur-sm z-10">{student.name}</td>
                                   {sundaysInMonth.map(day => {
                                       const studentChecks = getStudentChecksForDay(student.id, day);
@@ -241,4 +241,3 @@ export function MonthlyReport() {
     </div>
   );
 }
-
