@@ -47,6 +47,7 @@ interface AppHeaderProps {
   dailyLesson: DailyLesson | undefined;
   onLessonDetailChange: (field: keyof DailyLesson, value: string) => void;
   onSave: () => void;
+  dailyLessons: Record<string, DailyLesson>;
 }
 
 export function AppHeader({
@@ -60,11 +61,14 @@ export function AppHeader({
   dailyLesson,
   onLessonDetailChange,
   onSave,
+  dailyLessons,
 }: AppHeaderProps) {
   const formattedDate = format(currentDate, "EEEE, dd MMM", { locale: ptBR });
   const teacherName = currentClass.teachers.find(
     (t) => t.id === dailyLesson?.teacherId
   )?.name;
+  
+  const recordedDays = Object.keys(dailyLessons).map(dateStr => new Date(dateStr));
 
   return (
     <header className="bg-slate-800 border-b border-slate-700 p-3 flex flex-col shadow-lg z-10 shrink-0 gap-4">
@@ -140,6 +144,10 @@ export function AppHeader({
                 onSelect={(date) => date && onDateChange(date)}
                 initialFocus
                 locale={ptBR}
+                modifiers={{ recorded: recordedDays }}
+                modifiersClassNames={{
+                  recorded: 'day-recorded'
+                }}
                 className="bg-card text-white"
                 classNames={{
                   day_selected:

@@ -221,6 +221,7 @@ export function StudentDashboard() {
             dailyLesson={dailyLesson}
             onLessonDetailChange={handleLessonDetailChange}
             onSave={handleSave}
+            dailyLessons={dailyLessons}
         />
         <main className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-6 bg-background">
           <div className="bg-slate-800/50 rounded-t-xl">

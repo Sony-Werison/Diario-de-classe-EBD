@@ -84,4 +84,10 @@ body {
   ::-webkit-scrollbar-thumb:hover {
       background: hsl(var(--muted-foreground));
   }
+  .day-recorded:not(.day-selected) {
+    @apply ring-1 ring-primary/50;
+  }
+  .day-today:not(.day-selected) {
+    @apply bg-accent/50 text-accent-foreground;
+  }
 }
