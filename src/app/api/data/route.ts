@@ -6,53 +6,73 @@ import { getInitialData } from '@/lib/data';
 
 const DATA_BLOB_KEY = 'data.json';
 
+// Esta é a URL base para a API do Vercel Blob
+// A variável de ambiente BLOB_URL é injetada automaticamente pela Vercel
+const BLOB_STORE_BASE_URL = process.env.BLOB_URL;
+
 export async function GET(request: NextRequest) {
+  if (!BLOB_STORE_BASE_URL) {
+    console.error("A variável de ambiente BLOB_URL não está definida.");
+    return NextResponse.json({ message: "Configuração do servidor incompleta: BLOB_URL faltando." }, { status: 500 });
+  }
+
+  const blobUrl = `${BLOB_STORE_BASE_URL}/${DATA_BLOB_KEY}`;
+  
   try {
-    // A função `get` do @vercel/blob/client é para o client-side. 
-    // No backend, usamos a API REST diretamente ou o SDK admin, mas aqui vamos simular o client-side `get`
-    // para verificar a existência do blob. A forma mais segura é usar o `head` para verificar.
-    // No entanto, para simplicidade e compatibilidade com o que parece ser a intenção, vamos tentar buscar
-    // e capturar o erro 404.
-    const { head } = await import('@vercel/blob');
-    await head(`${process.env.BLOB_URL}/${DATA_BLOB_KEY}`, {
-        token: process.env.BLOB_READ_WRITE_TOKEN
+    // Tenta buscar o blob diretamente
+    const response = await fetch(blobUrl, {
+      headers: {
+        'Authorization': `Bearer ${process.env.BLOB_READ_WRITE_TOKEN}`
+      }
     });
 
-    // Se o `head` for bem-sucedido, significa que o blob existe. Agora podemos obter o conteúdo.
-    const { get } = await import('@vercel/blob/client');
-    const blob = await get(DATA_BLOB_KEY, {
-        token: process.env.BLOB_READ_WRITE_TOKEN
-    });
-    const data = await blob.json();
-    return NextResponse.json(data, { status: 200 });
-  } catch (error: any) {
-    if (error.status === 404) {
-        // Se o blob não existir (erro 404), crie-o com dados iniciais
-        const initialData = getInitialData();
-        await put(DATA_BLOB_KEY, JSON.stringify(initialData), { 
-            access: 'protected', 
-            token: process.env.BLOB_READ_WRITE_TOKEN 
-        });
-        return NextResponse.json(initialData, { status: 200 });
+    if (response.status === 404) {
+      // O blob não existe, então o criamos com os dados iniciais
+      console.log("Blob não encontrado. Criando com dados iniciais.");
+      const initialData = getInitialData();
+      await put(DATA_BLOB_KEY, JSON.stringify(initialData), { 
+          access: 'protected', 
+          token: process.env.BLOB_READ_WRITE_TOKEN 
+      });
+      // Retorna os dados iniciais que acabamos de salvar
+      return NextResponse.json(initialData, { status: 200 });
     }
-    
+
+    if (!response.ok) {
+        // Lança um erro se a resposta não for bem-sucedida por outros motivos
+        throw new Error(`Erro da API do Blob: ${response.statusText}`);
+    }
+
+    // Se o blob existir, retorna seu conteúdo
+    const data = await response.json();
+    return NextResponse.json(data, { status: 200 });
+
+  } catch (error: any) {
+    console.error("Erro ao buscar os dados do Blob:", error);
     // Para qualquer outro erro, retorne um 500
-    console.error(error);
-    return NextResponse.json({ message: "Erro ao buscar os dados", error: error.message }, { status: 500 });
+    return NextResponse.json({ message: "Erro interno ao buscar os dados.", error: error.message }, { status: 500 });
   }
 }
 
 export async function POST(request: NextRequest) {
+  if (!process.env.BLOB_READ_WRITE_TOKEN) {
+    console.error("A variável de ambiente BLOB_READ_WRITE_TOKEN não está definida.");
+    return NextResponse.json({ message: "Configuração do servidor incompleta: token de escrita faltando." }, { status: 500 });
+  }
+
   try {
     const body = await request.json();
     const dataString = JSON.stringify(body);
+    
+    // Salva os dados no blob
     await put(DATA_BLOB_KEY, dataString, { 
         access: 'protected', 
         token: process.env.BLOB_READ_WRITE_TOKEN 
     });
+    
     return NextResponse.json({ message: "Dados salvos com sucesso" }, { status: 200 });
   } catch (error: any) {
-    console.error(error);
-    return NextResponse.json({ message: "Erro ao salvar os dados", error: error.message }, { status: 500 });
+    console.error("Erro ao salvar os dados no Blob:", error);
+    return NextResponse.json({ message: "Erro interno ao salvar os dados.", error: error.message }, { status: 500 });
   }
 }
