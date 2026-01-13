@@ -18,6 +18,7 @@ interface StudentRowProps {
   onToggleDailyTask: (studentId: string, day: string) => void;
   trackedItems: Record<CheckType | 'task', boolean>;
   taskMode: 'unique' | 'daily';
+  isLessonCancelled: boolean;
 }
 
 const checkConfig: Record<CheckType | 'task', { Icon: React.ElementType; activeClass: string; inactiveClass: string; }> = {
@@ -37,7 +38,7 @@ const weekDays: { key: keyof DailyTasks, label: string }[] = [
     { key: 'sat', label: 'S' },
 ];
 
-export function StudentRow({ student, onToggleCheck, trackedItems, taskMode, onToggleDailyTask }: StudentRowProps) {
+export function StudentRow({ student, onToggleCheck, trackedItems, taskMode, onToggleDailyTask, isLessonCancelled }: StudentRowProps) {
   const { id, name, checks, dailyScore, age, completionPercent, checkedItemsCount, totalTrackedItems } = student;
   const singleItem = totalTrackedItems <= 1 && taskMode === 'unique';
   
@@ -51,9 +52,11 @@ export function StudentRow({ student, onToggleCheck, trackedItems, taskMode, onT
                 </div>
             </div>
             
-            <div className={cn("flex-1 flex justify-center gap-4", singleItem && "justify-start")}>
+            <div className={cn("flex-1 flex justify-center items-center gap-4", singleItem && "justify-start")}>
                 {(Object.keys(checkConfig) as (CheckType | 'task')[]).map(type => {
                     if (!trackedItems[type]) return null;
+
+                    const isDisabled = !checks.presence && type !== 'presence' && type !== 'task' && !isLessonCancelled;
 
                     if (type === 'task' && taskMode === 'daily') {
                         return (
@@ -65,10 +68,9 @@ export function StudentRow({ student, onToggleCheck, trackedItems, taskMode, onT
                                         className={cn(
                                             "w-7 h-8 rounded-md flex items-center justify-center transition-all duration-200 text-xs font-bold",
                                             checks.dailyTasks?.[day.key] ? checkConfig.task.activeClass : 'text-slate-400 bg-slate-700/50',
-                                            !checks.presence ? 'opacity-50 cursor-not-allowed' : 'hover:border-slate-500'
+                                            'hover:border-slate-500' // Always allow hover for tasks
                                         )}
                                         aria-label={`Marcar tarefa de ${day.label} para ${name}`}
-                                        disabled={!checks.presence}
                                         >
                                         {day.label}
                                     </button>
@@ -85,10 +87,10 @@ export function StudentRow({ student, onToggleCheck, trackedItems, taskMode, onT
                         className={cn(
                             "w-10 h-10 rounded-lg flex items-center justify-center transition-all duration-200 border",
                             (checks as any)[type] ? checkConfig[type].activeClass : checkConfig[type].inactiveClass,
-                            !checks.presence && type !== 'presence' ? 'opacity-50 cursor-not-allowed' : 'hover:border-slate-500',
+                             isDisabled ? 'opacity-50 cursor-not-allowed' : 'hover:border-slate-500',
                         )}
                         aria-label={`Marcar ${type} para ${name}`}
-                        disabled={!checks.presence && type !== 'presence'}
+                        disabled={isDisabled}
                         >
                         <CheckIcon size={20} />
                         </button>
@@ -96,7 +98,7 @@ export function StudentRow({ student, onToggleCheck, trackedItems, taskMode, onT
                 })}
             </div>
 
-            {!singleItem && (
+            {(!singleItem || taskMode === 'daily') && (
                 <div className="w-1/4 pl-4 pr-2 flex-col justify-center hidden sm:flex">
                     <div className="flex justify-between text-xs mb-1">
                     <span className={cn("font-bold", dailyScore > 0 ? "text-[var(--class-color)]" : "text-slate-400")}>

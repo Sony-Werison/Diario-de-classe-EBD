@@ -122,16 +122,14 @@ export function StudentDashboard({ initialDate, classId: initialClassId }: { ini
         const newChecksForStudent = { ...(prevChecks[studentId] || defaultChecks) };
         (newChecksForStudent as any)[type] = !(newChecksForStudent as any)[type];
 
-        // If un-checking presence, un-check everything else
+        // If un-checking presence, un-check everything else except tasks
         if (type === 'presence' && !newChecksForStudent.presence) {
             Object.keys(newChecksForStudent).forEach(key => {
-                if (key !== 'dailyTasks') {
-                    (newChecksForStudent as any)[key as CheckType | 'task'] = false;
-                } else {
-                    newChecksForStudent.dailyTasks = { mon: false, tue: false, wed: false, thu: false, fri: false, sat: false };
+                const checkKey = key as keyof StudentChecks;
+                if (checkKey !== 'presence' && checkKey !== 'task' && checkKey !== 'dailyTasks') {
+                    (newChecksForStudent as any)[checkKey] = false;
                 }
             });
-            newChecksForStudent.task = false;
         }
         
         return {
@@ -233,14 +231,15 @@ export function StudentDashboard({ initialDate, classId: initialClassId }: { ini
 
       const data = getSimulatedData();
       data.lessons[dateKey] = updatedLesson;
-      if (!data.studentRecords[currentClassId]) {
-        data.studentRecords[currentClassId] = {};
-      }
-      data.studentRecords[currentClassId][dateKey] = {}; // Clear checks for cancelled lesson
+      // We don't clear checks for a cancelled lesson anymore
+      // if (!data.studentRecords[currentClassId]) {
+      //   data.studentRecords[currentClassId] = {};
+      // }
+      // data.studentRecords[currentClassId][dateKey] = {};
       saveSimulatedData(data);
       
       setIsCancelDialogOpen(false);
-      setDailyStudentChecks({});
+      // setDailyStudentChecks({});
       
       toast({
         title: "Aula cancelada",
@@ -286,16 +285,21 @@ export function StudentDashboard({ initialDate, classId: initialClassId }: { ini
 
       const dailyScore = (Object.keys(POINTS) as (CheckType | 'task')[]).reduce((acc, key) => {
         if ((studentChecks as any)[key] && currentClass.trackedItems[key]) {
+           // Behavior, verse, and material points only count if the student is present
+          if (['behavior', 'verse', 'material'].includes(key) && !studentChecks.presence) {
+            return acc;
+          }
           return acc + (POINTS[key] || 0);
         }
         return acc;
       }, 0);
 
       if (studentChecks.presence) presenceCount++;
-      if (studentChecks.verse) verseCount++;
-      if (studentChecks.task) taskCount++;
-      if (studentChecks.behavior) behaviorCount++;
-      if (studentChecks.material) materialCount++;
+      // Other checks only count towards percentage if the student was present
+      if (studentChecks.verse && studentChecks.presence) verseCount++;
+      if (studentChecks.task) taskCount++; // Task can be done even if absent
+      if (studentChecks.behavior && studentChecks.presence) behaviorCount++;
+      if (studentChecks.material && studentChecks.presence) materialCount++;
       totalScore += dailyScore;
       
       const age = calculateAge(student.birthDate);
@@ -305,14 +309,31 @@ export function StudentDashboard({ initialDate, classId: initialClassId }: { ini
       );
       
       const checkedItemsCount = activeTrackedItems.filter(
-        key => (studentChecks as any)[key]
+        key => {
+          if ((studentChecks as any)[key]) {
+            // For these items, only count them if present
+            if (['behavior', 'verse', 'material'].includes(key) && !studentChecks.presence) {
+                return false;
+            }
+            return true;
+          }
+          return false;
+        }
       ).length;
 
-      const completionPercent = activeTrackedItems.length > 0
-        ? (checkedItemsCount / activeTrackedItems.length) * 100
+      const totalItemsForPercentage = activeTrackedItems.filter(key => {
+          if (['behavior', 'verse', 'material'].includes(key)) {
+            return studentChecks.presence;
+          }
+          return true;
+      }).length;
+
+
+      const completionPercent = totalItemsForPercentage > 0
+        ? (checkedItemsCount / totalItemsForPercentage) * 100
         : 0;
 
-      return { ...student, checks: studentChecks, dailyScore, age, completionPercent, checkedItemsCount, totalTrackedItems: activeTrackedItems.length };
+      return { ...student, checks: studentChecks, dailyScore, age, completionPercent, checkedItemsCount, totalTrackedItems: totalItemsForPercentage };
     }).sort((a, b) => {
         const dir = sortDirection === 'asc' ? 1 : -1;
         switch (sortKey) {
@@ -326,10 +347,13 @@ export function StudentDashboard({ initialDate, classId: initialClassId }: { ini
 
     const presentStudentsCount = students.filter(s => (dailyStudentChecks[s.id] || {}).presence).length;
 
+    // For task percentage, we count all students, not just present ones
+    const totalStudentsForTask = totalStudents;
+
     return {
       presencePercent: totalStudents > 0 ? Math.round((presenceCount / totalStudents) * 100) : 0,
       versePercent: presentStudentsCount > 0 ? Math.round((verseCount / presentStudentsCount) * 100) : 0,
-      taskPercent: presentStudentsCount > 0 ? Math.round((taskCount / presentStudentsCount) * 100) : 0,
+      taskPercent: totalStudentsForTask > 0 ? Math.round((taskCount / totalStudentsForTask) * 100) : 0,
       behaviorPercent: presentStudentsCount > 0 ? Math.round((behaviorCount / presentStudentsCount) * 100) : 0,
       materialPercent: presentStudentsCount > 0 ? Math.round((materialCount / presentStudentsCount) * 100) : 0,
       totalScore,
@@ -381,6 +405,7 @@ export function StudentDashboard({ initialDate, classId: initialClassId }: { ini
                 onToggleDailyTask={handleToggleDailyTask}
                 trackedItems={trackedItems}
                 taskMode={currentClass.taskMode}
+                isLessonCancelled={dailyLesson.status === 'cancelled'}
               />
             ))}
              {studentsWithScores.length === 0 && (
