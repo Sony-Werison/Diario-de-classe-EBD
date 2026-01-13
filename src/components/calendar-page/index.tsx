@@ -8,30 +8,32 @@ import {
   startOfMonth,
   endOfMonth,
   eachDayOfInterval,
-  isSameMonth,
   isSameDay,
   getDay,
 } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { ChevronLeft, ChevronRight, Church, CalendarCheck, CheckCircle, Ban } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Church, CalendarCheck, CheckCircle, Ban, ChevronDown, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { getSimulatedData, DailyLesson } from '@/lib/data';
+import { getSimulatedData, DailyLesson, ClassConfig, initialClasses, Teacher } from '@/lib/data';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 
 export function CalendarPage() {
   const [currentMonth, setCurrentMonth] = useState(startOfMonth(new Date()));
   const [dailyLessons, setDailyLessons] = useState<Record<string, DailyLesson>>({});
   const [isClient, setIsClient] = useState(false);
+  const [classes] = useState<ClassConfig[]>(initialClasses);
+  const [currentClassId, setCurrentClassId] = useState<string>(initialClasses[0].id);
+
+  const currentClass = useMemo(() => classes.find(c => c.id === currentClassId) || classes[0], [classes, currentClassId]);
 
   useEffect(() => {
-    // This effect runs on mount and whenever the month changes
     const data = getSimulatedData();
     setDailyLessons(data.lessons);
     setIsClient(true);
   }, [currentMonth]);
   
-  // This effect listens for storage changes from other tabs, not strictly necessary but good practice
   useEffect(() => {
     const handleStorageChange = () => {
       const data = getSimulatedData();
@@ -58,6 +60,10 @@ export function CalendarPage() {
   const handleNextMonth = () => {
     setCurrentMonth(addMonths(currentMonth, 1));
   };
+  
+  const getTeacherName = (teacherId: string, teachers: Teacher[]): string => {
+    return teachers.find(t => t.id === teacherId)?.name || "Professor(a) não definido";
+  }
 
   if (!isClient) {
     return null; // Or a loading skeleton
@@ -65,7 +71,7 @@ export function CalendarPage() {
 
   return (
     <div className="p-4 sm:p-6 text-white bg-background flex-1 flex flex-col">
-      <header className="mb-6 flex items-center justify-between">
+      <header className="mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center text-primary-foreground font-bold text-xl shrink-0">
                 <Church size={24} />
@@ -75,6 +81,32 @@ export function CalendarPage() {
                 <p className="text-slate-400">Selecione um domingo para ver os detalhes da aula.</p>
               </div>
           </div>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+                <Button variant="outline" className="w-full sm:w-60 justify-between bg-card border-border hover:bg-secondary">
+                <span className="truncate">{currentClass.name}</span>
+                <ChevronDown className="h-4 w-4 shrink-0" />
+                </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="w-full sm:w-60 bg-card border-border text-white">
+                {classes.map((c) => (
+                <DropdownMenuItem
+                    key={c.id}
+                    onSelect={() => setCurrentClassId(c.id)}
+                    className="cursor-pointer hover:bg-secondary focus:bg-secondary"
+                >
+                    <Check
+                    size={16}
+                    className={cn(
+                        "mr-2",
+                        currentClassId === c.id ? "opacity-100" : "opacity-0"
+                    )}
+                    />
+                    {c.name}
+                </DropdownMenuItem>
+                ))}
+            </DropdownMenuContent>
+            </DropdownMenu>
       </header>
 
       <div className="bg-card border border-border rounded-xl flex flex-col flex-1">
@@ -97,30 +129,39 @@ export function CalendarPage() {
             const dateKey = format(day, 'yyyy-MM-dd');
             const lesson = dailyLessons[dateKey];
             const isToday = isSameDay(day, new Date());
+            const teacherName = lesson ? getTeacherName(lesson.teacherId, currentClass.teachers) : null;
 
             return (
                 <Link
                     key={day.toString()}
                     href={`/dashboard/${dateKey}`}
                     className={cn(
-                        'flex items-center justify-between p-4 rounded-lg transition-colors',
+                        'flex items-start sm:items-center justify-between p-4 rounded-lg transition-colors flex-col sm:flex-row gap-4 sm:gap-2',
                         'hover:bg-secondary',
                         isToday && 'bg-primary/10 border border-primary/50'
                     )}
                 >
                     <div className="flex items-center gap-4">
-                       <CalendarCheck className={cn("w-6 h-6", isToday ? "text-primary" : "text-slate-500")} />
+                       <div className="flex flex-col items-center">
+                            <span className="text-xs text-slate-400 uppercase">{format(day, "EEE", { locale: ptBR })}</span>
+                            <span className={cn('text-2xl font-bold', isToday ? 'text-primary' : 'text-white')}>
+                                {format(day, "d")}
+                            </span>
+                       </div>
                        <div>
                             <span className={cn('font-semibold', isToday ? 'text-primary' : 'text-white')}>
                                 {format(day, "d 'de' MMMM", { locale: ptBR })}
                             </span>
-                            <span className="text-sm text-slate-400 ml-2">
-                                (Domingo)
-                            </span>
+                           {lesson && (
+                             <div className="text-sm text-slate-400 mt-1 space-y-1">
+                                <p className='truncate max-w-xs'>{lesson.title || "Aula sem título"}</p>
+                                <p className="font-medium text-slate-500">{teacherName}</p>
+                             </div>
+                           )}
                        </div>
                     </div>
                     {lesson && (
-                        <div className="text-right">
+                        <div className="text-right self-center">
                            {lesson.status === 'cancelled' ? (
                                 <Ban className="w-5 h-5 text-yellow-500" title="Aula não realizada"/>
                            ) : (
