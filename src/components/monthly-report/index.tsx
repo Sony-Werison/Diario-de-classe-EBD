@@ -32,7 +32,6 @@ import { initialClasses, ClassConfig, Student, CheckType, generateFullSimulatedD
 import { cn } from "@/lib/utils";
 import { format, getDaysInMonth, startOfMonth, addMonths, subMonths, getDay, isSameDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { toPng } from 'html-to-image';
 
 
 const itemIcons: Record<CheckType, React.ElementType> = {
@@ -65,7 +64,6 @@ export function MonthlyReport() {
   const [currentMonth, setCurrentMonth] = useState(startOfMonth(new Date()));
   const [simulatedData, setSimulatedData] = useState<SimulatedFullData>({ lessons: {}, studentRecords: {} });
   const [isClient, setIsClient] = useState(false);
-  const [filter, setFilter] = useState<CheckType | "all">("all");
 
   useEffect(() => {
     setIsClient(true);
@@ -100,20 +98,6 @@ export function MonthlyReport() {
 
 
   const reportRef = useRef<HTMLDivElement>(null);
-
-  const handleExportPng = () => {
-    if (!reportRef.current) return;
-    toPng(reportRef.current, { cacheBust: true, backgroundColor: '#1E293B', fontEmbedCSS: '@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap");' })
-      .then((dataUrl) => {
-        const link = document.createElement('a');
-        link.download = `relatorio-${currentClass.name}-${format(currentMonth, 'MM-yyyy')}.png`;
-        link.href = dataUrl;
-        link.click();
-      })
-      .catch((err) => {
-        console.error('oops, something went wrong!', err);
-      });
-  };
 
   const handleMonthChange = (direction: 'prev' | 'next') => {
     setCurrentMonth(prev => direction === 'next' ? addMonths(prev, 1) : subMonths(prev, 1));
@@ -203,25 +187,8 @@ export function MonthlyReport() {
                     <ChevronRight size={16} />
                 </Button>
             </div>
-
-            <Select value={filter} onValueChange={(value) => setFilter(value as any)}>
-              <SelectTrigger className="w-full sm:w-[180px] bg-card border-border">
-                <SelectValue placeholder="Filtrar critério" />
-              </SelectTrigger>
-              <SelectContent className="bg-card border-border text-white">
-                <SelectItem value="all">Todos os Critérios</SelectItem>
-                {orderedVisibleItems.map(item => (
-                  <SelectItem key={item} value={item}>{itemLabels[item]}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
         </div>
 
-        <Button onClick={handleExportPng} className="bg-primary hover:bg-primary/90 w-full sm:w-auto">
-            <Download size={16} className="mr-2" />
-            Exportar PNG
-        </Button>
       </div>
 
       <div className="flex-1 flex flex-col min-h-0">
@@ -252,21 +219,13 @@ export function MonthlyReport() {
                                                   <Tooltip>
                                                       <TooltipTrigger asChild>
                                                           <div className="flex flex-col items-center justify-center gap-0.5">
-                                                              {filter === 'all' ? (
-                                                                  orderedVisibleItems.map(item => {
-                                                                      const Icon = itemIcons[item];
-                                                                      const isChecked = studentChecks[item];
-                                                                      return (
-                                                                          <Icon key={item} size={14} className={cn(isChecked ? itemColors[item] : 'text-slate-700 opacity-60')} />
-                                                                      )
-                                                                  })
-                                                              ) : (
-                                                                  studentChecks[filter] ? (
-                                                                      <Check size={16} className="text-green-500" />
-                                                                  ) : (
-                                                                      <X size={16} className="text-red-500" />
+                                                              {orderedVisibleItems.map(item => {
+                                                                  const Icon = itemIcons[item];
+                                                                  const isChecked = studentChecks[item];
+                                                                  return (
+                                                                      <Icon key={item} size={14} className={cn(isChecked ? itemColors[item] : 'text-slate-700 opacity-60')} />
                                                                   )
-                                                              )}
+                                                              })}
                                                           </div>
                                                       </TooltipTrigger>
                                                       <TooltipContent className="bg-slate-900 border-slate-700 text-white">

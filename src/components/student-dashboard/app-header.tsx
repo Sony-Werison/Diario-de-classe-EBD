@@ -10,7 +10,7 @@ import {
   ChevronRight,
   Save,
 } from "lucide-react";
-import { format, isSameDay } from "date-fns";
+import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { ClassConfig, DailyLesson } from "@/lib/data";
 import {
@@ -26,12 +26,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import { Calendar } from "@/components/ui/calendar";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
@@ -63,16 +57,11 @@ export function AppHeader({
   onSave,
   dailyLessons,
 }: AppHeaderProps) {
-  const formattedDate = format(currentDate, "EEEE, dd MMM", { locale: ptBR });
+  const formattedDate = format(currentDate, "EEEE, dd 'de' MMMM", { locale: ptBR });
   const teacherName = currentClass.teachers.find(
     (t) => t.id === dailyLesson?.teacherId
   )?.name;
   
-  const recordedDays = Object.keys(dailyLessons)
-    .filter(key => dailyLessons[key].title || dailyLessons[key].teacherId)
-    .map(dateStr => new Date(dateStr.replace(/-/g, '/')));
-
-
   return (
     <header className="bg-slate-800 border-b border-slate-700 p-3 flex flex-col shadow-lg z-10 shrink-0 gap-4">
       <div className="flex items-center justify-between w-full">
@@ -130,39 +119,14 @@ export function AppHeader({
           >
             <ChevronLeft size={16} />
           </Button>
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button
-                variant={"ghost"}
-                className="text-sm font-semibold text-indigo-300 flex items-center gap-2 capitalize whitespace-nowrap px-2 h-7"
-              >
-                <CalendarIcon size={16} />
+          
+          <div className="flex items-center gap-2">
+            <CalendarIcon size={16} className="text-indigo-400"/>
+            <span className="text-sm font-semibold text-indigo-300 capitalize whitespace-nowrap">
                 {formattedDate}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0 bg-card border-border" align="center">
-              <Calendar
-                mode="single"
-                selected={currentDate}
-                onSelect={(date) => date && onDateChange(date)}
-                initialFocus
-                locale={ptBR}
-                modifiers={{ 
-                  recorded: recordedDays,
-                  today: new Date()
-                }}
-                modifiersClassNames={{
-                  recorded: 'day-recorded',
-                  today: 'day-today'
-                }}
-                className="bg-card text-white"
-                classNames={{
-                  day_selected:
-                    "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground",
-                }}
-              />
-            </PopoverContent>
-          </Popover>
+            </span>
+          </div>
+          
           <Button
             variant="ghost"
             size="icon"
