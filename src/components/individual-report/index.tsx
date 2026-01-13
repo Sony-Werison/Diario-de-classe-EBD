@@ -190,7 +190,7 @@ export function IndividualReport() {
                     <DropdownMenuContent className="w-full sm:w-60 bg-card border-border text-white">
                         {currentClass.students.map((s) => (
                         <DropdownMenuItem key={s.id} onSelect={() => setSelectedStudentId(s.id)} className="cursor-pointer hover:bg-secondary focus:bg-secondary">
-                             <Check size={16} className={cn("selectedStudentId === s.id ? "opacity-100" : "opacity-0")} />
+                             <Check size={16} className={cn("mr-2", selectedStudentId === s.id ? "opacity-100" : "opacity-0")} />
                             {s.name}
                         </DropdownMenuItem>
                         ))}
