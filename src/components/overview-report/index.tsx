@@ -5,9 +5,9 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { getSimulatedData, ClassConfig, SimulatedFullData, CheckType } from '@/lib/data';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Users, Cake, ArrowUp, ArrowDown } from 'lucide-react';
+import { Users, Cake, ArrowUp, ArrowDown, Crown } from 'lucide-react';
 import { itemIcons } from '../report-helpers';
-import { startOfMonth, startOfYear } from 'date-fns';
+import { startOfMonth, startOfYear, format } from 'date-fns';
 import { Progress } from '../ui/progress';
 
 const calculateAge = (birthDateString: string) => {
@@ -51,7 +51,8 @@ const calculateStatsForPeriod = (classConfig: ClassConfig, studentRecords: Simul
     if (students.length === 0) {
         return {
             attendanceRate: 0,
-            criteriaRates: {}
+            criteriaRates: {},
+            topStudents: []
         };
     }
 
@@ -62,6 +63,10 @@ const calculateStatsForPeriod = (classConfig: ClassConfig, studentRecords: Simul
         total: {} as Record<CheckType | 'task', number>,
         checked: {} as Record<CheckType | 'task', number>
     };
+    
+    const studentScores: Record<string, { score: number, count: number }> = {};
+    students.forEach(s => studentScores[s.id] = { score: 0, count: 0 });
+
 
     for (const dateKey in classRecords) {
         if (new Date(dateKey) < startDate) continue;
@@ -71,6 +76,10 @@ const calculateStatsForPeriod = (classConfig: ClassConfig, studentRecords: Simul
 
         students.forEach(student => {
             const record = dayRecords[student.id];
+            
+            let dayScore = 0;
+            let dayTotal = 0;
+
             if (record?.presence) {
                 actualAttendance++;
             }
@@ -81,14 +90,29 @@ const calculateStatsForPeriod = (classConfig: ClassConfig, studentRecords: Simul
                     if (!criteriaCounts.total[item]) criteriaCounts.total[item] = 0;
                     if (!criteriaCounts.checked[item]) criteriaCounts.checked[item] = 0;
                     
+                     const isApplicable = (item !== 'presence' && item !== 'task') ? record?.presence : true;
+                     if(isApplicable) {
+                        dayTotal++;
+                     }
+
                      if (item === 'presence' || item === 'task') {
                          criteriaCounts.total[item]++;
-                         if(record?.[item]) criteriaCounts.checked[item]++;
+                         if(record?.[item]) {
+                            criteriaCounts.checked[item]++;
+                            if(isApplicable) dayScore++;
+                         }
                      } else if (record?.presence) {
                          criteriaCounts.total[item]++;
-                         if(record?.[item]) criteriaCounts.checked[item]++;
+                         if(record?.[item]) {
+                            criteriaCounts.checked[item]++;
+                             if(isApplicable) dayScore++;
+                         }
                      }
                 }
+            }
+            if (dayTotal > 0) {
+                studentScores[student.id].score += (dayScore / dayTotal);
+                studentScores[student.id].count++;
             }
         });
     }
@@ -102,10 +126,17 @@ const calculateStatsForPeriod = (classConfig: ClassConfig, studentRecords: Simul
         const checked = criteriaCounts.checked[item];
         criteriaRates[item] = total > 0 ? (checked / total) * 100 : 0;
     }
+    
+    const topStudents = students.map(student => ({
+        name: student.name,
+        avgScore: studentScores[student.id].count > 0 ? (studentScores[student.id].score / studentScores[student.id].count) * 100 : 0
+    })).sort((a,b) => b.avgScore - a.avgScore).slice(0, 3);
+
 
     return {
         attendanceRate,
         criteriaRates,
+        topStudents,
     };
 };
 
@@ -117,8 +148,8 @@ const calculateClassStats = (classConfig: ClassConfig, studentRecords: Simulated
             avgAge: 0,
             minAgeStudent: { name: '-', age: 0 },
             maxAgeStudent: { name: '-', age: 0 },
-            monthStats: { attendanceRate: 0, criteriaRates: {} },
-            yearStats: { attendanceRate: 0, criteriaRates: {} },
+            monthStats: { attendanceRate: 0, criteriaRates: {}, topStudents: [] },
+            yearStats: { attendanceRate: 0, criteriaRates: {}, topStudents: [] },
         };
     }
 
@@ -144,8 +175,8 @@ const calculateClassStats = (classConfig: ClassConfig, studentRecords: Simulated
 };
 
 const RateDisplay = ({ rate }: { rate: number }) => (
-    <div className="flex items-center gap-2">
-        <span className="font-semibold text-white w-8">{rate.toFixed(0)}%</span>
+    <div className="flex items-center gap-2 justify-end">
+        <span className="font-semibold text-white w-8 text-right">{rate.toFixed(0)}%</span>
         <Progress value={rate} className="h-1.5 w-10 bg-slate-700" indicatorClassName="bg-primary/50" />
     </div>
 );
@@ -181,6 +212,8 @@ export function OverviewReport() {
     if (!isClient || !fullData) return null; // or a loading spinner
     
     const allTrackedItems: (CheckType | 'task')[] = ['presence', 'material', 'inClassTask', 'task', 'verse', 'behavior'];
+    
+    const rankColors = ["text-yellow-400", "text-slate-300", "text-yellow-600"];
 
     return (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
@@ -208,12 +241,27 @@ export function OverviewReport() {
                                 <div className="col-span-2 text-center text-xs text-slate-500 py-2">Sem alunos para calcular idade.</div>
                             )}
                         </div>
+
+                        <div className="space-y-2 pt-2 border-t border-border">
+                            <h4 className="text-sm font-semibold text-slate-300">Destaques do Mês</h4>
+                             {classData.stats.monthStats.topStudents.length > 0 ? classData.stats.monthStats.topStudents.map((student, index) => (
+                                <div key={student.name} className="flex items-center justify-between text-sm">
+                                    <div className="flex items-center gap-2">
+                                        <Crown size={14} className={rankColors[index]} />
+                                        <span className="text-slate-300 truncate max-w-40">{student.name}</span>
+                                    </div>
+                                    <span className="font-semibold text-white">{student.avgScore.toFixed(0)}%</span>
+                                </div>
+                            )) : (
+                                <p className="text-xs text-slate-500 text-center py-2">Sem dados de avaliação no mês.</p>
+                            )}
+                        </div>
                         
                         <div className="space-y-2 pt-2 border-t border-border mt-auto">
-                           <div className="grid grid-cols-[1fr_auto_auto] items-center pt-2">
+                           <div className="grid grid-cols-[1fr_auto_auto] items-center pt-2 gap-2">
                                 <h4 className="text-sm font-semibold text-slate-300">Médias Gerais</h4>
-                                <span className="text-xs font-bold text-slate-400 text-right pr-2">Mês</span>
-                                <span className="text-xs font-bold text-slate-400 text-right">Ano</span>
+                                <span className="text-xs font-bold text-slate-400 text-center">Mês</span>
+                                <span className="text-xs font-bold text-slate-400 text-center">Ano</span>
                             </div>
                            
                            {allTrackedItems.map(itemKey => {
@@ -233,17 +281,13 @@ export function OverviewReport() {
                                 }
 
                                 return (
-                                    <div key={itemKey} className="grid grid-cols-[1fr_auto_auto] items-center text-sm">
+                                    <div key={itemKey} className="grid grid-cols-[1fr_auto_auto] items-center text-sm gap-2">
                                         <div className="flex items-center gap-2">
                                             <Icon size={14} className="text-slate-400" />
                                             <span className="text-slate-300">{label}</span>
                                         </div>
-                                        <div className="text-right pr-2">
-                                            <RateDisplay rate={monthlyRate} />
-                                        </div>
-                                        <div className="text-right">
-                                            <RateDisplay rate={yearlyRate} />
-                                        </div>
+                                        <RateDisplay rate={monthlyRate} />
+                                        <RateDisplay rate={yearlyRate} />
                                     </div>
                                 )
                            })}
