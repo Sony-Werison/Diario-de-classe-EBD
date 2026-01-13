@@ -25,8 +25,8 @@ import { itemIcons, itemLabels, itemColors, CheckType } from "../report-helpers"
 export function MonthlyReport() {
   const [classes, setClasses] = useState<ClassConfig[]>(initialClasses);
   const [currentClassId, setCurrentClassId] = useState<string>(initialClasses[0].id);
-  const [currentMonth, setCurrentMonth] = useState(startOfMonth(new Date()));
-  const [simulatedData, setSimulatedData] = useState<SimulatedFullData>({ lessons: {}, studentRecords: {} });
+  const [currentMonth, setCurrentMonth] = useState(startOfMonth(new Date(new Date().getFullYear(), 0, 1)));
+  const [simulatedData, setSimulatedData] = useState<SimulatedFullData>({ classes: [], lessons: {}, studentRecords: {} });
   const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
@@ -35,6 +35,9 @@ export function MonthlyReport() {
     const handleStorageChange = () => {
         const data = getSimulatedData();
         setSimulatedData(data);
+        if (data.classes) {
+          setClasses(data.classes);
+        }
     };
     handleStorageChange(); // Initial load
     window.addEventListener('storage', handleStorageChange);
@@ -85,32 +88,34 @@ export function MonthlyReport() {
   
   const sundaysInMonth = useMemo(() => daysInMonth.filter(d => getDay(d) === 0), [daysInMonth]);
 
-  const getStudentChecksForDay = (studentId: number, day: Date) => {
+  const getStudentChecksForDay = (studentId: string, day: Date) => {
     const dateKey = format(day, 'yyyy-MM-dd');
     return monthStudentRecords[dateKey]?.[studentId];
   }
   
   const Legend = () => (
-    <div className="flex flex-wrap gap-x-4 gap-y-1 items-center px-4 py-2 border-b border-border bg-card">
-        <span className="text-xs font-bold text-slate-400 uppercase">Legenda:</span>
-        {orderedVisibleItems.map(item => {
-            const Icon = itemIcons[item];
-            return (
-                <div key={item} className="flex items-center gap-1.5">
-                    <Icon size={14} className={cn(itemColors[item])} />
-                    <span className="text-xs text-slate-300">{itemLabels[item]}</span>
-                </div>
-            )
-        })}
+    <div className="px-4 py-3 border-b border-border bg-card">
+        <span className="text-xs font-bold text-slate-400 uppercase mb-2 block">Legenda:</span>
+        <div className="flex flex-wrap gap-x-4 gap-y-2 items-center">
+            {orderedVisibleItems.map(item => {
+                const Icon = itemIcons[item];
+                return (
+                    <div key={item} className="flex items-center gap-1.5">
+                        <Icon size={14} className={cn(itemColors[item])} />
+                        <span className="text-xs text-slate-300">{itemLabels[item]}</span>
+                    </div>
+                )
+            })}
+        </div>
     </div>
   )
 
-  if (!isClient) {
+  if (!isClient || !currentClass) {
     return null;
   }
 
   return (
-    <div className="text-white bg-background flex-1 flex flex-col">
+    <div className="text-white bg-background flex-1 flex flex-col" style={{'--class-color': currentClass.color} as React.CSSProperties}>
       <div className="mb-6 flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
         <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
             <DropdownMenu>
@@ -119,7 +124,10 @@ export function MonthlyReport() {
                 variant="outline"
                 className="w-full sm:w-60 justify-between bg-card border-border hover:bg-secondary"
                 >
-                <span className="truncate">{currentClass.name}</span>
+                <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 rounded-full" style={{backgroundColor: currentClass.color}}/>
+                    <span className="truncate">{currentClass.name}</span>
+                </div>
                 <ChevronDown className="h-4 w-4 shrink-0" />
                 </Button>
             </DropdownMenuTrigger>
@@ -137,6 +145,7 @@ export function MonthlyReport() {
                         currentClassId === c.id ? "opacity-100" : "opacity-0"
                     )}
                     />
+                    <div className="w-3 h-3 rounded-full mr-2" style={{backgroundColor: c.color}}/>
                     {c.name}
                 </DropdownMenuItem>
                 ))}
@@ -164,7 +173,7 @@ export function MonthlyReport() {
               <table className="w-full border-collapse table-fixed">
                   <thead className="sticky top-0 z-10 bg-card/80 backdrop-blur-sm">
                       <tr>
-                          <th className="p-3 border-b border-r border-border text-left text-xs font-bold uppercase text-slate-400 sticky left-0 bg-card/80 z-20 w-1/3 sm:w-auto">
+                          <th className="p-3 border-b border-r border-border text-left text-xs font-bold uppercase text-slate-400 sticky left-0 bg-card/80 z-20 w-1/3 sm:w-48">
                             Aluno
                           </th>
                           {sundaysInMonth.map(day => (
@@ -232,3 +241,4 @@ export function MonthlyReport() {
     </div>
   );
 }
+

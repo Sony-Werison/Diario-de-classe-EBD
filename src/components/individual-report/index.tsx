@@ -9,10 +9,10 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Check, ChevronDown, User, TrendingUp } from "lucide-react";
+import { Check, ChevronDown, User, TrendingUp, ChevronLeft, ChevronRight } from "lucide-react";
 import { initialClasses, ClassConfig, getSimulatedData, SimulatedFullData, CheckType } from "@/lib/data";
 import { cn } from "@/lib/utils";
-import { format, parseISO, startOfMonth, endOfMonth } from 'date-fns';
+import { format, parseISO, startOfMonth, endOfMonth, addMonths, subMonths } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { itemLabels, itemIcons } from "../report-helpers";
@@ -29,7 +29,7 @@ export function IndividualReport() {
   const [classes] = useState<ClassConfig[]>(initialClasses);
   const [currentClassId, setCurrentClassId] = useState<string>(initialClasses[0].id);
   const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null);
-  const [simulatedData, setSimulatedData] = useState<SimulatedFullData>({ lessons: {}, studentRecords: {} });
+  const [simulatedData, setSimulatedData] = useState<SimulatedFullData>({ classes: [], lessons: {}, studentRecords: {} });
   const [isClient, setIsClient] = useState(false);
   const [currentMonth, setCurrentMonth] = useState(startOfMonth(new Date()));
 
@@ -40,18 +40,26 @@ export function IndividualReport() {
     setIsClient(true);
     const data = getSimulatedData();
     setSimulatedData(data);
-    if (currentClass.students.length > 0) {
-      setSelectedStudentId(currentClass.students[0].id);
+    // Use the classes from the loaded data
+    const loadedClasses = data.classes || initialClasses;
+    if (loadedClasses.length > 0) {
+      const firstClass = loadedClasses[0];
+      setCurrentClassId(firstClass.id);
+      if (firstClass.students.length > 0) {
+        setSelectedStudentId(firstClass.students[0].id);
+      }
     }
   }, []);
 
   useEffect(() => {
-    setSelectedStudentId(currentClass.students[0]?.id || null);
-  }, [currentClassId, currentClass.students]);
+    // When class changes, select the first student of the new class
+    const newClass = classes.find(c => c.id === currentClassId);
+    setSelectedStudentId(newClass?.students[0]?.id || null);
+  }, [currentClassId, classes]);
   
   const handleMonthChange = (direction: 'prev' | 'next') => {
-      const newMonth = direction === 'next' ? new Date(currentMonth.setMonth(currentMonth.getMonth() + 1)) : new Date(currentMonth.setMonth(currentMonth.getMonth() - 1));
-      setCurrentMonth(newMonth);
+      const newMonth = direction === 'next' ? addMonths(currentMonth, 1) : subMonths(currentMonth, -1);
+      setCurrentMonth(startOfMonth(newMonth));
   }
 
   const performanceData = useMemo((): PerformanceMetric[] => {
@@ -196,6 +204,18 @@ export function IndividualReport() {
                         ))}
                     </DropdownMenuContent>
                 </DropdownMenu>
+            </div>
+            
+            <div className="flex items-center gap-2 bg-card border border-border px-2 py-1 rounded-md w-full sm:w-auto justify-between">
+                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleMonthChange('prev')}>
+                    <ChevronLeft size={16} />
+                </Button>
+                <span className="font-bold text-sm capitalize w-28 text-center">
+                    {format(currentMonth, 'MMMM yyyy', { locale: ptBR })}
+                </span>
+                 <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleMonthChange('next')}>
+                    <ChevronRight size={16} />
+                </Button>
             </div>
         </div>
 
