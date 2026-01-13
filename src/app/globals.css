@@ -10,10 +10,10 @@ body {
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 0 0% 3.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 0 0% 3.9%;
+    --background: 224 71% 4%;
+    --foreground: 210 40% 98%;
+    --card: 222 84% 5%;
+    --card-foreground: 210 40% 98%;
     --popover: 0 0% 100%;
     --popover-foreground: 0 0% 3.9%;
     --primary: 150 78% 35%;
@@ -84,7 +84,7 @@ body {
   ::-webkit-scrollbar-thumb:hover {
       background: hsl(var(--muted-foreground));
   }
-  .day-recorded:not(.day-selected) {
+   .day-recorded:not(.day-selected) {
     @apply ring-1 ring-primary/50;
   }
   .day-today:not(.day-selected) {

@@ -7,12 +7,12 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
-import { LayoutGrid, LogOut, Settings, FileText } from "lucide-react";
+import { LayoutGrid, LogOut, Settings, FileText, Calendar } from "lucide-react";
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
 const navLinks = [
-  { href: "/", icon: LayoutGrid, label: "Painel" },
+  { href: "/", icon: Calendar, label: "Calendário" },
   { href: "/report", icon: FileText, label: "Relatório" },
   { href: "/settings", icon: Settings, label: "Ajustes" },
 ];
@@ -29,7 +29,7 @@ const NavLink = ({
   isMobile?: boolean;
 }) => {
   const pathname = usePathname();
-  const active = pathname === href;
+  const active = pathname === href || (href === '/' && pathname.startsWith('/dashboard'));
 
   if (isMobile) {
     return (

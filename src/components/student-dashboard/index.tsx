@@ -23,7 +23,7 @@ const calculateAge = (birthDateString: string) => {
     return age;
 }
 
-export function StudentDashboard() {
+export function StudentDashboard({ initialDate }: { initialDate?: string }) {
   const [classes, setClasses] = useState<ClassConfig[]>(initialClasses);
   const [currentClassId, setCurrentClassId] = useState<string>(initialClasses[0].id);
   const [currentDate, setCurrentDate] = useState<Date>(startOfDay(new Date()));
@@ -36,26 +36,31 @@ export function StudentDashboard() {
   useEffect(() => {
     setIsClient(true);
     setSimulatedData(generateFullSimulatedData(initialClasses));
-    setCurrentDate(startOfDay(new Date()));
-  }, []);
+    if (initialDate) {
+        setCurrentDate(startOfDay(new Date(initialDate)));
+    } else {
+        setCurrentDate(startOfDay(new Date()));
+    }
+  }, [initialDate]);
 
   const currentClass = useMemo(() => classes.find(c => c.id === currentClassId) || classes[0], [classes, currentClassId]);
 
   const dateKey = useMemo(() => currentDate ? format(currentDate, "yyyy-MM-dd") : '', [currentDate]);
 
   const dailyLesson = useMemo(() => {
-     if (!dateKey || !simulatedData.lessons[dateKey]) {
+     if (!isClient || !dateKey || !simulatedData.lessons[dateKey]) {
       return {
         teacherId: currentClass.teachers[0]?.id || "",
         title: "",
       };
     }
     return simulatedData.lessons[dateKey];
-  }, [dateKey, simulatedData.lessons, currentClass.teachers]);
+  }, [dateKey, simulatedData.lessons, currentClass.teachers, isClient]);
   
   const dailyStudentChecks = useMemo(() => {
+    if (!isClient) return {};
     return simulatedData.studentRecords[currentClassId]?.[dateKey] || {};
-  }, [simulatedData.studentRecords, currentClassId, dateKey]);
+  }, [simulatedData.studentRecords, currentClassId, dateKey, isClient]);
 
 
   const handleToggleCheck = useCallback((studentId: number, type: CheckType) => {
@@ -103,7 +108,8 @@ export function StudentDashboard() {
       if (!prevDate) return startOfDay(new Date());
       let newDate = new Date(prevDate);
       const dayOfWeek = newDate.getDay();
-      const offset = direction === 'next' ? (7 - dayOfWeek) % 7 || 7 : - (dayOfWeek || 7);
+      // Always move 7 days
+      const offset = direction === 'next' ? 7 : -7;
       newDate.setDate(newDate.getDate() + offset);
       return newDate;
     });
@@ -140,7 +146,7 @@ export function StudentDashboard() {
     const students = currentClass.students;
     const totalStudents = students.length;
 
-    if (totalStudents === 0) {
+    if (totalStudents === 0 || !isClient) {
       return { presencePercent: 0, versePercent: 0, taskPercent: 0, behaviorPercent: 0, materialPercent: 0, totalScore: 0, studentsWithScores: [] };
     }
 
@@ -207,7 +213,7 @@ export function StudentDashboard() {
       totalScore,
       studentsWithScores,
     };
-  }, [currentClass, sortKey, sortDirection, dailyStudentChecks]);
+  }, [currentClass, sortKey, sortDirection, dailyStudentChecks, isClient]);
 
   const trackedItems = currentClass.trackedItems;
 
@@ -216,7 +222,7 @@ export function StudentDashboard() {
   }
   
   return (
-      <div className="flex flex-1 flex-col overflow-hidden">
+      <div className="flex flex-1 flex-col">
         <AppHeader 
             currentDate={currentDate}
             onDateChange={handleDateChange}
@@ -230,7 +236,7 @@ export function StudentDashboard() {
             onSave={handleSave}
             dailyLessons={simulatedData.lessons}
         />
-        <main className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-6 bg-background">
+        <main className="flex-1 p-3 sm:p-4 md:p-6 bg-background">
           <div className="bg-slate-800/50 rounded-t-xl">
              <StudentListHeader 
                 trackedItems={trackedItems}

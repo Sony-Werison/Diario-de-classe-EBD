@@ -68,7 +68,6 @@ export function MonthlyReport() {
   useEffect(() => {
     setIsClient(true);
     setSimulatedData(generateFullSimulatedData(initialClasses));
-    setCurrentMonth(startOfMonth(new Date()));
   }, []);
 
   const currentClass = useMemo(
@@ -82,6 +81,7 @@ export function MonthlyReport() {
 
 
   const monthStudentRecords = useMemo(() => {
+    if (!isClient) return {};
     const classRecords = simulatedData.studentRecords[currentClassId];
     if (!classRecords) return {};
 
@@ -94,7 +94,7 @@ export function MonthlyReport() {
       }
     }
     return relevantRecords;
-  }, [simulatedData.studentRecords, currentClassId, currentMonth]);
+  }, [simulatedData.studentRecords, currentClassId, currentMonth, isClient]);
 
 
   const reportRef = useRef<HTMLDivElement>(null);
@@ -139,9 +139,6 @@ export function MonthlyReport() {
     <div className="p-4 sm:p-6 text-white bg-background flex-1 flex flex-col">
       <header className="mb-6">
         <h1 className="text-2xl font-bold">Relatório Mensal</h1>
-        <p className="text-slate-400">
-          Acompanhe a frequência e o cumprimento dos critérios de avaliação.
-        </p>
       </header>
 
       <div className="mb-6 flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
@@ -197,9 +194,9 @@ export function MonthlyReport() {
               <table className="w-full border-collapse table-fixed">
                   <thead className="sticky top-0 z-10 bg-slate-900/80 backdrop-blur-sm">
                       <tr>
-                          <th className="p-3 border-b border-r border-slate-700 text-left text-xs font-bold uppercase text-slate-400 sticky left-0 bg-slate-900/80 z-20 w-1/3 sm:w-1/4">Aluno</th>
+                          <th className="p-3 border-b border-r border-slate-700 text-left text-xs font-bold uppercase text-slate-400 sticky left-0 bg-slate-900/80 z-20 w-1/3 sm:w-auto">Aluno</th>
                           {sundaysInMonth.map(day => (
-                              <th key={day.toISOString()} className="p-3 text-center border-b border-r border-slate-700 last:border-r-0 text-xs font-bold uppercase text-slate-400 w-12">
+                              <th key={day.toISOString()} className="p-3 text-center border-b border-r border-slate-700 last:border-r-0 text-xs font-bold uppercase text-slate-400 w-16">
                                   {format(day, 'dd')}
                               </th>
                           ))}

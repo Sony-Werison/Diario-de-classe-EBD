@@ -139,14 +139,20 @@ export const generateSimulatedDataForStudent = (studentId: number, month: Date, 
     return { studentId, monthData };
 };
 
+let memoizedData: SimulatedFullData | null = null;
+
 export const generateFullSimulatedData = (classes: ClassConfig[]): SimulatedFullData => {
+    if (memoizedData) {
+        return memoizedData;
+    }
+
     const lessons: Record<string, DailyLesson> = {};
     const studentRecords: SimulatedFullData['studentRecords'] = {};
 
     const today = new Date();
     
-    // Generate for current and previous month
-    for (let monthOffset = -2; monthOffset <= 1; monthOffset++) {
+    // Generate for a wider range of months to ensure data consistency
+    for (let monthOffset = -12; monthOffset <= 12; monthOffset++) {
         const month = new Date(today.getFullYear(), today.getMonth() + monthOffset, 1);
         
         classes.forEach(classConfig => {
@@ -163,8 +169,8 @@ export const generateFullSimulatedData = (classes: ClassConfig[]): SimulatedFull
                     // Create lesson if it doesn't exist
                     if (!lessons[dateKey]) {
                         lessons[dateKey] = {
-                            teacherId: classConfig.teachers[0]?.id || "",
-                            title: `Aula de ${format(dayData.date, "dd/MM")}`,
+                            teacherId: classConfig.teachers[Math.floor(Math.random() * classConfig.teachers.length)]?.id || "",
+                            title: `Aula sobre ${["Criação", "Patriarcas", "Êxodo", "Juízes", "Reis"][Math.floor(Math.random()*5)]}`,
                         };
                     }
 
@@ -177,5 +183,6 @@ export const generateFullSimulatedData = (classes: ClassConfig[]): SimulatedFull
             });
         });
     }
-    return { lessons, studentRecords };
+    memoizedData = { lessons, studentRecords };
+    return memoizedData;
 };
