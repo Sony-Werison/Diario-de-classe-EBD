@@ -2,7 +2,7 @@
 
 "use client";
 
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useContext } from 'react';
 import { getSimulatedData, ClassConfig, SimulatedFullData, CheckType } from '@/lib/data';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Users, Cake, ArrowUp, ArrowDown, Crown, ChevronLeft, ChevronRight } from 'lucide-react';
@@ -12,6 +12,7 @@ import { Progress } from '../ui/progress';
 import { Button } from '../ui/button';
 import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
+import { DataContext } from '@/contexts/DataContext';
 
 const calculateAge = (birthDateString: string) => {
     if (!birthDateString) return 0;
@@ -194,17 +195,14 @@ const RateDisplay: React.FC<{ rate: number, label: string }> = ({ rate, label })
 
 
 export function OverviewReport() {
-    const [fullData, setFullData] = useState<SimulatedFullData | null>(null);
+    const dataContext = useContext(DataContext);
+    const { fullData, isLoading } = dataContext || { fullData: null, isLoading: true };
+
     const [isClient, setIsClient] = useState(false);
     const [currentMonth, setCurrentMonth] = useState(startOfMonth(new Date()));
 
     useEffect(() => {
         setIsClient(true);
-        const loadData = async () => {
-            const data = await getSimulatedData();
-            setFullData(data);
-        };
-        loadData();
     }, []);
 
     const classStats = useMemo(() => {
@@ -225,7 +223,7 @@ export function OverviewReport() {
         return 'text-red-400';
     };
     
-    if (!isClient || !fullData) return <div className="p-4 sm:p-6 text-white flex-1 flex flex-col items-center justify-center"><div className="text-slate-500">Carregando dados...</div></div>;
+    if (isLoading || !isClient || !fullData) return <div className="p-4 sm:p-6 text-white flex-1 flex flex-col items-center justify-center"><div className="text-slate-500">Carregando dados...</div></div>;
     
     const allTrackedItems: (CheckType | 'task')[] = ['presence', 'material', 'inClassTask', 'task', 'verse', 'behavior'];
     

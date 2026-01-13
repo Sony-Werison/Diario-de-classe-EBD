@@ -2,7 +2,7 @@
 
 "use client";
 
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useContext } from 'react';
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -12,10 +12,11 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Progress } from "@/components/ui/progress";
 import { Check, ChevronDown, User, ChevronLeft, ChevronRight, CheckCircle, Notebook, Pencil, BookOpen, Smile, Ban, ClipboardCheck } from "lucide-react";
-import { ClassConfig, getSimulatedData, SimulatedFullData, CheckType, StudentChecks, DailyTasks } from "@/lib/data";
+import { ClassConfig, SimulatedFullData, CheckType, StudentChecks, DailyTasks } from "@/lib/data";
 import { cn } from "@/lib/utils";
 import { format, startOfMonth, addMonths, subMonths, getDay } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { DataContext } from '@/contexts/DataContext';
 
 const checkConfig: Record<CheckType | 'task', { Icon: React.ElementType; activeClass: string; inactiveClass: string; label: string; }> = {
   presence: { Icon: CheckCircle, activeClass: 'bg-blue-500 border-blue-500 text-white', inactiveClass: 'text-slate-400 bg-slate-700/50', label: 'Presença' },
@@ -72,7 +73,9 @@ const calculateDailyProgress = (checks: StudentChecks, classConfig: ClassConfig)
 
 
 export function MonthlyStudentReport() {
-  const [fullData, setFullData] = useState<SimulatedFullData | null>(null);
+  const dataContext = useContext(DataContext);
+  const { fullData, isLoading } = dataContext || { fullData: null, isLoading: true };
+  
   const [currentClassId, setCurrentClassId] = useState<string>('');
   const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null);
   const [isClient, setIsClient] = useState(false);
@@ -80,19 +83,14 @@ export function MonthlyStudentReport() {
 
   useEffect(() => {
     setIsClient(true);
-    const loadData = async () => {
-      const data = await getSimulatedData();
-      setFullData(data);
-       if (data.classes.length > 0) {
-        const firstClass = data.classes[0];
-        setCurrentClassId(firstClass.id);
-        if (firstClass.students.length > 0) {
-            setSelectedStudentId(firstClass.students[0].id);
-        }
+    if (fullData && fullData.classes.length > 0) {
+      const firstClass = fullData.classes[0];
+      setCurrentClassId(firstClass.id);
+      if (firstClass.students.length > 0) {
+          setSelectedStudentId(firstClass.students[0].id);
+      }
     }
-    };
-    loadData();
-  }, []);
+  }, [fullData]);
   
   const { classes, lessons, studentRecords } = fullData || { classes: [], lessons: {}, studentRecords: {} };
   const currentClass = useMemo(() => classes.find((c) => c.id === currentClassId), [classes, currentClassId]);
@@ -135,7 +133,7 @@ export function MonthlyStudentReport() {
   }, [currentMonth, isClient]);
 
 
-  if (!isClient || !fullData || !currentClass) {
+  if (isLoading || !isClient || !fullData || !currentClass) {
      return <div className="p-4 sm:p-6 text-white flex-1 flex flex-col items-center justify-center"><div className="text-slate-500">Carregando dados...</div></div>;
   }
 
@@ -290,5 +288,3 @@ export function MonthlyStudentReport() {
     </div>
   );
 }
-
-    

@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useRef, useMemo, useContext } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -22,7 +22,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { PlusCircle, Trash2, Edit, ChevronDown, Check, Upload, Download, User } from "lucide-react";
-import { getSimulatedData, saveSimulatedData, CheckType, Student, ClassConfig, TaskMode, Teacher, SimulatedFullData } from "@/lib/data";
+import { saveSimulatedData, CheckType, Student, ClassConfig, TaskMode, Teacher, SimulatedFullData } from "@/lib/data";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -32,6 +32,7 @@ import {
 import { cn } from "@/lib/utils";
 import { RadioGroup, RadioGroupItem } from "../ui/radio-group";
 import { useToast } from "@/hooks/use-toast";
+import { DataContext } from "@/contexts/DataContext";
 
 const itemLabels: Record<CheckType | 'task', string> = {
   presence: "Presença",
@@ -67,7 +68,9 @@ const colorPresets = [
 
 
 export function ClassSettings() {
-  const [data, setData] = useState<SimulatedFullData | null>(null);
+  const dataContext = useContext(DataContext);
+  const { fullData: data, updateAndSaveData, isLoading } = dataContext || { fullData: null, updateAndSaveData: () => {}, isLoading: true };
+
   const [currentClassId, setCurrentClassId] = useState<string>('');
   const [isStudentDialogOpen, setIsStudentDialogOpen] = useState(false);
   const [isClassDialogOpen, setIsClassDialogOpen] = useState(false);
@@ -85,23 +88,19 @@ export function ClassSettings() {
     const role = sessionStorage.getItem('userRole') || 'admin';
     setUserRole(role);
     
-    const loadData = async () => {
-        const savedData = await getSimulatedData();
-        setData(savedData);
-        
-        let availableClasses = savedData.classes;
+    if (data) {
+        let availableClasses = data.classes;
         if (role === 'teacher') {
           const teacherId = sessionStorage.getItem('teacherId');
-          availableClasses = savedData.classes.filter(c => c.teachers.some(t => t.id === teacherId));
+          availableClasses = data.classes.filter(c => c.teachers.some(t => t.id === teacherId));
         }
 
         if(availableClasses.length > 0 && (!currentClassId || !availableClasses.find(c => c.id === currentClassId))) {
           setCurrentClassId(availableClasses[0].id);
         }
-    };
-    loadData();
+    }
 
-  }, [currentClassId]);
+  }, [data, currentClassId]);
   
   const availableClasses = useMemo(() => {
     if (!data || !userRole) return [];
@@ -114,16 +113,8 @@ export function ClassSettings() {
   }, [data, userRole]);
 
 
-  const updateAndSaveData = (updater: (prev: typeof data) => typeof data) => {
-    if (!data) return;
-    const newData = updater(data!);
-    setData(newData);
-    saveSimulatedData(newData as SimulatedFullData);
-    return newData;
-  };
-
   const handleTrackedItemToggle = (item: CheckType | 'task') => {
-    if (!currentClass || isViewer) return;
+    if (!currentClass || isViewer || !updateAndSaveData) return;
     updateAndSaveData(prev => ({
         ...prev!,
         classes: prev!.classes.map(c =>
@@ -135,7 +126,7 @@ export function ClassSettings() {
   };
   
     const handleTaskModeChange = (mode: TaskMode) => {
-        if(isViewer) return;
+        if(isViewer || !updateAndSaveData) return;
         updateAndSaveData(prev => ({
             ...prev!,
             classes: prev!.classes.map(c =>
@@ -146,7 +137,7 @@ export function ClassSettings() {
 
   const handleSaveStudent = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if(isViewer) return;
+    if(isViewer || !updateAndSaveData) return;
     const formData = new FormData(e.currentTarget);
     const name = formData.get("name") as string;
     const birthDate = formData.get("birthDate") as string;
@@ -184,7 +175,7 @@ export function ClassSettings() {
   }
 
   const handleDeleteStudent = (studentId: string) => {
-    if(isViewer) return;
+    if(isViewer || !updateAndSaveData) return;
     updateAndSaveData(prev => ({
         ...prev!,
         classes: prev!.classes.map(c =>
@@ -203,7 +194,7 @@ export function ClassSettings() {
 
   const handleSaveClass = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!editingClass || isViewer) return;
+    if (!editingClass || isViewer || !updateAndSaveData) return;
 
     const formData = new FormData(e.currentTarget);
     const name = formData.get("name") as string;
@@ -236,7 +227,9 @@ export function ClassSettings() {
         teachers: teachers.length > 0 ? teachers : [{id: `teacher-${Date.now()}`, name: ''}],
       };
       const newData = updateAndSaveData(prev => ({ ...prev!, classes: [...prev!.classes, newClass] }));
-      setCurrentClassId(newClass.id);
+      if (newData) {
+        setCurrentClassId(newClass.id);
+      }
     }
 
     setEditingClass(null);
@@ -288,8 +281,8 @@ export function ClassSettings() {
   }
 
   const handleExportData = async () => {
-    const dataToExport = await getSimulatedData();
-    const dataStr = JSON.stringify(dataToExport, null, 2);
+    if (!data) return;
+    const dataStr = JSON.stringify(data, null, 2);
     const blob = new Blob([dataStr], { type: "application/json" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
@@ -310,7 +303,7 @@ export function ClassSettings() {
 
   const handleImportData = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (!file || isViewer) return;
+    if (!file || isViewer || !updateAndSaveData) return;
 
     const reader = new FileReader();
     reader.onload = async (e) => {
@@ -320,8 +313,7 @@ export function ClassSettings() {
         
         // Basic validation
         if (importedData && importedData.classes && importedData.lessons && importedData.studentRecords) {
-          await saveSimulatedData(importedData);
-          setData(importedData); // Refresh UI
+          updateAndSaveData(() => importedData);
           setCurrentClassId(importedData.classes[0]?.id || '');
           toast({ title: "Backup importado com sucesso!", description: "Os dados foram restaurados." });
         } else {
@@ -339,7 +331,7 @@ export function ClassSettings() {
     }
   };
 
-  if (!isClient || !data) {
+  if (!isClient || isLoading || !data) {
     return <div className="p-4 sm:p-6 text-white flex-1 flex flex-col items-center justify-center"><div className="text-slate-500">Carregando dados...</div></div>;
   }
 
@@ -737,5 +729,3 @@ export function ClassSettings() {
     </div>
   );
 }
-
-    

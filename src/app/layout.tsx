@@ -5,6 +5,7 @@ import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
 import { cn } from "@/lib/utils";
 import AppLayout from "./AppLayout";
+import { DataProvider } from "@/contexts/DataContext";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
 
@@ -27,7 +28,9 @@ export default function RootLayout({
           inter.variable
         )}
       >
-        <AppLayout>{children}</AppLayout>
+        <DataProvider>
+            <AppLayout>{children}</AppLayout>
+        </DataProvider>
         <Toaster />
       </body>
     </html>

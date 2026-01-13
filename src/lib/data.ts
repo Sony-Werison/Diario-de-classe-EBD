@@ -102,10 +102,6 @@ export const getSimulatedData = async (): Promise<SimulatedFullData> => {
   try {
     const response = await fetch('/api/data');
     if (!response.ok) {
-        if (response.status === 404) {
-            console.log("No data found in blob storage, returning initial data.");
-            return getInitialData();
-        }
         throw new Error(`Failed to fetch data: ${response.statusText}`);
     }
     const data: SimulatedFullData = await response.json();
@@ -117,6 +113,13 @@ export const getSimulatedData = async (): Promise<SimulatedFullData> => {
     return getInitialData();
   } catch (error) {
     console.error("Failed to fetch from API", error);
+    const vercelError = error as any;
+    if (vercelError?.code === 'not_found') {
+        console.log("No data blob found, creating initial data.");
+        const initialData = getInitialData();
+        await saveSimulatedData(initialData);
+        return initialData;
+    }
     return getInitialData();
   }
 };

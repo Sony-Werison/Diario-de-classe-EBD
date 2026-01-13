@@ -1,7 +1,7 @@
 
 "use client";
 
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useContext } from 'react';
 import {
   format,
   addMonths,
@@ -15,14 +15,17 @@ import {
 import { ptBR } from 'date-fns/locale';
 import { ChevronLeft, ChevronRight, Church, Ban, CheckCircle, ChevronDown, Check, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { getSimulatedData, DailyLesson, ClassConfig, saveSimulatedData, SimulatedFullData } from '@/lib/data';
+import { DailyLesson, ClassConfig, SimulatedFullData } from '@/lib/data';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { DataContext } from '@/contexts/DataContext';
 
 export function CalendarPage() {
   const [currentMonth, setCurrentMonth] = useState(startOfMonth(new Date()));
-  const [fullData, setFullData] = useState<SimulatedFullData | null>(null);
+  const dataContext = useContext(DataContext);
+  const { fullData, isLoading } = dataContext || { fullData: null, isLoading: true };
+
   const [isClient, setIsClient] = useState(false);
   const [currentClassId, setCurrentClassId] = useState<string>("");
   const [userRole, setUserRole] = useState<string>('');
@@ -33,16 +36,13 @@ export function CalendarPage() {
     const role = sessionStorage.getItem('userRole') || 'admin';
     setUserRole(role);
 
-    const loadData = async () => {
-        const savedData = await getSimulatedData();
-        setFullData(savedData);
-        
-        let availableClasses = savedData.classes;
+    if (fullData) {
+        let availableClasses = fullData.classes;
         let currentUserName = role;
         const teacherId = sessionStorage.getItem('teacherId');
         if (role === 'teacher' && teacherId) {
-            availableClasses = savedData.classes.filter(c => c.teachers.some(t => t.id === teacherId));
-            const allTeachers = savedData.classes.flatMap(c => c.teachers);
+            availableClasses = fullData.classes.filter(c => c.teachers.some(t => t.id === teacherId));
+            const allTeachers = fullData.classes.flatMap(c => c.teachers);
             const teacher = allTeachers.find(t => t.id === teacherId);
             if (teacher) {
                 currentUserName = teacher.name;
@@ -54,9 +54,7 @@ export function CalendarPage() {
             setCurrentClassId(availableClasses[0].id);
         }
     }
-
-    loadData();
-  }, [currentClassId]);
+  }, [fullData, currentClassId]);
   
   const { classes: allSystemClasses, lessons: allLessons } = fullData || { classes: [], lessons: {} };
 
@@ -92,10 +90,10 @@ export function CalendarPage() {
     return classConfig.teachers.find(t => t.id === teacherId)?.name || "Professor(a) não definido";
   }
 
-  if (!isClient || !fullData || !currentClass) {
+  if (isLoading || !isClient || !fullData || !currentClass) {
      return (
        <div className="p-4 sm:p-6 text-white flex-1 flex flex-col items-center justify-center">
-            {isClient && fullData && availableClasses.length === 0 && userRole === 'teacher' ? (
+            {isClient && !isLoading && availableClasses.length === 0 && userRole === 'teacher' ? (
                 <>
                     <User size={48} className="text-slate-500 mb-4" />
                     <h2 className="text-xl font-bold text-slate-300">Nenhuma turma atribuída</h2>

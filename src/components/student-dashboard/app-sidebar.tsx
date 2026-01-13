@@ -11,8 +11,8 @@ import { cn } from "@/lib/utils";
 import { LogOut, Settings, FileText, Calendar, User } from "lucide-react";
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useEffect, useState } from "react";
-import { getSimulatedData } from "@/lib/data";
+import { useEffect, useState, useContext } from "react";
+import { DataContext } from "@/contexts/DataContext";
 
 const navLinks = [
   { href: "/calendar", icon: Calendar, label: "Calendário" },
@@ -89,6 +89,9 @@ const NavLink = ({
 };
 
 export function AppSidebar() {
+  const dataContext = useContext(DataContext);
+  const { fullData } = dataContext || {};
+
   const [currentUser, setCurrentUser] = useState('');
   const [isClient, setIsClient] = useState(false);
 
@@ -98,20 +101,16 @@ export function AppSidebar() {
     const teacherId = sessionStorage.getItem('teacherId');
     let currentUserName = role;
 
-    const fetchTeacherName = async () => {
-        if (role === 'teacher' && teacherId) {
-            const data = await getSimulatedData();
-            const allTeachers = data.classes.flatMap(c => c.teachers);
-            const teacher = allTeachers.find(t => t.id === teacherId);
-            if (teacher) {
-                currentUserName = teacher.name;
-            }
+    if (fullData && role === 'teacher' && teacherId) {
+        const allTeachers = fullData.classes.flatMap(c => c.teachers);
+        const teacher = allTeachers.find(t => t.id === teacherId);
+        if (teacher) {
+            currentUserName = teacher.name;
         }
-        setCurrentUser(currentUserName);
     }
+    setCurrentUser(currentUserName);
     
-    fetchTeacherName();
-  }, []);
+  }, [fullData]);
 
   return (
     <aside className="w-20 bg-card border-r border-border flex-col items-center py-6 gap-4 shrink-0 hidden sm:flex">

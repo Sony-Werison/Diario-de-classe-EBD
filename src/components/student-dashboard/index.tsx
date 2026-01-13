@@ -1,8 +1,8 @@
 
 "use client";
 
-import React, { useState, useMemo, useCallback, useEffect } from "react";
-import { POINTS, CheckType, ClassConfig, DailyLesson, getSimulatedData, saveSimulatedData, StudentChecks, DailyTasks, Teacher, SimulatedFullData } from "@/lib/data";
+import React, { useState, useMemo, useCallback, useEffect, useContext } from "react";
+import { POINTS, CheckType, ClassConfig, DailyLesson, saveSimulatedData, StudentChecks, DailyTasks, Teacher, SimulatedFullData } from "@/lib/data";
 import { AppHeader } from "./app-header";
 import { StatCard } from "./stat-card";
 import { StudentListHeader } from "./student-list-header";
@@ -16,6 +16,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
 import { Label } from "../ui/label";
 import { Textarea } from "../ui/textarea";
 import { Button } from "../ui/button";
+import { DataContext } from "@/contexts/DataContext";
 
 const calculateAge = (birthDateString: string) => {
     if (!birthDateString) return null;
@@ -43,7 +44,9 @@ const defaultChecks: StudentChecks = {
 
 export function StudentDashboard({ initialDate, classId: initialClassId }: { initialDate?: string, classId?: string }) {
   const router = useRouter();
-  const [fullData, setFullData] = useState<SimulatedFullData | null>(null);
+  const dataContext = useContext(DataContext);
+  const { fullData, updateAndSaveData, isLoading } = dataContext || { fullData: null, updateAndSaveData: () => {}, isLoading: true };
+
   const [currentClassId, setCurrentClassId] = useState<string>('');
   const [currentDate, setCurrentDate] = useState<Date>(() => initialDate ? startOfDay(parseISO(initialDate)) : startOfDay(new Date()));
   const { toast } = useToast();
@@ -66,17 +69,14 @@ export function StudentDashboard({ initialDate, classId: initialClassId }: { ini
     const role = sessionStorage.getItem('userRole') || 'admin';
     setUserRole(role);
 
-    const loadInitialData = async () => {
-        const data = await getSimulatedData();
-        setFullData(data);
-
-        let availableClasses = data.classes;
+    if (fullData) {
+        let availableClasses = fullData.classes;
         let currentUserName = role;
         
         const teacherId = sessionStorage.getItem('teacherId');
         if (role === 'teacher' && teacherId) {
-            availableClasses = data.classes.filter(c => c.teachers.some(t => t.id === teacherId));
-            const allTeachers = data.classes.flatMap(c => c.teachers);
+            availableClasses = fullData.classes.filter(c => c.teachers.some(t => t.id === teacherId));
+            const allTeachers = fullData.classes.flatMap(c => c.teachers);
             const teacher = allTeachers.find(t => t.id === teacherId);
             if (teacher) {
                 currentUserName = teacher.name;
@@ -92,10 +92,8 @@ export function StudentDashboard({ initialDate, classId: initialClassId }: { ini
         if (!initialDate) {
             router.push('/calendar');
         }
-    };
-
-    loadInitialData();
-  }, [initialClassId, initialDate, router]);
+    }
+  }, [fullData, initialClassId, initialDate, router]);
 
   const currentClass = useMemo(() => classes.find(c => c.id === currentClassId), [classes, currentClassId]);
   const dateKey = useMemo(() => currentDate ? format(currentDate, "yyyy-MM-dd") : '', [currentDate]);
@@ -199,29 +197,30 @@ export function StudentDashboard({ initialDate, classId: initialClassId }: { ini
   }
 
   const handleSave = () => {
-    if (!currentDate || !currentClass || isViewer || !fullData) return;
+    if (!currentDate || !currentClass || isViewer || !fullData || !updateAndSaveData) return;
     
-    const dataToSave = JSON.parse(JSON.stringify(fullData)) as SimulatedFullData;
+    updateAndSaveData((prevData: SimulatedFullData) => {
+        const dataToSave = JSON.parse(JSON.stringify(prevData)) as SimulatedFullData;
     
-    const finalLesson: DailyLesson = { 
-        teacherId: dailyLesson?.teacherId || currentClass.teachers[0]?.id || "",
-        title: dailyLesson?.title || "",
-        status: dailyLesson?.status === 'cancelled' ? 'cancelled' : 'held',
-        cancellationReason: dailyLesson?.status === 'cancelled' ? cancellationReason : "",
-    };
+        const finalLesson: DailyLesson = { 
+            teacherId: dailyLesson?.teacherId || currentClass.teachers[0]?.id || "",
+            title: dailyLesson?.title || "",
+            status: dailyLesson?.status === 'cancelled' ? 'cancelled' : 'held',
+            cancellationReason: dailyLesson?.status === 'cancelled' ? cancellationReason : "",
+        };
 
-    if (!dataToSave.lessons[currentClassId]) {
-        dataToSave.lessons[currentClassId] = {};
-    }
-    dataToSave.lessons[currentClassId][dateKey] = finalLesson;
+        if (!dataToSave.lessons[currentClassId]) {
+            dataToSave.lessons[currentClassId] = {};
+        }
+        dataToSave.lessons[currentClassId][dateKey] = finalLesson;
 
-    if (!dataToSave.studentRecords[currentClassId]) {
-        dataToSave.studentRecords[currentClassId] = {};
-    }
-    dataToSave.studentRecords[currentClassId][dateKey] = dailyStudentChecks;
-    
-    setFullData(dataToSave);
-    saveSimulatedData(dataToSave);
+        if (!dataToSave.studentRecords[currentClassId]) {
+            dataToSave.studentRecords[currentClassId] = {};
+        }
+        dataToSave.studentRecords[currentClassId][dateKey] = dailyStudentChecks;
+        
+        return dataToSave;
+    });
 
     toast({
       title: "Aula Salva!",
@@ -230,19 +229,20 @@ export function StudentDashboard({ initialDate, classId: initialClassId }: { ini
   }
 
   const handleDeleteLesson = () => {
-    if (!currentDate || !currentClassId || isViewer || !fullData) return;
+    if (!currentDate || !currentClassId || isViewer || !fullData || !updateAndSaveData) return;
   
-    const dataToSave = JSON.parse(JSON.stringify(fullData)) as SimulatedFullData;
-    
-    if (dataToSave.lessons[currentClassId]) {
-      delete dataToSave.lessons[currentClassId][dateKey];
-    }
-    if (dataToSave.studentRecords[currentClassId]) {
-      delete dataToSave.studentRecords[currentClassId][dateKey];
-    }
-    
-    setFullData(dataToSave);
-    saveSimulatedData(dataToSave);
+    updateAndSaveData((prevData: SimulatedFullData) => {
+        const dataToSave = JSON.parse(JSON.stringify(prevData)) as SimulatedFullData;
+        
+        if (dataToSave.lessons[currentClassId]) {
+        delete dataToSave.lessons[currentClassId][dateKey];
+        }
+        if (dataToSave.studentRecords[currentClassId]) {
+        delete dataToSave.studentRecords[currentClassId][dateKey];
+        }
+        
+        return dataToSave;
+    });
     
     setIsDeleteAlertOpen(false);
     router.push(`/calendar?classId=${currentClassId}`);
@@ -259,7 +259,7 @@ export function StudentDashboard({ initialDate, classId: initialClassId }: { ini
         toast({ title: "O motivo é obrigatório", variant: "destructive" });
         return;
       }
-      if(!currentClass || isViewer || !fullData) return;
+      if(!currentClass || isViewer || !fullData || !updateAndSaveData) return;
       
       const updatedLesson: DailyLesson = {
           ...(dailyLesson || { teacherId: currentClass.teachers[0]?.id || "", title: "", status: 'held' }),
@@ -269,14 +269,14 @@ export function StudentDashboard({ initialDate, classId: initialClassId }: { ini
 
       setDailyLesson(updatedLesson);
 
-      const dataToSave = JSON.parse(JSON.stringify(fullData)) as SimulatedFullData;
-       if (!dataToSave.lessons[currentClassId]) {
-        dataToSave.lessons[currentClassId] = {};
-      }
-      dataToSave.lessons[currentClassId][dateKey] = updatedLesson;
-      
-      setFullData(dataToSave);
-      saveSimulatedData(dataToSave);
+      updateAndSaveData((prevData: SimulatedFullData) => {
+          const dataToSave = JSON.parse(JSON.stringify(prevData)) as SimulatedFullData;
+          if (!dataToSave.lessons[currentClassId]) {
+            dataToSave.lessons[currentClassId] = {};
+          }
+          dataToSave.lessons[currentClassId][dateKey] = updatedLesson;
+          return dataToSave;
+      });
       
       setIsCancelDialogOpen(false);
       
@@ -382,7 +382,7 @@ export function StudentDashboard({ initialDate, classId: initialClassId }: { ini
   }, [currentClass, studentsWithScores, isClient]);
 
 
-  if (!isClient || !initialDate || !dailyLesson || !currentClass || !fullData) {
+  if (isLoading || !isClient || !initialDate || !dailyLesson || !currentClass || !fullData) {
     return <div className="p-4 sm:p-6 text-white flex-1 flex flex-col items-center justify-center"><div className="text-slate-500">Carregando dados...</div></div>;
   }
 

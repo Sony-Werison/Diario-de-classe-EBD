@@ -1,6 +1,6 @@
 
 "use client";
-import React, { useState, useMemo, useRef, useEffect } from "react";
+import React, { useState, useMemo, useRef, useEffect, useContext } from "react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -16,33 +16,31 @@ import {
 } from "@/components/ui/tooltip";
 
 import { Check, ChevronDown, ChevronLeft, ChevronRight, Users } from "lucide-react";
-import { ClassConfig, getSimulatedData, SimulatedFullData } from "@/lib/data";
+import { SimulatedFullData } from "@/lib/data";
 import { cn } from "@/lib/utils";
 import { format, getDaysInMonth, startOfMonth, addMonths, subMonths, getDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { itemIcons, itemLabels, itemColors, CheckType } from "../report-helpers";
 import { useRouter } from "next/navigation";
+import { DataContext } from "@/contexts/DataContext";
 
 export function MonthlyReport() {
   const router = useRouter();
+  const dataContext = useContext(DataContext);
+  const { fullData: simulatedData, isLoading } = dataContext || { fullData: null, isLoading: true };
+
   const [currentClassId, setCurrentClassId] = useState<string>('');
   const [currentMonth, setCurrentMonth] = useState(startOfMonth(new Date()));
-  const [simulatedData, setSimulatedData] = useState<SimulatedFullData | null>(null);
   const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
     setIsClient(true);
-    const loadData = async () => {
-        const data = await getSimulatedData();
-        setSimulatedData(data);
-        if (data.classes && data.classes.length > 0) {
-          if (!currentClassId) {
-            setCurrentClassId(data.classes[0].id);
-          }
-        }
-    };
-    loadData();
-  }, [currentClassId]);
+    if (simulatedData && simulatedData.classes && simulatedData.classes.length > 0) {
+      if (!currentClassId) {
+        setCurrentClassId(simulatedData.classes[0].id);
+      }
+    }
+  }, [simulatedData, currentClassId]);
 
 
   const currentClass = useMemo(
@@ -116,7 +114,7 @@ export function MonthlyReport() {
     </div>
   )
 
-  if (!isClient || !simulatedData || !currentClass) {
+  if (isLoading || !isClient || !simulatedData || !currentClass) {
     return <div className="p-4 sm:p-6 text-white flex-1 flex flex-col items-center justify-center"><div className="text-slate-500">Carregando dados...</div></div>;
   }
 

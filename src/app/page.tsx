@@ -3,10 +3,11 @@
 
 import { Church, Shield, Eye, ArrowRight, User } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useState, useEffect } from 'react';
-import { getSimulatedData, Teacher } from '@/lib/data';
+import { useState, useContext } from 'react';
+import { Teacher } from '@/lib/data';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { DataContext } from '@/contexts/DataContext';
 
 const profiles = [
   {
@@ -34,16 +35,21 @@ export default function ProfileSelectionPage() {
   const [isTeacherSelectOpen, setIsTeacherSelectOpen] = useState(false);
   const [allTeachers, setAllTeachers] = useState<Teacher[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const dataContext = useContext(DataContext);
+
 
   const handleProfileSelect = async (role: string) => {
     if (role === 'teacher') {
-      setIsLoading(true);
-      const data = await getSimulatedData();
-      const teachers = data.classes.flatMap(c => c.teachers);
-      const uniqueTeachers = Array.from(new Map(teachers.map(t => [t.id, t])).values());
-      setAllTeachers(uniqueTeachers.sort((a,b) => a.name.localeCompare(b.name)));
-      setIsTeacherSelectOpen(true);
-      setIsLoading(false);
+      if (dataContext?.fullData) {
+        const teachers = dataContext.fullData.classes.flatMap(c => c.teachers);
+        const uniqueTeachers = Array.from(new Map(teachers.map(t => [t.id, t])).values());
+        setAllTeachers(uniqueTeachers.sort((a,b) => a.name.localeCompare(b.name)));
+        setIsTeacherSelectOpen(true);
+      } else {
+        // Handle case where data is not loaded yet
+        setIsLoading(true);
+        // We can optionally trigger a load or just wait
+      }
     } else {
       sessionStorage.setItem('userRole', role);
       sessionStorage.removeItem('teacherId');
@@ -57,6 +63,14 @@ export default function ProfileSelectionPage() {
     setIsTeacherSelectOpen(false);
     router.push('/calendar');
   };
+  
+  if (dataContext && dataContext.isLoading && !dataContext.fullData) {
+      return (
+        <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">
+            <div className="text-slate-400">Carregando dados do aplicativo...</div>
+        </div>
+      )
+  }
 
   return (
     <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">
