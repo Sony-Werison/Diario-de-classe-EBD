@@ -158,10 +158,10 @@ const calculateClassStats = (classConfig: ClassConfig, studentRecords: Simulated
         };
     }
 
-    const ages = students.map(s => calculateAge(s.birthDate)).filter(age => age > 0);
+    const ages = students.map(s => calculateAge(s.birthDate)).filter((age): age is number => age !== null && age > 0);
     const avgAge = ages.length > 0 ? ages.reduce((sum, age) => sum + age, 0) / ages.length : 0;
     
-    const sortedByAge = [...students].sort((a, b) => calculateAge(a.birthDate) - calculateAge(b.birthDate));
+    const sortedByAge = [...students].sort((a, b) => (calculateAge(a.birthDate) || 0) - (calculateAge(b.birthDate) || 0));
     const minAgeStudent = sortedByAge[0];
     const maxAgeStudent = sortedByAge[sortedByAge.length - 1];
 
@@ -172,8 +172,8 @@ const calculateClassStats = (classConfig: ClassConfig, studentRecords: Simulated
     return {
         totalStudents: students.length,
         avgAge: Math.round(avgAge),
-        minAgeStudent: { name: minAgeStudent.name, age: calculateAge(minAgeStudent.birthDate) },
-        maxAgeStudent: { name: maxAgeStudent.name, age: calculateAge(maxAgeStudent.birthDate) },
+        minAgeStudent: { name: minAgeStudent.name, age: calculateAge(minAgeStudent.birthDate) || 0 },
+        maxAgeStudent: { name: maxAgeStudent.name, age: calculateAge(maxAgeStudent.birthDate) || 0 },
         monthStats,
     };
 };
@@ -198,17 +198,11 @@ export function OverviewReport() {
 
     useEffect(() => {
         setIsClient(true);
-        const data = getSimulatedData();
-        setFullData(data);
-
-        const handleStorageChange = () => {
-            const updatedData = getSimulatedData();
-            setFullData(updatedData);
+        const loadData = async () => {
+            const data = await getSimulatedData();
+            setFullData(data);
         };
-        window.addEventListener('storage', handleStorageChange);
-        return () => {
-            window.removeEventListener('storage', handleStorageChange);
-        };
+        loadData();
     }, []);
 
     const classStats = useMemo(() => {
@@ -229,7 +223,7 @@ export function OverviewReport() {
         return 'text-red-400';
     };
     
-    if (!isClient || !fullData) return null; // or a loading spinner
+    if (!isClient || !fullData) return <div className="p-4 sm:p-6 text-white flex-1 flex flex-col items-center justify-center"><div className="text-slate-500">Carregando dados...</div></div>;
     
     const allTrackedItems: (CheckType | 'task')[] = ['presence', 'material', 'inClassTask', 'task', 'verse', 'behavior'];
     

@@ -72,7 +72,7 @@ const calculateDailyProgress = (checks: StudentChecks, classConfig: ClassConfig)
 
 
 export function MonthlyStudentReport() {
-  const [fullData, setFullData] = useState<SimulatedFullData>(getSimulatedData);
+  const [fullData, setFullData] = useState<SimulatedFullData | null>(null);
   const [currentClassId, setCurrentClassId] = useState<string>('');
   const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null);
   const [isClient, setIsClient] = useState(false);
@@ -80,7 +80,8 @@ export function MonthlyStudentReport() {
 
   useEffect(() => {
     setIsClient(true);
-     const data = getSimulatedData();
+    const loadData = async () => {
+      const data = await getSimulatedData();
       setFullData(data);
        if (data.classes.length > 0) {
         const firstClass = data.classes[0];
@@ -89,17 +90,11 @@ export function MonthlyStudentReport() {
             setSelectedStudentId(firstClass.students[0].id);
         }
     }
-
-    const handleStorageChange = () => {
-      const data = getSimulatedData();
-      setFullData(data);
     };
-    window.addEventListener('storage', handleStorageChange);
-    
-    return () => window.removeEventListener('storage', handleStorageChange);
+    loadData();
   }, []);
   
-  const { classes, lessons, studentRecords } = fullData;
+  const { classes, lessons, studentRecords } = fullData || { classes: [], lessons: {}, studentRecords: {} };
   const currentClass = useMemo(() => classes.find((c) => c.id === currentClassId), [classes, currentClassId]);
   const selectedStudent = useMemo(() => currentClass?.students.find(s => s.id === selectedStudentId), [currentClass?.students, selectedStudentId]);
 
@@ -140,7 +135,9 @@ export function MonthlyStudentReport() {
   }, [currentMonth, isClient]);
 
 
-  if (!isClient || !currentClass) return null;
+  if (!isClient || !fullData || !currentClass) {
+     return <div className="p-4 sm:p-6 text-white flex-1 flex flex-col items-center justify-center"><div className="text-slate-500">Carregando dados...</div></div>;
+  }
 
   return (
     <div className="text-white bg-background flex-1 flex flex-col" style={{'--class-color': currentClass?.color} as React.CSSProperties}>

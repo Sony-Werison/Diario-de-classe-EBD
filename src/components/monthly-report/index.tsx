@@ -25,37 +25,29 @@ import { useRouter } from "next/navigation";
 
 export function MonthlyReport() {
   const router = useRouter();
-  const [classes, setClasses] = useState<ClassConfig[]>([]);
   const [currentClassId, setCurrentClassId] = useState<string>('');
   const [currentMonth, setCurrentMonth] = useState(startOfMonth(new Date()));
-  const [simulatedData, setSimulatedData] = useState<SimulatedFullData>({ classes: [], lessons: {}, studentRecords: {} });
+  const [simulatedData, setSimulatedData] = useState<SimulatedFullData | null>(null);
   const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
     setIsClient(true);
-    const data = getSimulatedData();
-    setSimulatedData(data);
-    if (data.classes && data.classes.length > 0) {
-      setClasses(data.classes);
-      setCurrentClassId(data.classes[0].id);
-    }
-    const handleStorageChange = () => {
-        const updatedData = getSimulatedData();
-        setSimulatedData(updatedData);
-        if (updatedData.classes) {
-          setClasses(updatedData.classes);
+    const loadData = async () => {
+        const data = await getSimulatedData();
+        setSimulatedData(data);
+        if (data.classes && data.classes.length > 0) {
+          if (!currentClassId) {
+            setCurrentClassId(data.classes[0].id);
+          }
         }
     };
-    window.addEventListener('storage', handleStorageChange);
-    return () => {
-        window.removeEventListener('storage', handleStorageChange);
-    };
-  }, []);
+    loadData();
+  }, [currentClassId]);
 
 
   const currentClass = useMemo(
-    () => classes.find((c) => c.id === currentClassId),
-    [classes, currentClassId]
+    () => simulatedData?.classes.find((c) => c.id === currentClassId),
+    [simulatedData, currentClassId]
   );
   
   const orderedVisibleItems: (CheckType | 'task')[] = useMemo(() => {
@@ -67,7 +59,7 @@ export function MonthlyReport() {
 
 
   const monthStudentRecords = useMemo(() => {
-    if (!isClient) return {};
+    if (!isClient || !simulatedData) return {};
     const classRecords = simulatedData.studentRecords[currentClassId];
     if (!classRecords) return {};
 
@@ -80,7 +72,7 @@ export function MonthlyReport() {
       }
     }
     return relevantRecords;
-  }, [simulatedData.studentRecords, currentClassId, currentMonth, isClient]);
+  }, [simulatedData, currentClassId, currentMonth, isClient]);
 
 
   const reportRef = useRef<HTMLDivElement>(null);
@@ -124,8 +116,8 @@ export function MonthlyReport() {
     </div>
   )
 
-  if (!isClient || !currentClass) {
-    return null;
+  if (!isClient || !simulatedData || !currentClass) {
+    return <div className="p-4 sm:p-6 text-white flex-1 flex flex-col items-center justify-center"><div className="text-slate-500">Carregando dados...</div></div>;
   }
 
   return (
@@ -145,7 +137,7 @@ export function MonthlyReport() {
                 </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent className="w-[var(--radix-dropdown-menu-trigger-width)] bg-card border-border text-white">
-                {classes.map((c) => (
+                {simulatedData.classes.map((c) => (
                 <DropdownMenuItem
                     key={c.id}
                     onSelect={() => setCurrentClassId(c.id)}

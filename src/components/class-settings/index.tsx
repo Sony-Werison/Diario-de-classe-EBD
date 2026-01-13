@@ -84,26 +84,23 @@ export function ClassSettings() {
     setIsClient(true);
     const role = sessionStorage.getItem('userRole') || 'admin';
     setUserRole(role);
-    const savedData = getSimulatedData();
-    setData(savedData);
     
-    let availableClasses = savedData.classes;
-    if (role === 'teacher') {
-      const teacherId = sessionStorage.getItem('teacherId');
-      availableClasses = savedData.classes.filter(c => c.teachers.some(t => t.id === teacherId));
-    }
+    const loadData = async () => {
+        const savedData = await getSimulatedData();
+        setData(savedData);
+        
+        let availableClasses = savedData.classes;
+        if (role === 'teacher') {
+          const teacherId = sessionStorage.getItem('teacherId');
+          availableClasses = savedData.classes.filter(c => c.teachers.some(t => t.id === teacherId));
+        }
 
-    if(availableClasses.length > 0 && (!currentClassId || !availableClasses.find(c => c.id === currentClassId))) {
-      setCurrentClassId(availableClasses[0].id);
-    }
-    
-    const handleStorageChange = () => {
-      setData(getSimulatedData());
+        if(availableClasses.length > 0 && (!currentClassId || !availableClasses.find(c => c.id === currentClassId))) {
+          setCurrentClassId(availableClasses[0].id);
+        }
     };
-    window.addEventListener('storage', handleStorageChange);
-    return () => {
-      window.removeEventListener('storage', handleStorageChange);
-    };
+    loadData();
+
   }, [currentClassId]);
   
   const availableClasses = useMemo(() => {
@@ -118,6 +115,7 @@ export function ClassSettings() {
 
 
   const updateAndSaveData = (updater: (prev: typeof data) => typeof data) => {
+    if (!data) return;
     const newData = updater(data!);
     setData(newData);
     saveSimulatedData(newData as SimulatedFullData);
@@ -285,8 +283,8 @@ export function ClassSettings() {
     });
   }
 
-  const handleExportData = () => {
-    const dataToExport = getSimulatedData();
+  const handleExportData = async () => {
+    const dataToExport = await getSimulatedData();
     const dataStr = JSON.stringify(dataToExport, null, 2);
     const blob = new Blob([dataStr], { type: "application/json" });
     const url = URL.createObjectURL(blob);
@@ -311,14 +309,14 @@ export function ClassSettings() {
     if (!file || isViewer) return;
 
     const reader = new FileReader();
-    reader.onload = (e) => {
+    reader.onload = async (e) => {
       try {
         const text = e.target?.result as string;
         const importedData = JSON.parse(text);
         
         // Basic validation
         if (importedData && importedData.classes && importedData.lessons && importedData.studentRecords) {
-          saveSimulatedData(importedData);
+          await saveSimulatedData(importedData);
           setData(importedData); // Refresh UI
           setCurrentClassId(importedData.classes[0]?.id || '');
           toast({ title: "Backup importado com sucesso!", description: "Os dados foram restaurados." });
@@ -338,7 +336,7 @@ export function ClassSettings() {
   };
 
   if (!isClient || !data) {
-    return null; // Render nothing on the server until client is ready
+    return <div className="p-4 sm:p-6 text-white flex-1 flex flex-col items-center justify-center"><div className="text-slate-500">Carregando dados...</div></div>;
   }
 
   const currentClass = availableClasses.find(c => c.id === currentClassId);

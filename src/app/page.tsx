@@ -33,14 +33,20 @@ export default function ProfileSelectionPage() {
   const router = useRouter();
   const [isTeacherSelectOpen, setIsTeacherSelectOpen] = useState(false);
   const [allTeachers, setAllTeachers] = useState<Teacher[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     // Load all teachers from all classes on component mount
-    const data = getSimulatedData();
-    const teachers = data.classes.flatMap(c => c.teachers);
-    // Remove duplicates
-    const uniqueTeachers = Array.from(new Map(teachers.map(t => [t.id, t])).values());
-    setAllTeachers(uniqueTeachers.sort((a,b) => a.name.localeCompare(b.name)));
+    const loadTeachers = async () => {
+        setIsLoading(true);
+        const data = await getSimulatedData();
+        const teachers = data.classes.flatMap(c => c.teachers);
+        // Remove duplicates
+        const uniqueTeachers = Array.from(new Map(teachers.map(t => [t.id, t])).values());
+        setAllTeachers(uniqueTeachers.sort((a,b) => a.name.localeCompare(b.name)));
+        setIsLoading(false);
+    }
+    loadTeachers();
   }, []);
 
   const handleProfileSelect = (role: string) => {
@@ -59,6 +65,14 @@ export default function ProfileSelectionPage() {
     setIsTeacherSelectOpen(false);
     router.push('/calendar');
   };
+
+  if (isLoading) {
+    return (
+        <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">
+             <div className="text-slate-500">Carregando dados...</div>
+        </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">

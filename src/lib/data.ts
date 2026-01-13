@@ -1,4 +1,3 @@
-
 import { format, getDaysInMonth, getDay } from "date-fns";
 
 export type CheckType = 'presence' | 'verse' | 'behavior' | 'material' | 'inClassTask';
@@ -119,210 +118,56 @@ export const initialClasses: ClassConfig[] = [
   }
 ];
 
-// --- SIMULATED DATA GENERATION ---
-const SIMULATED_DATA_KEY = 'ebd-junior-tracker-data-v2';
-
-export type SimulatedDayData = {
-  date: Date;
-  checks: StudentChecks;
-}
-
-export type SimulatedStudentData = {
-  studentId: string;
-  monthData: SimulatedDayData[];
-}
-
 export type SimulatedFullData = {
   classes: ClassConfig[];
   lessons: Record<string, Record<string, DailyLesson>>; // [classId][dateKey] -> lesson
   studentRecords: Record<string, Record<string, Record<string, StudentChecks>>>; // [classId][dateKey][studentId] -> checks
 }
 
-// Function to generate consistent random data for a student for a specific month
-export const generateSimulatedDataForStudent = (studentId: string, month: Date, classConfig: ClassConfig): SimulatedDayData[] => {
-    const daysInMonth = getDaysInMonth(month);
-    const monthData: SimulatedDayData[] = [];
-    const year = month.getFullYear();
-    const monthIndex = month.getMonth();
-    const studentSeed = studentId.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0);
-
-    for (let day = 1; day <= daysInMonth; day++) {
-        const date = new Date(year, monthIndex, day);
-        // Only generate data for Sundays
-        if (getDay(date) === 0) {
-            const seed = studentSeed * day * (monthIndex + 1) * year;
-            let sineSeed = Math.sin(seed) * 10000;
-            const random = () => {
-                sineSeed += 1;
-                let x = Math.sin(sineSeed) * 10000;
-                return x - Math.floor(x);
-            };
-
-            const checks: StudentChecks = { presence: false, verse: false, behavior: false, material: false, task: false, inClassTask: false, dailyTasks: {} };
-            
-            const allItems: (CheckType | 'task')[] = ['presence', 'material', 'task', 'verse', 'behavior', 'inClassTask'];
-            
-            let isPresent = false;
-             if (classConfig.trackedItems.presence) {
-                isPresent = random() > 0.2; // 80% chance of presence
-                checks.presence = isPresent;
-             }
-
-            allItems.forEach(key => {
-                if (key !== 'presence' && classConfig.trackedItems[key]) {
-                    if (key === 'task') {
-                        if (classConfig.taskMode === 'unique') {
-                            checks.task = random() > 0.4; // not dependent on presence
-                        } else {
-                            checks.dailyTasks = {
-                                mon: random() > 0.3,
-                                tue: random() > 0.3,
-                                wed: random() > 0.3,
-                                thu: random() > 0.3,
-                                fri: random() > 0.3,
-                                sat: random() > 0.3,
-                            };
-                            const completedCount = Object.values(checks.dailyTasks).filter(v => v).length;
-                            checks.task = completedCount >= 5;
-                        }
-                    } else {
-                       (checks as any)[key] = isPresent && random() > 0.4; // 60% chance if present
-                    }
-                } else if (!classConfig.trackedItems[key]) {
-                   if (key === 'task') {
-                     checks.task = false;
-                     checks.dailyTasks = {};
-                   } else {
-                    (checks as any)[key] = false;
-                   }
-                }
-            });
-
-            monthData.push({ date, checks });
-        }
-    }
-    return monthData;
-};
-
-export const generateFullSimulatedData = (classes: ClassConfig[]): Omit<SimulatedFullData, 'classes'> => {
-    const lessons: SimulatedFullData['lessons'] = {};
-    const studentRecords: SimulatedFullData['studentRecords'] = {};
-    const today = new Date();
-    
-    // Generate for a wider range of months to ensure data consistency
-    for (let monthOffset = -12; monthOffset <= 12; monthOffset++) {
-        const month = new Date(today.getFullYear(), today.getMonth() + monthOffset, 1);
-        
-        classes.forEach(classConfig => {
-            if (!studentRecords[classConfig.id]) {
-                studentRecords[classConfig.id] = {};
-            }
-             if (!lessons[classConfig.id]) {
-                lessons[classConfig.id] = {};
-            }
-
-            classConfig.students.forEach(student => {
-                const studentMonthlyData = generateSimulatedDataForStudent(student.id, month, classConfig);
-                
-                studentMonthlyData.forEach(dayData => {
-                    const dateKey = format(dayData.date, "yyyy-MM-dd");
-                    
-                    if (!lessons[classConfig.id][dateKey]) {
-                         const randomTeacherIndex = Math.floor(Math.random() * classConfig.teachers.length);
-                         const isCancelled = Math.random() < 0.05; // 5% chance of cancellation
-                        lessons[classConfig.id][dateKey] = {
-                            teacherId: classConfig.teachers[randomTeacherIndex]?.id || "",
-                            title: `Aula sobre ${["Criação", "Patriarcas", "Êxodo", "Juízes", "Reis"][Math.floor(Math.random()*5)]}`,
-                            status: isCancelled ? 'cancelled' : 'held',
-                            cancellationReason: isCancelled ? 'Evento especial na igreja' : undefined,
-                        };
-                    }
-                    
-                    if (lessons[classConfig.id][dateKey].status === 'held') {
-                        if (!studentRecords[classConfig.id][dateKey]) {
-                            studentRecords[classConfig.id][dateKey] = {};
-                        }
-                        studentRecords[classConfig.id][dateKey][student.id] = dayData.checks;
-                    }
-                });
-            });
-        });
-    }
-    return { lessons, studentRecords };
-};
+export const getInitialData = (): SimulatedFullData => {
+  return { classes: initialClasses, lessons: {}, studentRecords: {} };
+}
 
 
-// Centralized functions to get and save data from localStorage
-export const getSimulatedData = (): SimulatedFullData => {
+// Centralized functions to get and save data from the API
+export const getSimulatedData = async (): Promise<SimulatedFullData> => {
   if (typeof window === 'undefined') {
-    return { classes: initialClasses, lessons: {}, studentRecords: {} };
+    return getInitialData();
   }
   try {
-    const savedData = localStorage.getItem(SIMULATED_DATA_KEY);
-    if (savedData) {
-      const parsedData: SimulatedFullData = JSON.parse(savedData);
-      
-      let needsUpdate = false;
-      if (!parsedData.classes || parsedData.classes.length === 0) {
-        parsedData.classes = initialClasses;
-        needsUpdate = true;
-      }
-      
-      // Migration: Ensure lesson structure is per-class
-      const firstKey = Object.keys(parsedData.lessons)[0];
-      if (firstKey && typeof (parsedData.lessons as any)[firstKey].teacherId === 'string') {
-          // This is the old structure, needs migration
-          needsUpdate = true;
-      }
-
-      parsedData.classes.forEach((c: ClassConfig) => {
-        if (c.taskMode === undefined) {
-          c.taskMode = c.id === 'adolescentes' || c.id === 'jovens' ? 'daily' : 'unique';
-          needsUpdate = true;
+    const response = await fetch('/api/data');
+    if (!response.ok) {
+        if (response.status === 404) {
+            console.log("No data found in blob storage, returning initial data.");
+            return getInitialData();
         }
-        if (c.trackedItems.inClassTask === undefined) {
-            c.trackedItems.inClassTask = c.id !== 'maternal';
-            needsUpdate = true;
-        }
-      });
-      
-      if(needsUpdate) {
-        const { lessons, studentRecords } = generateFullSimulatedData(parsedData.classes);
-        const newData = { classes: parsedData.classes, lessons, studentRecords };
-        localStorage.setItem(SIMULATED_DATA_KEY, JSON.stringify(newData));
-        return newData;
-      }
-
-      return parsedData;
-    } else {
-      const { lessons, studentRecords } = generateFullSimulatedData(initialClasses);
-      const newData = { classes: initialClasses, lessons, studentRecords };
-      localStorage.setItem(SIMULATED_DATA_KEY, JSON.stringify(newData));
-      return newData;
+        throw new Error(`Failed to fetch data: ${response.statusText}`);
     }
+    const data: SimulatedFullData = await response.json();
+    return data;
   } catch (error) {
-    console.error("Failed to read from localStorage", error);
-    // Fallback to generating fresh data if localStorage fails
-    const { lessons, studentRecords } = generateFullSimulatedData(initialClasses);
-    return { classes: initialClasses, lessons, studentRecords };
+    console.error("Failed to fetch from API", error);
+    return getInitialData();
   }
 };
 
-export const saveSimulatedData = (data: SimulatedFullData) => {
+export const saveSimulatedData = async (data: SimulatedFullData): Promise<void> => {
   if (typeof window === 'undefined') {
     return;
   }
   try {
-    const dataString = JSON.stringify(data);
-    localStorage.setItem(SIMULATED_DATA_KEY, dataString);
-    // Dispatch a storage event to notify other tabs/windows
-    window.dispatchEvent(new StorageEvent('storage', {
-      key: SIMULATED_DATA_KEY,
-      newValue: dataString,
-    }));
+    const response = await fetch('/api/data', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+        throw new Error(`Failed to save data: ${response.statusText}`);
+    }
   } catch (error) {
-    console.error("Failed to save to localStorage", error);
+    console.error("Failed to save to API", error);
   }
 };
-
-    

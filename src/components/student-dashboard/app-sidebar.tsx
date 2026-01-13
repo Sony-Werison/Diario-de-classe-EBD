@@ -24,7 +24,7 @@ const mobileNavLinks = [
   { href: "/calendar", icon: Calendar, label: "Calendário" },
   { href: "/report", icon: FileText, label: "Relatório" },
   { href: "/settings", icon: Settings, label: "Ajustes" },
-  { href: "/", icon: LogOut, label: "Perfil" },
+  { href: "/", icon: LogOut, label: "Sair" },
 ]
 
 const NavLink = ({
@@ -97,15 +97,20 @@ export function AppSidebar() {
     const role = sessionStorage.getItem('userRole') || 'admin';
     const teacherId = sessionStorage.getItem('teacherId');
     let currentUserName = role;
-     if (role === 'teacher' && teacherId) {
-        const data = getSimulatedData();
-        const allTeachers = data.classes.flatMap(c => c.teachers);
-        const teacher = allTeachers.find(t => t.id === teacherId);
-        if (teacher) {
-            currentUserName = teacher.name;
+
+    const fetchTeacherName = async () => {
+        if (role === 'teacher' && teacherId) {
+            const data = await getSimulatedData();
+            const allTeachers = data.classes.flatMap(c => c.teachers);
+            const teacher = allTeachers.find(t => t.id === teacherId);
+            if (teacher) {
+                currentUserName = teacher.name;
+            }
         }
+        setCurrentUser(currentUserName);
     }
-    setCurrentUser(currentUserName);
+    
+    fetchTeacherName();
   }, []);
 
   return (
@@ -125,14 +130,14 @@ export function AppSidebar() {
         </TooltipProvider>
       )}
 
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-4 mt-auto">
         {navLinks.map(link => (
           <NavLink key={link.href} {...link} />
         ))}
       </div>
       
       <div className="mt-auto">
-        <NavLink href="/" icon={LogOut} label="Perfil" />
+        <NavLink href="/" icon={LogOut} label="Sair" />
       </div>
     </aside>
   );
