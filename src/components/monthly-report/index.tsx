@@ -27,7 +27,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 
-import { Check, ChevronDown, ChevronLeft, ChevronRight, Download, Users, Dot, CheckCircle, Notebook, Pencil, BookOpen, Smile, X } from "lucide-react";
+import { Check, ChevronDown, ChevronLeft, ChevronRight, Download, Users, X, CheckCircle, Notebook, Pencil, BookOpen, Smile } from "lucide-react";
 import { initialClasses, ClassConfig, Student, CheckType } from "@/lib/data";
 import { cn } from "@/lib/utils";
 import { format, getDaysInMonth, startOfMonth, addMonths, subMonths, getDay, isSameDay } from "date-fns";
@@ -88,19 +88,23 @@ const generateSimulatedDataForStudent = (studentId: number, month: Date, classCo
             };
 
             const checks: Record<CheckType, boolean> = {} as any;
+            
+            const orderedVisibleItems: CheckType[] = ['presence', 'material', 'task', 'verse', 'behavior'].filter(
+                item => classConfig.trackedItems[item as CheckType]
+            ) as CheckType[];
+            
             let isPresent = false;
              if (classConfig.trackedItems.presence) {
                 isPresent = random() > 0.2; // 80% chance of presence
                 checks.presence = isPresent;
              }
 
-            const orderedVisibleItems: CheckType[] = ['presence', 'material', 'task', 'verse', 'behavior'].filter(
-                item => classConfig.trackedItems[item as CheckType]
-            ) as CheckType[];
 
             orderedVisibleItems.forEach(key => {
                 if (key !== 'presence' && classConfig.trackedItems[key]) {
                    checks[key] = isPresent && random() > 0.4; // 60% chance if present
+                } else if (!classConfig.trackedItems[key]) {
+                   checks[key] = false;
                 }
             });
 
@@ -173,6 +177,21 @@ export function MonthlyReport() {
     const studentData = simulatedData.find(sd => sd.studentId === studentId);
     return studentData?.monthData.find(md => isSameDay(md.date, day));
   }
+  
+  const Legend = () => (
+    <div className="flex flex-wrap gap-x-4 gap-y-1 items-center px-4 py-2 border-b border-slate-700 bg-slate-800 rounded-t-xl">
+        <span className="text-xs font-bold text-slate-400 uppercase">Legenda:</span>
+        {orderedVisibleItems.map(item => {
+            const Icon = itemIcons[item];
+            return (
+                <div key={item} className="flex items-center gap-1.5">
+                    <Icon size={14} className={cn(itemColors[item])} />
+                    <span className="text-xs text-slate-300">{itemLabels[item]}</span>
+                </div>
+            )
+        })}
+    </div>
+  )
 
   return (
     <div className="p-4 sm:p-6 text-white bg-background flex-1 flex flex-col">
@@ -247,91 +266,83 @@ export function MonthlyReport() {
         </Button>
       </div>
 
-        <Card className="bg-slate-800 border-slate-700 flex-1 flex flex-col" id="report-table">
-            <div ref={reportRef} className="h-full flex flex-col">
-                <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-base">
-                        <span>Resumo de {format(currentMonth, 'MMMM, yyyy', {locale: ptBR})} - {currentClass.name}</span>
-                    </CardTitle>
-                </CardHeader>
-                <CardContent className="overflow-auto pb-6 flex-1">
-                    <div className="border border-slate-700 rounded-lg min-w-[600px] h-full flex flex-col">
-                    
-                    <div className="sticky top-0 z-10 grid bg-slate-900/50 font-bold text-xs uppercase text-slate-400" style={{gridTemplateColumns: `minmax(150px, 1fr) repeat(${sundaysInMonth.length}, 40px)`}}>
-                        <div className="p-3 border-r border-slate-700">Aluno</div>
-                        {sundaysInMonth.map(day => (
-                            <div key={day.toISOString()} className="p-3 text-center border-r border-slate-700 last:border-r-0">
-                                {format(day, 'dd')}
-                            </div>
-                        ))}
-                    </div>
-
-                    <div className="flex-1">
-                        {currentClass.students.map(student => (
-                            <div key={student.id} className="grid items-center border-b border-slate-700 last:border-b-0 text-sm hover:bg-slate-700/50" style={{gridTemplateColumns: `minmax(150px, 1fr) repeat(${sundaysInMonth.length}, 40px)`}}>
-                                <div className="p-2 whitespace-nowrap overflow-hidden text-ellipsis border-r border-slate-700 font-medium text-slate-200">{student.name}</div>
-                                {sundaysInMonth.map(day => {
-                                    const dayData = getStudentDataForDay(student.id, day);
-                                    return (
-                                    <div key={day.toISOString()} className="text-center border-r border-slate-700 last:border-r-0 h-full flex items-center justify-center py-2">
-                                        {isClient && dayData ? (
-                                        <TooltipProvider>
-                                            <Tooltip>
-                                                <TooltipTrigger asChild>
-                                                    <span className="flex flex-col items-center justify-center gap-0.5">
-                                                        {filter === 'all' ? (
-                                                            orderedVisibleItems.map(item => {
-                                                                const Icon = itemIcons[item];
-                                                                return (
-                                                                <div key={item}>
-                                                                    {dayData.checks[item] ? (
-                                                                        <Icon size={14} className={cn(itemColors[item])} />
-                                                                    ) : (
-                                                                        <Dot size={16} className="text-slate-700" />
-                                                                    )}
-                                                                </div>
-                                                            )})
-                                                        ) : (
-                                                            dayData.checks[filter] ? (
-                                                                <Check size={16} className="text-green-500" />
-                                                            ) : (
-                                                                <X size={16} className="text-red-500" />
-                                                            )
-                                                        )}
-                                                    </span>
-                                                </TooltipTrigger>
-                                                <TooltipContent className="bg-slate-900 border-slate-700 text-white">
-                                                    <div className="space-y-1">
-                                                        {orderedVisibleItems.map(item => (
-                                                            <div key={item} className="flex items-center gap-2 text-xs">
-                                                                {dayData.checks[item] ? <Check size={14} className="text-green-500"/> : <Dot size={14} className="text-slate-500" />}
-                                                                <span>{itemLabels[item]}</span>
-                                                            </div>
-                                                        ))}
-                                                    </div>
-                                                </TooltipContent>
-                                            </Tooltip>
-                                        </TooltipProvider>
-                                        ) : (
-                                            <span className="text-slate-600">-</span>
-                                        )}
-                                    </div>
-                                    )
-                                })}
-                            </div>
-                        ))}
-                    </div>
-                    </div>
-                    {currentClass.students.length === 0 && (
-                        <div className="text-center py-16 text-slate-500 rounded-b-xl">
-                            <Users size={40} className="mx-auto mb-2" />
-                            <h3 className="font-bold">Nenhum aluno nesta classe</h3>
-                            <p className="text-sm">Vá para as configurações para adicionar alunos.</p>
-                        </div>
-                    )}
-                </CardContent>
-            </div>
-        </Card>
+      <div className="flex-1 flex flex-col min-h-0">
+          <Legend />
+          <div className="overflow-auto border border-slate-700 border-t-0 rounded-b-xl" ref={reportRef}>
+              <table className="w-full border-collapse">
+                  <thead className="sticky top-0 z-10 bg-slate-900/80 backdrop-blur-sm">
+                      <tr>
+                          <th className="p-3 border-b border-r border-slate-700 text-left text-xs font-bold uppercase text-slate-400 sticky left-0 bg-slate-900/80 z-20 min-w-[150px]">Aluno</th>
+                          {sundaysInMonth.map(day => (
+                              <th key={day.toISOString()} className="p-3 text-center border-b border-r border-slate-700 last:border-r-0 text-xs font-bold uppercase text-slate-400 w-12">
+                                  {format(day, 'dd')}
+                              </th>
+                          ))}
+                      </tr>
+                  </thead>
+                  <tbody>
+                      {currentClass.students.map(student => {
+                          return (
+                              <tr key={student.id} className="text-sm hover:bg-slate-800/50">
+                                  <td className="p-2 whitespace-nowrap overflow-hidden text-ellipsis border-b border-r border-slate-700 font-medium text-slate-200 sticky left-0 bg-slate-800/50 z-10">{student.name}</td>
+                                  {sundaysInMonth.map(day => {
+                                      const dayData = getStudentDataForDay(student.id, day);
+                                      return (
+                                          <td key={day.toISOString()} className="text-center border-b border-r border-slate-700 last:border-r-0 h-full p-2">
+                                              {isClient && dayData ? (
+                                              <TooltipProvider>
+                                                  <Tooltip>
+                                                      <TooltipTrigger asChild>
+                                                          <div className="flex flex-col items-center justify-center gap-0.5">
+                                                              {filter === 'all' ? (
+                                                                  orderedVisibleItems.map(item => {
+                                                                      const Icon = itemIcons[item];
+                                                                      const isChecked = dayData.checks[item];
+                                                                      return (
+                                                                          <Icon key={item} size={14} className={cn(isChecked ? itemColors[item] : 'text-slate-700 opacity-60')} />
+                                                                      )
+                                                                  })
+                                                              ) : (
+                                                                  dayData.checks[filter] ? (
+                                                                      <Check size={16} className="text-green-500" />
+                                                                  ) : (
+                                                                      <X size={16} className="text-red-500" />
+                                                                  )
+                                                              )}
+                                                          </div>
+                                                      </TooltipTrigger>
+                                                      <TooltipContent className="bg-slate-900 border-slate-700 text-white">
+                                                          <div className="space-y-1">
+                                                              {orderedVisibleItems.map(item => (
+                                                                  <div key={item} className="flex items-center gap-2 text-xs">
+                                                                      {dayData.checks[item] ? <Check size={14} className="text-green-500"/> : <X size={14} className="text-slate-500" />}
+                                                                      <span>{itemLabels[item]}</span>
+                                                                  </div>
+                                                              ))}
+                                                          </div>
+                                                      </TooltipContent>
+                                                  </Tooltip>
+                                              </TooltipProvider>
+                                              ) : (
+                                                  <span className="text-slate-600">-</span>
+                                              )}
+                                          </td>
+                                      )
+                                  })}
+                              </tr>
+                          )
+                      })}
+                  </tbody>
+              </table>
+              {currentClass.students.length === 0 && (
+                  <div className="text-center py-16 text-slate-500 rounded-b-xl bg-slate-800">
+                      <Users size={40} className="mx-auto mb-2" />
+                      <h3 className="font-bold">Nenhum aluno nesta classe</h3>
+                      <p className="text-sm">Vá para as configurações para adicionar alunos.</p>
+                  </div>
+              )}
+          </div>
+      </div>
     </div>
   );
 }
