@@ -1,9 +1,10 @@
 
+
 "use client";
 
 import React, { useState } from 'react';
 import { MonthlyReport } from "@/components/monthly-report";
-import { IndividualReport } from '@/components/individual-report';
+import { MonthlyStudentReport } from '@/components/monthly-student-report';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Users, User } from 'lucide-react';
 
@@ -29,7 +30,7 @@ export default function ReportPage() {
                     <MonthlyReport />
                 </TabsContent>
                 <TabsContent value="individual" className="flex-1 flex flex-col">
-                    <IndividualReport />
+                    <MonthlyStudentReport />
                 </TabsContent>
             </Tabs>
         </div>

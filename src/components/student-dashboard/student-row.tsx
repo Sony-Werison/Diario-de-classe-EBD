@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { Student, CheckType, StudentChecks, DailyTasks } from "@/lib/data";
@@ -21,12 +22,12 @@ interface StudentRowProps {
   isLessonCancelled: boolean;
 }
 
-const checkConfig: Record<CheckType | 'task', { Icon: React.ElementType; activeClass: string; inactiveClass: string; }> = {
-  presence: { Icon: CheckCircle, activeClass: 'bg-blue-500 border-blue-500 text-white', inactiveClass: 'text-slate-400 bg-slate-700/50' },
-  material: { Icon: Notebook, activeClass: 'bg-pink-500 border-pink-500 text-white', inactiveClass: 'text-slate-400 bg-slate-700/50' },
-  task: { Icon: Pencil, activeClass: 'bg-purple-500 border-purple-500 text-white', inactiveClass: 'text-slate-400 bg-slate-700/50' },
-  verse: { Icon: BookOpen, activeClass: 'bg-yellow-500 border-yellow-500 text-black', inactiveClass: 'text-slate-400 bg-slate-700/50' },
-  behavior: { Icon: Smile, activeClass: 'bg-emerald-500 border-emerald-500 text-white', inactiveClass: 'text-slate-400 bg-slate-700/50' },
+const checkConfig: Record<CheckType | 'task', { Icon: React.ElementType; activeClass: string; inactiveClass: string; label: string; }> = {
+  presence: { Icon: CheckCircle, activeClass: 'bg-blue-500 border-blue-500 text-white', inactiveClass: 'text-slate-400 bg-slate-700/50', label: 'Presença' },
+  material: { Icon: Notebook, activeClass: 'bg-pink-500 border-pink-500 text-white', inactiveClass: 'text-slate-400 bg-slate-700/50', label: 'Material' },
+  task: { Icon: Pencil, activeClass: 'bg-purple-500 border-purple-500 text-white', inactiveClass: 'text-slate-400 bg-slate-700/50', label: 'Tarefa' },
+  verse: { Icon: BookOpen, activeClass: 'bg-yellow-500 border-yellow-500 text-black', inactiveClass: 'text-slate-400 bg-slate-700/50', label: 'Versículo' },
+  behavior: { Icon: Smile, activeClass: 'bg-emerald-500 border-emerald-500 text-white', inactiveClass: 'text-slate-400 bg-slate-700/50', label: 'Comport.' },
 };
 
 const weekDays: { key: keyof DailyTasks, label: string }[] = [
@@ -45,14 +46,14 @@ export function StudentRow({ student, onToggleCheck, trackedItems, taskMode, onT
   return (
     <div className="bg-slate-800 p-3 flex flex-col sm:flex-row sm:items-center border-b border-slate-700/50 transition-colors hover:bg-slate-700/50 group">
         <div className="flex items-center w-full">
-            <div className={cn("flex items-center gap-3", singleItem ? "w-1/2" : "w-1/3")}>
+            <div className="w-1/3">
                 <div className="pl-2">
                   <p className="text-sm font-semibold text-slate-200 group-hover:text-white transition-colors">{name}</p>
                    <p className="text-xs text-slate-400">{age !== null ? `${age} anos` : 'Idade não informada'}</p>
                 </div>
             </div>
             
-            <div className={cn("flex-1 flex justify-center items-center gap-4", singleItem && "justify-start")}>
+            <div className="flex-1 flex justify-center items-center gap-4">
                 {(Object.keys(checkConfig) as (CheckType | 'task')[]).map(type => {
                     if (!trackedItems[type]) return null;
 
@@ -60,40 +61,45 @@ export function StudentRow({ student, onToggleCheck, trackedItems, taskMode, onT
 
                     if (type === 'task' && taskMode === 'daily') {
                         return (
-                            <div key="daily-task-group" className="flex items-center justify-center gap-1 border border-slate-700 rounded-lg p-1 bg-slate-700/50">
-                                {weekDays.map(day => (
-                                     <button
-                                        key={day.key}
-                                        onClick={() => onToggleDailyTask(id, day.key)}
-                                        className={cn(
-                                            "w-7 h-8 rounded-md flex items-center justify-center transition-all duration-200 text-xs font-bold",
-                                            checks.dailyTasks?.[day.key] ? checkConfig.task.activeClass : 'text-slate-400 bg-slate-700/50',
-                                            'hover:border-slate-500' // Always allow hover for tasks
-                                        )}
-                                        aria-label={`Marcar tarefa de ${day.label} para ${name}`}
-                                        >
-                                        {day.label}
-                                    </button>
-                                ))}
+                            <div key="daily-task-group" className="flex flex-col items-center gap-1">
+                                <div className="flex items-center justify-center gap-1 border border-slate-700 rounded-lg p-1 bg-slate-700/50">
+                                    {weekDays.map(day => (
+                                        <button
+                                            key={day.key}
+                                            onClick={() => onToggleDailyTask(id, day.key)}
+                                            className={cn(
+                                                "w-7 h-8 rounded-md flex items-center justify-center transition-all duration-200 text-xs font-bold",
+                                                checks.dailyTasks?.[day.key] ? checkConfig.task.activeClass : 'text-slate-400 bg-slate-700/50',
+                                                'hover:border-slate-500' // Always allow hover for tasks
+                                            )}
+                                            aria-label={`Marcar tarefa de ${day.label} para ${name}`}
+                                            >
+                                            {day.label}
+                                        </button>
+                                    ))}
+                                </div>
+                                <span className="text-[10px] text-slate-500 font-semibold">{checkConfig.task.label}</span>
                             </div>
                         );
                     }
 
                     const CheckIcon = checkConfig[type].Icon;
                     return (
-                        <button
-                        key={type}
-                        onClick={() => onToggleCheck(id, type)}
-                        className={cn(
-                            "w-10 h-10 rounded-lg flex items-center justify-center transition-all duration-200 border",
-                            (checks as any)[type] ? checkConfig[type].activeClass : checkConfig[type].inactiveClass,
-                             isDisabled ? 'opacity-50 cursor-not-allowed' : 'hover:border-slate-500',
-                        )}
-                        aria-label={`Marcar ${type} para ${name}`}
-                        disabled={isDisabled}
-                        >
-                        <CheckIcon size={20} />
-                        </button>
+                        <div key={type} className="flex flex-col items-center gap-1">
+                            <button
+                            onClick={() => onToggleCheck(id, type)}
+                            className={cn(
+                                "w-10 h-10 rounded-lg flex items-center justify-center transition-all duration-200 border",
+                                (checks as any)[type] ? checkConfig[type].activeClass : checkConfig[type].inactiveClass,
+                                isDisabled ? 'opacity-50 cursor-not-allowed' : 'hover:border-slate-500',
+                            )}
+                            aria-label={`Marcar ${type} para ${name}`}
+                            disabled={isDisabled}
+                            >
+                            <CheckIcon size={20} />
+                            </button>
+                            <span className="text-[10px] text-slate-500 font-semibold">{checkConfig[type].label}</span>
+                        </div>
                     )
                 })}
             </div>

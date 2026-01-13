@@ -1,11 +1,12 @@
 
+
 "use client";
 
 import React, { useState, useMemo, useCallback, useEffect } from "react";
 import { initialClasses, POINTS, CheckType, ClassConfig, DailyLesson, getSimulatedData, saveSimulatedData, StudentChecks } from "@/lib/data";
 import { AppHeader } from "./app-header";
 import { StatCard } from "./stat-card";
-import { StudentListHeader, SortKey } from "./student-list-header";
+import { StudentListHeader } from "./student-list-header";
 import { StudentRow } from "./student-row";
 import { CheckCircle, BookOpen, Pencil, Star, Users, Smile, Notebook, Ban, Trash2 } from "lucide-react";
 import { startOfDay, format, parseISO } from "date-fns";
@@ -45,8 +46,6 @@ export function StudentDashboard({ initialDate, classId: initialClassId }: { ini
   const [classes, setClasses] = useState<ClassConfig[]>(initialClasses);
   const [currentClassId, setCurrentClassId] = useState<string>(initialClassId || initialClasses[0].id);
   const [currentDate, setCurrentDate] = useState<Date>(() => initialDate ? startOfDay(parseISO(initialDate)) : startOfDay(new Date()));
-  const [sortKey, setSortKey] = useState<SortKey>("name");
-  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
   const { toast } = useToast();
   const [isClient, setIsClient] = useState(false);
   const [isDeleteAlertOpen, setIsDeleteAlertOpen] = useState(false);
@@ -231,30 +230,14 @@ export function StudentDashboard({ initialDate, classId: initialClassId }: { ini
 
       const data = getSimulatedData();
       data.lessons[dateKey] = updatedLesson;
-      // We don't clear checks for a cancelled lesson anymore
-      // if (!data.studentRecords[currentClassId]) {
-      //   data.studentRecords[currentClassId] = {};
-      // }
-      // data.studentRecords[currentClassId][dateKey] = {};
       saveSimulatedData(data);
       
       setIsCancelDialogOpen(false);
-      // setDailyStudentChecks({});
       
       toast({
         title: "Aula cancelada",
         description: "A aula foi marcada como não realizada.",
       });
-  }
-
-
-  const handleSort = (key: SortKey) => {
-    if (sortKey === key) {
-      setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
-    } else {
-      setSortKey(key);
-      setSortDirection('asc');
-    }
   }
 
   const {
@@ -295,9 +278,8 @@ export function StudentDashboard({ initialDate, classId: initialClassId }: { ini
       }, 0);
 
       if (studentChecks.presence) presenceCount++;
-      // Other checks only count towards percentage if the student was present
       if (studentChecks.verse && studentChecks.presence) verseCount++;
-      if (studentChecks.task) taskCount++; // Task can be done even if absent
+      if (studentChecks.task) taskCount++;
       if (studentChecks.behavior && studentChecks.presence) behaviorCount++;
       if (studentChecks.material && studentChecks.presence) materialCount++;
       totalScore += dailyScore;
@@ -311,7 +293,6 @@ export function StudentDashboard({ initialDate, classId: initialClassId }: { ini
       const checkedItemsCount = activeTrackedItems.filter(
         key => {
           if ((studentChecks as any)[key]) {
-            // For these items, only count them if present
             if (['behavior', 'verse', 'material'].includes(key) && !studentChecks.presence) {
                 return false;
             }
@@ -335,19 +316,10 @@ export function StudentDashboard({ initialDate, classId: initialClassId }: { ini
 
       return { ...student, checks: studentChecks, dailyScore, age, completionPercent, checkedItemsCount, totalTrackedItems: totalItemsForPercentage };
     }).sort((a, b) => {
-        const dir = sortDirection === 'asc' ? 1 : -1;
-        switch (sortKey) {
-            case 'progress':
-                return (a.completionPercent - b.completionPercent) * dir || (a.dailyScore - b.dailyScore) * dir;
-            case 'name':
-            default:
-                 return a.name.localeCompare(b.name) * dir;
-        }
+        return a.name.localeCompare(b.name);
     });
 
     const presentStudentsCount = students.filter(s => (dailyStudentChecks[s.id] || {}).presence).length;
-
-    // For task percentage, we count all students, not just present ones
     const totalStudentsForTask = totalStudents;
 
     return {
@@ -359,7 +331,7 @@ export function StudentDashboard({ initialDate, classId: initialClassId }: { ini
       totalScore,
       studentsWithScores,
     };
-  }, [currentClass, sortKey, sortDirection, dailyStudentChecks, isClient]);
+  }, [currentClass, dailyStudentChecks, isClient]);
 
   const trackedItems = currentClass.trackedItems;
 
@@ -387,13 +359,7 @@ export function StudentDashboard({ initialDate, classId: initialClassId }: { ini
         />
         <main className="flex-1 p-3 sm:p-4 md:p-6 bg-background">
           <div className="bg-card rounded-t-xl">
-             <StudentListHeader 
-                trackedItems={trackedItems}
-                onSort={handleSort}
-                sortKey={sortKey}
-                sortDirection={sortDirection}
-                taskMode={currentClass.taskMode}
-             />
+             <StudentListHeader />
           </div>
          
           <div className="space-y-px bg-card rounded-b-xl overflow-hidden">
