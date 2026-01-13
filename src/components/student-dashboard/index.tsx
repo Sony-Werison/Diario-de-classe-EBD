@@ -28,9 +28,9 @@ export function StudentDashboard({ initialDate }: { initialDate?: string }) {
   const router = useRouter();
   const [classes, setClasses] = useState<ClassConfig[]>(initialClasses);
   const [currentClassId, setCurrentClassId] = useState<string>(initialClasses[0].id);
-  const [currentDate, setCurrentDate] = useState<Date>(startOfDay(new Date()));
-  const [sortKey, setSortKey] = useState<SortKey>("name");
-  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
+  const [currentDate, setCurrentDate] = useState<Date>(() => initialDate ? startOfDay(parseISO(initialDate)) : startOfDay(new Date()));
+  const [sortKey, setSortKey] = useState<SortKey>("progress");
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
   const [simulatedData, setSimulatedData] = useState<SimulatedFullData>({ lessons: {}, studentRecords: {} });
   const { toast } = useToast();
   const [isClient, setIsClient] = useState(false);
@@ -39,7 +39,6 @@ export function StudentDashboard({ initialDate }: { initialDate?: string }) {
     setIsClient(true);
     setSimulatedData(generateFullSimulatedData(initialClasses));
     if (initialDate) {
-        // Ensure the date is parsed correctly, considering timezone
         const dateFromUrl = parseISO(initialDate);
         setCurrentDate(startOfDay(dateFromUrl));
     } else {
@@ -104,16 +103,11 @@ export function StudentDashboard({ initialDate }: { initialDate?: string }) {
   }, [dateKey, currentClass.teachers]);
   
   const handleSundayNavigation = (direction: 'prev' | 'next') => {
-     setCurrentDate(prevDate => {
-      if (!prevDate) return startOfDay(new Date());
-      let newDate = new Date(prevDate);
-      const offset = direction === 'next' ? 7 : -7;
-      newDate.setDate(newDate.getDate() + offset);
-      
-      const newDateKey = format(newDate, 'yyyy-MM-dd');
-      router.push(`/dashboard/${newDateKey}`);
-      return newDate;
-    });
+    const newDate = new Date(currentDate);
+    const offset = direction === 'next' ? 7 : -7;
+    newDate.setDate(newDate.getDate() + offset);
+    const newDateKey = format(newDate, 'yyyy-MM-dd');
+    router.push(`/dashboard/${newDateKey}`);
   }
 
   const handleSave = () => {
@@ -195,12 +189,10 @@ export function StudentDashboard({ initialDate }: { initialDate?: string }) {
     }).sort((a, b) => {
         const dir = sortDirection === 'asc' ? 1 : -1;
         switch (sortKey) {
-            case 'name':
-                return a.name.localeCompare(b.name) * dir;
             case 'progress':
                 return (a.completionPercent - b.completionPercent) * dir || (a.dailyScore - b.dailyScore) * dir;
             default:
-                return 0;
+                 return a.name.localeCompare(b.name) * (sortDirection === 'asc' ? 1 : -1);
         }
     });
 
