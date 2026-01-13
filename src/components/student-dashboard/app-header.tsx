@@ -1,3 +1,4 @@
+
 "use client";
 
 import { Button } from "@/components/ui/button";
@@ -9,7 +10,6 @@ import {
   ChevronLeft,
   ChevronRight,
   Save,
-  MoreVertical,
   Trash2,
   Ban,
 } from "lucide-react";
@@ -21,7 +21,6 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import {
   Select,
@@ -182,30 +181,24 @@ export function AppHeader({
         )}
 
          <div className="flex gap-2 w-full md:w-auto">
-            {dailyLesson?.status !== 'cancelled' && (
-              <Button onClick={onSave} className="bg-primary hover:bg-primary/90 w-full md:w-auto">
-                <Save size={16} className="mr-2" />
-                Salvar Aula
-              </Button>
-            )}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="secondary" size="icon" className="w-10 h-10 shrink-0">
-                  <MoreVertical size={16} />
+            {dailyLesson?.status !== 'cancelled' ? (
+              <>
+                <Button onClick={onSave} className="bg-primary hover:bg-primary/90 w-full md:w-auto">
+                  <Save size={16} className="mr-2" />
+                  Salvar
                 </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="bg-card border-border text-white">
-                <DropdownMenuItem onSelect={onOpenCancelDialog} className="cursor-pointer">
-                  <Ban className="mr-2"/>
-                  <span>Marcar como não realizada</span>
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onSelect={onOpenDeleteAlert} className="text-red-400 focus:bg-red-900/50 focus:text-red-400 cursor-pointer">
-                  <Trash2 className="mr-2"/>
-                  <span>Excluir registro da aula</span>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+                <Button variant="outline" size="sm" onClick={onOpenCancelDialog}>
+                  <Ban size={14} className="mr-2"/> Não realizada
+                </Button>
+              </>
+            ) : (
+               <Button variant="secondary" size="sm" onClick={onOpenCancelDialog}>
+                  <Ban size={14} className="mr-2"/> Editar motivo
+                </Button>
+            )}
+             <Button variant="destructive" size="sm" onClick={onOpenDeleteAlert}>
+                <Trash2 size={14} className="mr-2"/> Excluir
+              </Button>
          </div>
 
       </div>

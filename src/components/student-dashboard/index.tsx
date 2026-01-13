@@ -140,24 +140,20 @@ export function StudentDashboard({ initialDate }: { initialDate?: string }) {
     setIsDeleteAlertOpen(false);
     if (!currentDate) return;
 
-    // Use a timeout to allow navigation to complete before data mutation
-    setTimeout(() => {
-        const data = getSimulatedData();
-        delete data.lessons[dateKey];
-        if (data.studentRecords[currentClassId]) {
-            delete data.studentRecords[currentClassId][dateKey];
-        }
-        saveSimulatedData(data);
-        
-        toast({
-          title: "Aula Excluída",
-          description: `O registro da aula de ${format(currentDate, "dd/MM/yyyy")} foi removido.`,
-          variant: 'destructive',
-        });
-        
-        // IMPORTANT: Navigate away AFTER changing the data
-        router.push('/');
-    }, 50); // 50ms delay is usually enough
+    const data = getSimulatedData();
+    delete data.lessons[dateKey];
+    if (data.studentRecords[currentClassId]) {
+      delete data.studentRecords[currentClassId][dateKey];
+    }
+    saveSimulatedData(data);
+
+    toast({
+      title: "Aula Excluída",
+      description: `O registro da aula de ${format(currentDate, "dd/MM/yyyy")} foi removido.`,
+      variant: 'destructive',
+    });
+
+    router.push('/');
   }
   
   const handleCancelLesson = () => {
@@ -165,6 +161,7 @@ export function StudentDashboard({ initialDate }: { initialDate?: string }) {
         setIsCancelDialogVali(false);
         return;
       }
+      setIsCancelDialogOpen(false);
       
       const updatedLesson: DailyLesson = {
           ...(dailyLesson || { teacherId: currentClass.teachers[0]?.id || "", title: "" }),
@@ -177,7 +174,6 @@ export function StudentDashboard({ initialDate }: { initialDate?: string }) {
       saveSimulatedData(data);
       
       setDailyLesson(updatedLesson); // Update local state immediately for UI feedback
-      setIsCancelDialogOpen(false); // Close dialog
 
       toast({
         title: "Aula cancelada",
