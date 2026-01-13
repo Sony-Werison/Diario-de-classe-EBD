@@ -209,6 +209,8 @@ export function MonthlyStudentReport() {
                         if (!lesson && !checks) return null;
 
                         const isLessonCancelled = lesson?.status === 'cancelled';
+                        const progress = checks ? calculateDailyProgress(checks, currentClass) : { completionPercent: 0, checkedItemsCount: 0, totalTrackedItems: 0 };
+                        const isComplete = progress.completionPercent === 100;
                         
                         return (
                              <div key={dateKey} className="bg-slate-800 p-3 border-b border-slate-700/50">
@@ -219,6 +221,15 @@ export function MonthlyStudentReport() {
                                         <p className={cn("text-xs truncate", isLessonCancelled ? "text-yellow-400 italic" : "text-slate-400")}>
                                             {isLessonCancelled ? lesson.cancellationReason : lesson?.title || "Sem título"}
                                         </p>
+                                      </div>
+                                      <div className="flex flex-col justify-center">
+                                        <div className="flex justify-between text-xs mb-0.5">
+                                            <span className={cn("font-bold", !isComplete ? "text-yellow-400" : "text-primary")}>
+                                                {Math.round(progress.completionPercent)}%
+                                            </span>
+                                            <span className="text-slate-500">{progress.checkedItemsCount}/{progress.totalTrackedItems}</span>
+                                        </div>
+                                        <Progress value={progress.completionPercent} className="h-1 bg-slate-900 border border-slate-700" indicatorClassName={cn(!isComplete ? "bg-gradient-to-r from-yellow-400 to-yellow-600" : "bg-primary")} />
                                       </div>
                                     </div>
                                     <div className="flex flex-col items-end gap-1.5 shrink-0">
