@@ -8,14 +8,14 @@ const DATA_BLOB_KEY = 'data.json';
 
 export async function GET(request: NextRequest) {
   try {
-    const blob = await get(DATA_BLOB_KEY);
+    const blob = await get(DATA_BLOB_KEY, {
+      token: process.env.BLOB_READ_WRITE_TOKEN
+    });
     const data = await blob.json();
     return NextResponse.json(data, { status: 200 });
   } catch (error: any) {
-    // O método `get` lança um erro com `code: 'NOT_FOUND'` se o arquivo não existir.
-    if (error.code === 'NOT_FOUND') {
+    if (error.status === 404) {
         const initialData = getInitialData();
-        // Também salva os dados iniciais no blob para futuras requisições.
         await put(DATA_BLOB_KEY, JSON.stringify(initialData), { access: 'protected', token: process.env.BLOB_READ_WRITE_TOKEN });
         return NextResponse.json(initialData, { status: 200 });
     }
