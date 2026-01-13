@@ -8,10 +8,20 @@ export type Student = {
   totalXp: number;
 };
 
+export type Teacher = {
+  id: string;
+  name: string;
+}
+
+export type DailyLesson = {
+  teacherId: string;
+  title: string;
+}
+
 export type ClassConfig = {
   id: string;
   name: string;
-  teacher: string;
+  teachers: Teacher[];
   trackedItems: Record<CheckType, boolean>;
   students: Student[];
 };
@@ -38,7 +48,7 @@ export const initialClasses: ClassConfig[] = [
   {
     id: "juniors-2",
     name: "Júniors 2",
-    teacher: "Prof. Carlos",
+    teachers: [{id: 'teacher-1', name: "Prof. Carlos"}, {id: 'teacher-2', name: "Profª. Daniela"}],
     trackedItems: {
       presence: true,
       task: true,
@@ -51,7 +61,7 @@ export const initialClasses: ClassConfig[] = [
     {
     id: "primarios-1",
     name: "Primários 1",
-    teacher: "Profª. Ana",
+    teachers: [{id: 'teacher-3', name: "Profª. Ana"}],
     trackedItems: {
       presence: true,
       task: true,

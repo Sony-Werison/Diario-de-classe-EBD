@@ -1,17 +1,19 @@
 "use client";
 
 import React, { useState, useMemo, useCallback } from "react";
-import { initialClasses, POINTS, Student, CheckType, ClassConfig } from "@/lib/data";
+import { initialClasses, POINTS, Student, CheckType, ClassConfig, DailyLesson } from "@/lib/data";
 import { AppHeader } from "./app-header";
 import { StatCard } from "./stat-card";
 import { StudentListHeader, SortKey } from "./student-list-header";
 import { StudentRow } from "./student-row";
-import { CheckCircle, BookOpen, Pencil, Star, Users, Smile, Notebook } from "lucide-react";
+import { CheckCircle, BookOpen, Pencil, Star, Users, Smile, Notebook, Pen } from "lucide-react";
+import { addDays, subDays, startOfDay, format } from "date-fns";
+import { useToast } from "@/hooks/use-toast";
+
 
 const calculateAge = (birthDateString: string) => {
     if (!birthDateString) return null;
     const birthDate = new Date(birthDateString);
-    // Fix off-by-one error when converting from YYYY-MM-DD string
     birthDate.setUTCHours(12);
     const today = new Date();
     let age = today.getFullYear() - birthDate.getFullYear();
@@ -25,11 +27,26 @@ const calculateAge = (birthDateString: string) => {
 export function StudentDashboard() {
   const [classes, setClasses] = useState<ClassConfig[]>(initialClasses);
   const [currentClassId, setCurrentClassId] = useState<string>(initialClasses[0].id);
-  const [currentDate, setCurrentDate] = useState(new Date());
+  const [currentDate, setCurrentDate] = useState(startOfDay(new Date()));
   const [sortKey, setSortKey] = useState<SortKey>("name");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
+  const [dailyLessons, setDailyLessons] = useState<Record<string, DailyLesson>>({});
+  const { toast } = useToast();
 
   const currentClass = useMemo(() => classes.find(c => c.id === currentClassId) || classes[0], [classes, currentClassId]);
+
+  const dateKey = useMemo(() => format(currentDate, "yyyy-MM-dd"), [currentDate]);
+
+  const dailyLesson = useMemo(() => {
+     if (!dailyLessons[dateKey]) {
+      return {
+        teacherId: currentClass.teachers[0]?.id || "",
+        title: "",
+      };
+    }
+    return dailyLessons[dateKey];
+  }, [dateKey, dailyLessons, currentClass.teachers]);
+
 
   const handleToggleCheck = useCallback((studentId: number, type: CheckType) => {
     setClasses(prevClasses =>
@@ -55,14 +72,40 @@ export function StudentDashboard() {
       })
     );
   }, [currentClassId]);
+
+  const handleLessonDetailChange = useCallback((field: keyof DailyLesson, value: string) => {
+    setDailyLessons(prev => ({
+      ...prev,
+      [dateKey]: {
+        ...dailyLesson,
+        [field]: value,
+      }
+    }));
+  }, [dateKey, dailyLesson]);
   
-  const handleDateChange = (direction: 'prev' | 'next') => {
-    setCurrentDate(prevDate => {
-      const newDate = new Date(prevDate);
-      newDate.setDate(newDate.getDate() + (direction === 'next' ? 1 : -1));
+  const handleDateChange = (date: Date) => {
+    setCurrentDate(startOfDay(date));
+  };
+  
+  const handleSundayNavigation = (direction: 'prev' | 'next') => {
+     setCurrentDate(prevDate => {
+      let newDate = new Date(prevDate);
+      const dayOfWeek = newDate.getDay();
+      const offset = direction === 'next' ? (7 - dayOfWeek) % 7 || 7 : - (dayOfWeek || 7);
+      newDate.setDate(newDate.getDate() + offset);
       return newDate;
     });
-  };
+  }
+
+  const handleSave = () => {
+    // Here you would typically save to a database.
+    // For now, we just show a confirmation.
+    setDailyLessons(prev => ({ ...prev, [dateKey]: dailyLesson as DailyLesson }));
+    toast({
+      title: "Aula Salva!",
+      description: `As informações da aula de ${format(currentDate, "dd/MM/yyyy")} foram salvas com sucesso.`,
+    })
+  }
 
   const handleSort = (key: SortKey) => {
     if (sortKey === key) {
@@ -133,7 +176,7 @@ export function StudentDashboard() {
             case 'name':
                 return a.name.localeCompare(b.name) * dir;
             case 'progress':
-                return (a.completionPercent - b.completionPercent) * dir;
+                return (a.completionPercent - b.completionPercent) * dir || (a.dailyScore - b.dailyScore) * dir;
             default:
                 return 0;
         }
@@ -153,28 +196,20 @@ export function StudentDashboard() {
   }, [currentClass, sortKey, sortDirection]);
 
   const trackedItems = currentClass.trackedItems;
-
-  const getVisibleStats = () => {
-    const stats = [];
-    if(trackedItems.presence) stats.push('presence');
-    if(trackedItems.material) stats.push('material');
-    if(trackedItems.task) stats.push('task');
-    if(trackedItems.verse) stats.push('verse');
-    if(trackedItems.behavior) stats.push('behavior');
-    stats.push('totalScore');
-    return stats;
-  }
-  const visibleStats = getVisibleStats();
-
+  
   return (
       <div className="flex flex-1 flex-col overflow-hidden">
         <AppHeader 
             currentDate={currentDate}
-            onPrevDate={() => handleDateChange('prev')}
-            onNextDate={() => handleDateChange('next')}
+            onDateChange={handleDateChange}
+            onPrevSunday={() => handleSundayNavigation('prev')}
+            onNextSunday={() => handleSundayNavigation('next')}
             classes={classes}
             currentClass={currentClass}
             onClassChange={setCurrentClassId}
+            dailyLesson={dailyLesson}
+            onLessonDetailChange={handleLessonDetailChange}
+            onSave={handleSave}
         />
         <main className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-6 bg-background">
           <div className="bg-slate-800/50 rounded-t-xl">

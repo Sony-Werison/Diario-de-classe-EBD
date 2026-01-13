@@ -122,15 +122,15 @@ export function ClassSettings() {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
     const name = formData.get("name") as string;
-    const teacher = formData.get("teacher") as string;
+    const teacherName = formData.get("teacher") as string;
 
     if (editingClass) {
-      setClasses(prev => prev.map(c => c.id === editingClass.id ? {...c, name, teacher} : c));
+      setClasses(prev => prev.map(c => c.id === editingClass.id ? {...c, name, teachers: [{id: `teacher-${Date.now()}`, name: teacherName}]} : c));
     } else {
       const newClass: ClassConfig = {
         id: `class-${Date.now()}`,
         name,
-        teacher,
+        teachers: [{id: `teacher-${Date.now()}`, name: teacherName}],
         trackedItems: { presence: true, task: true, verse: true, behavior: true, material: true },
         students: []
       };
@@ -312,7 +312,7 @@ export function ClassSettings() {
             </div>
             <div>
               <Label htmlFor="teacher">Professor(a)</Label>
-              <Input id="teacher" name="teacher" defaultValue={editingClass?.teacher} className="bg-secondary border-border" placeholder="Ex: Profª. Ana" />
+              <Input id="teacher" name="teacher" defaultValue={editingClass?.teachers[0]?.name} className="bg-secondary border-border" placeholder="Ex: Profª. Ana" />
             </div>
             <div className="flex justify-end gap-2 pt-4">
                  <Button type="button" variant="secondary" onClick={() => setIsClassDialogOpen(false)}>Cancelar</Button>
