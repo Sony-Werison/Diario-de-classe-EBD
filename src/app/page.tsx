@@ -3,8 +3,8 @@
 
 import { Church, Shield, Eye, ArrowRight, User } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useState, useContext, useEffect } from 'react';
-import { Teacher } from '@/lib/data';
+import { useState, useContext, useEffect, useMemo } from 'react';
+import { Teacher, ClassConfig } from '@/lib/data';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { DataContext } from '@/contexts/DataContext';
@@ -33,17 +33,29 @@ const profiles = [
   }
 ];
 
+type TeacherWithClass = Teacher & { className: string };
+
 export default function ProfileSelectionPage() {
   const router = useRouter();
   const [isTeacherSelectOpen, setIsTeacherSelectOpen] = useState(false);
-  const [allTeachers, setAllTeachers] = useState<Teacher[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
   const dataContext = useContext(DataContext);
-  const passwords = dataContext?.fullData?.passwords;
+  const { fullData } = dataContext || {};
+  const passwords = fullData?.passwords;
 
   const [password, setPassword] = useState('');
   const [passwordError, setPasswordError] = useState('');
   const [selectedRole, setSelectedRole] = useState<string | null>(null);
+
+  const teachersByClass = useMemo(() => {
+    if (!fullData) return new Map<string, TeacherWithClass[]>();
+
+    const map = new Map<string, TeacherWithClass[]>();
+    fullData.classes.forEach(c => {
+        const teachersWithClass = c.teachers.map(t => ({...t, className: c.name}));
+        map.set(c.name, teachersWithClass);
+    });
+    return map;
+  }, [fullData]);
 
   const handleProfileSelect = async (role: string) => {
     setPassword('');
@@ -68,15 +80,8 @@ export default function ProfileSelectionPage() {
         setSelectedRole(null);
         router.push('/calendar');
       } else if (selectedRole === 'teacher') {
-        if (dataContext?.fullData) {
-          const teachers = dataContext.fullData.classes.flatMap(c => c.teachers);
-          const uniqueTeachers = Array.from(new Map(teachers.map(t => [t.id, t])).values());
-          setAllTeachers(uniqueTeachers.sort((a,b) => a.name.localeCompare(b.name)));
-          setIsTeacherSelectOpen(true);
-          setSelectedRole(null); 
-        } else {
-          setIsLoading(true);
-        }
+        setSelectedRole(null);
+        setIsTeacherSelectOpen(true);
       }
     } else {
       setPasswordError('Senha incorreta. Tente novamente.');
@@ -90,7 +95,7 @@ export default function ProfileSelectionPage() {
     router.push('/calendar');
   };
   
-  if (dataContext && dataContext.isLoading && !dataContext.fullData) {
+  if (dataContext && dataContext.isLoading && !fullData) {
       return (
         <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">
             <div className="text-slate-400">Carregando dados do aplicativo...</div>
@@ -118,7 +123,7 @@ export default function ProfileSelectionPage() {
               key={profile.name}
               onClick={() => handleProfileSelect(profile.role)}
               className="w-full bg-card border border-border rounded-lg p-4 text-left transition-colors hover:bg-secondary disabled:opacity-50"
-              disabled={isLoading || (!passwords && profile.role !== 'viewer')}
+              disabled={!passwords && profile.role !== 'viewer'}
             >
               <div className="flex items-center justify-between mb-2">
                 <div className="p-2 bg-slate-800 border border-slate-700 rounded-md">
@@ -132,7 +137,6 @@ export default function ProfileSelectionPage() {
           );
         })}
       </div>
-       {isLoading && <div className="text-sm text-slate-400 mt-4">Carregando professores...</div>}
 
       <Dialog open={isTeacherSelectOpen} onOpenChange={setIsTeacherSelectOpen}>
         <DialogContent className="bg-card border-border text-white">
@@ -142,16 +146,23 @@ export default function ProfileSelectionPage() {
               Selecione o seu nome na lista para continuar.
             </DialogDescription>
           </DialogHeader>
-          <div className="max-h-[60vh] overflow-y-auto space-y-2 pr-2">
-            {allTeachers.map(teacher => (
-              <Button 
-                key={teacher.id} 
-                variant="outline" 
-                className="w-full justify-start text-base hover:bg-transparent hover:text-white focus-visible:ring-0 focus-visible:ring-offset-0"
-                onClick={() => handleTeacherSelect(teacher)}
-              >
-                {teacher.name}
-              </Button>
+          <div className="max-h-[60vh] overflow-y-auto space-y-4 pr-2">
+            {Array.from(teachersByClass.entries()).map(([className, teachers]) => (
+                <div key={className}>
+                    <h3 className="text-sm font-semibold text-primary mb-2">{className}</h3>
+                    <div className="space-y-2">
+                        {teachers.map(teacher => (
+                            <Button 
+                                key={teacher.id} 
+                                variant="outline" 
+                                className="w-full justify-start text-base hover:bg-transparent hover:text-white focus-visible:ring-0 focus-visible:ring-offset-0"
+                                onClick={() => handleTeacherSelect(teacher)}
+                            >
+                                {teacher.name}
+                            </Button>
+                        ))}
+                    </div>
+                </div>
             ))}
           </div>
         </DialogContent>

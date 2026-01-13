@@ -24,7 +24,6 @@ export default function SettingsPage() {
   const [adminPassword, setAdminPassword] = useState('');
   const [teacherPassword, setTeacherPassword] = useState('');
   
-  const isViewer = userRole === 'viewer';
   const isAdmin = userRole === 'admin';
 
 
@@ -58,6 +57,7 @@ export default function SettingsPage() {
   
 
   const handleExportData = async () => {
+    if (!isAdmin) return;
     if (!data) return;
     const dataStr = JSON.stringify(data, null, 2);
     const blob = new Blob([dataStr], { type: "application/json" });
@@ -74,13 +74,13 @@ export default function SettingsPage() {
   };
 
   const handleImportClick = () => {
-    if(isViewer) return;
+    if(!isAdmin) return;
     fileInputRef.current?.click();
   };
 
   const handleImportData = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (!file || isViewer || !updateAndSaveData) return;
+    if (!file || !isAdmin || !updateAndSaveData) return;
 
     const reader = new FileReader();
     reader.onload = async (e) => {
@@ -147,11 +147,11 @@ export default function SettingsPage() {
           <CardContent>
              <p className="text-sm text-slate-400 mb-4">Exporte ou importe todos os dados do aplicativo, incluindo turmas, alunos e registros.</p>
              <div className="flex flex-col sm:flex-row gap-2">
-                <Button onClick={handleExportData} variant="outline" className="w-full">
+                <Button onClick={handleExportData} variant="outline" className="w-full" disabled={!isAdmin}>
                   <Download size={16} className="mr-2"/>
                   Exportar Backup
                 </Button>
-                <Button onClick={handleImportClick} variant="outline" className="w-full" disabled={isViewer}>
+                <Button onClick={handleImportClick} variant="outline" className="w-full" disabled={!isAdmin}>
                   <Upload size={16} className="mr-2"/>
                   Importar Backup
                 </Button>
@@ -161,10 +161,10 @@ export default function SettingsPage() {
                   className="hidden"
                   accept=".json"
                   onChange={handleImportData}
-                  disabled={isViewer}
+                  disabled={!isAdmin}
                 />
              </div>
-             {isViewer && <p className="text-xs text-yellow-400 mt-4">Você está no modo de visualização. Não é possível importar um backup.</p>}
+             {!isAdmin && <p className="text-xs text-yellow-400 mt-4">Você está no modo de {userRole === 'viewer' ? 'visualização' : 'professor'}. Apenas administradores podem realizar backups.</p>}
           </CardContent>
         </Card>
       </div>
