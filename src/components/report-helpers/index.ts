@@ -12,12 +12,12 @@ export const itemIcons: Record<CheckType | 'task', React.ElementType> = {
 };
 
 export const itemLabels: Record<CheckType | 'task', string> = {
-  presence: "Presença",
+  presence: "Frequência",
   material: "Material",
-  inClassTask: "Tarefa em Sala",
-  task: "Tarefa de Casa",
-  verse: "Versículo",
-  behavior: "Comportamento",
+  inClassTask: "T. em Sala",
+  task: "Tarefas",
+  verse: "Versículos",
+  behavior: "Comport.",
 };
 
 export const itemColors: Record<CheckType | 'task', string> = {

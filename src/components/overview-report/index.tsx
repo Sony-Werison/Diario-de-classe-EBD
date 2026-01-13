@@ -6,11 +6,12 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { getSimulatedData, ClassConfig, SimulatedFullData, CheckType } from '@/lib/data';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Users, Cake, ArrowUp, ArrowDown, Crown, ChevronLeft, ChevronRight } from 'lucide-react';
-import { itemIcons } from '../report-helpers';
+import { itemIcons, itemLabels } from '../report-helpers';
 import { startOfMonth, format, addMonths, subMonths } from 'date-fns';
 import { Progress } from '../ui/progress';
 import { Button } from '../ui/button';
 import { ptBR } from 'date-fns/locale';
+import { cn } from '@/lib/utils';
 
 const calculateAge = (birthDateString: string) => {
     if (!birthDateString) return 0;
@@ -75,6 +76,9 @@ const calculateStatsForPeriod = (classConfig: ClassConfig, studentRecords: Simul
         if (recordDate < startDate || recordDate > endDate) continue;
 
         const dayRecords = classRecords[dateKey];
+        const sundaysInPeriod = classConfig.students.length > 0;
+        if (!sundaysInPeriod) continue;
+
         totalPossibleAttendance += students.length;
 
         students.forEach(student => {
@@ -218,6 +222,12 @@ export function OverviewReport() {
     const handleMonthChange = (direction: 'prev' | 'next') => {
         setCurrentMonth(prev => direction === 'next' ? addMonths(prev, 1) : subMonths(prev, 1));
     };
+
+    const getRateColor = (rate: number) => {
+        if (rate >= 80) return 'text-green-400';
+        if (rate >= 50) return 'text-yellow-400';
+        return 'text-red-400';
+    };
     
     if (!isClient || !fullData) return null; // or a loading spinner
     
@@ -226,7 +236,7 @@ export function OverviewReport() {
     const rankColors = ["text-yellow-400", "text-slate-300", "text-yellow-600"];
 
     return (
-        <div>
+        <div className="pb-16 sm:pb-2">
             <div className="flex items-center gap-2 bg-card border border-border px-2 py-1 rounded-md w-full sm:w-auto justify-between mb-6">
                 <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleMonthChange('prev')}>
                     <ChevronLeft size={16} />
@@ -266,14 +276,14 @@ export function OverviewReport() {
 
                             <div className="space-y-2 pt-2 border-t border-border">
                                 <h4 className="text-sm font-semibold text-slate-300">Destaques do Mês</h4>
-                                {classData.stats.monthStats.topStudents.length > 0 ? classData.stats.monthStats.topStudents.map((student, index) => (
+                                {classData.stats.monthStats.topStudents.length > 0 && classData.stats.monthStats.topStudents.some(s => s.avgScore > 0) ? classData.stats.monthStats.topStudents.map((student, index) => (
                                     <div key={student.name} className="grid grid-cols-[auto_1fr_auto] items-center text-sm gap-2">
                                         <div className="flex items-center gap-2">
                                             <Crown size={14} className={rankColors[index]} />
                                         </div>
                                         <span className="text-slate-300 truncate max-w-40">{student.name}</span>
                                         <div className="flex items-center gap-2 justify-end">
-                                            <span className="font-semibold text-white w-8 text-right">{student.avgScore.toFixed(0)}%</span>
+                                            <span className={cn("font-semibold w-8 text-right", getRateColor(student.avgScore))}>{student.avgScore.toFixed(0)}%</span>
                                             <Progress value={student.avgScore} className="h-1.5 w-10 bg-slate-700" indicatorClassName="bg-primary/50" />
                                         </div>
                                     </div>
@@ -291,16 +301,7 @@ export function OverviewReport() {
                                     if (!classData.trackedItems[itemKey]) return null;
                                     const Icon = itemIcons[itemKey];
                                     const monthlyRate = (itemKey === 'presence' ? classData.stats.monthStats.attendanceRate : classData.stats.monthStats.criteriaRates[itemKey]) || 0;
-                                    
-                                    let label = '';
-                                    switch(itemKey) {
-                                        case 'presence': label = 'Frequência'; break;
-                                        case 'task': label = 'Tarefas'; break;
-                                        case 'verse': label = 'Versículos'; break;
-                                        case 'material': label = 'Material'; break;
-                                        case 'inClassTask': label = 'T. em Sala'; break;
-                                        case 'behavior': label = 'Comport.'; break;
-                                    }
+                                    const label = itemLabels[itemKey];
 
                                     return (
                                         <div key={itemKey} className="grid grid-cols-[auto_1fr] items-center text-sm gap-2">
@@ -309,7 +310,7 @@ export function OverviewReport() {
                                                 <span className="text-slate-300">{label}</span>
                                             </div>
                                             <div className="flex items-center gap-2 justify-end">
-                                                <span className="font-semibold text-white w-8 text-right">{monthlyRate.toFixed(0)}%</span>
+                                                <span className={cn("font-semibold w-8 text-right", getRateColor(monthlyRate))}>{monthlyRate.toFixed(0)}%</span>
                                                 <Progress value={monthlyRate} className="h-1.5 w-10 bg-slate-700" indicatorClassName="bg-primary/50" />
                                             </div>
                                         </div>

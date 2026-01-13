@@ -24,7 +24,7 @@ const mobileNavLinks = [
   { href: "/calendar", icon: Calendar, label: "Calendário" },
   { href: "/report", icon: FileText, label: "Relatório" },
   { href: "/settings", icon: Settings, label: "Ajustes" },
-  { href: "/", icon: LogOut, label: "Sair" },
+  { href: "/", icon: LogOut, label: "Perfil" },
 ]
 
 const NavLink = ({
@@ -132,7 +132,7 @@ export function AppSidebar() {
       </div>
       
       <div className="mt-auto">
-        <NavLink href="/" icon={LogOut} label="Sair" />
+        <NavLink href="/" icon={LogOut} label="Perfil" />
       </div>
     </aside>
   );
