@@ -8,7 +8,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
-import { LogOut, Settings, FileText, Calendar, User, ClipboardEdit } from "lucide-react";
+import { LogOut, Settings, FileText, Calendar, User, ClipboardEdit, Users } from "lucide-react";
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState, useContext } from "react";
@@ -18,14 +18,14 @@ import Image from "next/image";
 const navLinks = [
   { href: "/calendar", icon: Calendar, label: "Calendário" },
   { href: "/report", icon: FileText, label: "Relatório" },
-  { href: "/settings", icon: ClipboardEdit, label: "Cadastro" },
+  { href: "/settings", icon: Users, label: "Turmas" },
   { href: "/configuracoes", icon: Settings, label: "Configurações" },
 ];
 
 const mobileNavLinks = [
   { href: "/calendar", icon: Calendar, label: "Calendário" },
   { href: "/report", icon: FileText, label: "Relatório" },
-  { href: "/settings", icon: ClipboardEdit, label: "Cadastro" },
+  { href: "/settings", icon: Users, label: "Turmas" },
   { href: "/configuracoes", icon: Settings, label: "Configurações" },
 ]
 
