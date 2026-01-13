@@ -30,7 +30,7 @@ export default function RootLayout({
       >
         <div className="flex h-screen">
           <AppSidebar />
-          <main className="flex-1 overflow-y-auto bg-background pb-20 sm:pb-0">{children}</main>
+          <main className="flex-1 overflow-y-auto bg-background pb-16 sm:pb-0">{children}</main>
         </div>
         <AppBottomNav />
         <Toaster />
