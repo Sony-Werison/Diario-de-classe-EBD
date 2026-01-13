@@ -8,6 +8,8 @@ import { Teacher } from '@/lib/data';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { DataContext } from '@/contexts/DataContext';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 
 const profiles = [
   {
@@ -30,6 +32,11 @@ const profiles = [
   }
 ];
 
+const PASSWORDS = {
+  admin: 'admin123',
+  teacher: 'professorebd',
+};
+
 export default function ProfileSelectionPage() {
   const router = useRouter();
   const [isTeacherSelectOpen, setIsTeacherSelectOpen] = useState(false);
@@ -37,23 +44,48 @@ export default function ProfileSelectionPage() {
   const [isLoading, setIsLoading] = useState(false);
   const dataContext = useContext(DataContext);
 
+  const [password, setPassword] = useState('');
+  const [passwordError, setPasswordError] = useState('');
+  const [selectedRole, setSelectedRole] = useState<string | null>(null);
 
   const handleProfileSelect = async (role: string) => {
-    if (role === 'teacher') {
-      if (dataContext?.fullData) {
-        const teachers = dataContext.fullData.classes.flatMap(c => c.teachers);
-        const uniqueTeachers = Array.from(new Map(teachers.map(t => [t.id, t])).values());
-        setAllTeachers(uniqueTeachers.sort((a,b) => a.name.localeCompare(b.name)));
-        setIsTeacherSelectOpen(true);
-      } else {
-        // Handle case where data is not loaded yet
-        setIsLoading(true);
-        // We can optionally trigger a load or just wait
-      }
-    } else {
+    setPassword('');
+    setPasswordError('');
+    setSelectedRole(role);
+
+    if (role === 'viewer') {
       sessionStorage.setItem('userRole', role);
       sessionStorage.removeItem('teacherId');
       router.push('/calendar');
+    } else {
+      // Open password dialog for admin and teacher
+    }
+  };
+
+  const handlePasswordSubmit = () => {
+    if (!selectedRole) return;
+
+    const correctPassword = PASSWORDS[selectedRole as keyof typeof PASSWORDS];
+    if (password === correctPassword) {
+      if (selectedRole === 'admin') {
+        sessionStorage.setItem('userRole', 'admin');
+        sessionStorage.removeItem('teacherId');
+        setSelectedRole(null);
+        router.push('/calendar');
+      } else if (selectedRole === 'teacher') {
+        // Password is correct, now open teacher selection
+        if (dataContext?.fullData) {
+          const teachers = dataContext.fullData.classes.flatMap(c => c.teachers);
+          const uniqueTeachers = Array.from(new Map(teachers.map(t => [t.id, t])).values());
+          setAllTeachers(uniqueTeachers.sort((a,b) => a.name.localeCompare(b.name)));
+          setIsTeacherSelectOpen(true);
+          setSelectedRole(null); // Close password dialog
+        } else {
+          setIsLoading(true);
+        }
+      }
+    } else {
+      setPasswordError('Senha incorreta. Tente novamente.');
     }
   };
 
@@ -125,6 +157,35 @@ export default function ProfileSelectionPage() {
                 {teacher.name}
               </Button>
             ))}
+          </div>
+        </DialogContent>
+      </Dialog>
+      
+      <Dialog open={!!selectedRole && selectedRole !== 'viewer'} onOpenChange={(isOpen) => !isOpen && setSelectedRole(null)}>
+        <DialogContent className="bg-card border-border text-white">
+          <DialogHeader>
+            <DialogTitle>Acesso Restrito</DialogTitle>
+            <DialogDescription>
+              Por favor, insira a senha para o perfil de {profiles.find(p => p.role === selectedRole)?.name}.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="password">Senha</Label>
+              <Input
+                id="password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handlePasswordSubmit()}
+                className="bg-input border-border"
+              />
+            </div>
+            {passwordError && <p className="text-sm text-destructive">{passwordError}</p>}
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setSelectedRole(null)}>Cancelar</Button>
+            <Button onClick={handlePasswordSubmit}>Continuar</Button>
           </div>
         </DialogContent>
       </Dialog>
