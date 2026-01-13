@@ -40,20 +40,28 @@ export function StudentDashboard({ initialDate }: { initialDate?: string }) {
   const { toast } = useToast();
   const [isClient, setIsClient] = useState(false);
   const [isDeleteAlertOpen, setIsDeleteAlertOpen] = useState(false);
-  const [isCancelDialogValid, setIsCancelDialogValid] = useState(true);
+  const [isCancelDialogVali
+d, setIsCancelDialogValid] = useState(true);
   const [isCancelDialogOpen, setIsCancelDialogOpen] = useState(false);
   const [cancellationReason, setCancellationReason] = useState("");
   
   useEffect(() => {
     setIsClient(true);
-    setSimulatedData(generateFullSimulatedData(initialClasses));
-    if (initialDate) {
-        const dateFromUrl = parseISO(initialDate);
-        setCurrentDate(startOfDay(dateFromUrl));
-    } else {
-        router.push('/');
+    // This check prevents client-side state from being overwritten on navigation
+    if (Object.keys(simulatedData.lessons).length === 0) {
+      setSimulatedData(generateFullSimulatedData(initialClasses));
     }
-  }, [initialDate, router]);
+  }, []);
+
+  useEffect(() => {
+    if (initialDate) {
+      const dateFromUrl = parseISO(initialDate);
+      setCurrentDate(startOfDay(dateFromUrl));
+    } else if (isClient) {
+      router.push('/');
+    }
+  }, [initialDate, isClient, router]);
+
 
   const currentClass = useMemo(() => classes.find(c => c.id === currentClassId) || classes[0], [classes, currentClassId]);
 
@@ -83,7 +91,7 @@ export function StudentDashboard({ initialDate }: { initialDate?: string }) {
         if (!newStudentRecords[currentClassId]) newStudentRecords[currentClassId] = {};
         if (!newStudentRecords[currentClassId][dateKey]) newStudentRecords[currentClassId][dateKey] = {};
 
-        const currentChecks = newStudentRecords[currentClassId][dateKey][studentId] || { presence: false, task: false, verse: false, behavior: false, material: false };
+        const currentChecks = newStudentRecords[currentClassId][dateKey]?.[studentId] || { presence: false, task: false, verse: false, behavior: false, material: false };
         const newChecks = { ...currentChecks, [type]: !currentChecks[type] };
 
         if (type === 'presence' && !newChecks.presence) {
@@ -94,6 +102,9 @@ export function StudentDashboard({ initialDate }: { initialDate?: string }) {
             });
         }
         
+        if (!newStudentRecords[currentClassId][dateKey]) {
+           newStudentRecords[currentClassId][dateKey] = {};
+        }
         newStudentRecords[currentClassId][dateKey][studentId] = newChecks;
         
         return { ...prevData, studentRecords: newStudentRecords };
@@ -123,9 +134,12 @@ export function StudentDashboard({ initialDate }: { initialDate?: string }) {
 
   const handleSave = () => {
     if (!currentDate) return;
-    // Data is already saved in state via handleLessonDetailChange and handleToggleCheck.
-    // This function can be used for API calls in the future.
-    setSimulatedData(prev => ({...prev})); // Trigger re-render to update dependent components if needed
+    
+    // Make sure lesson is marked as 'held' when saved, unless it was cancelled.
+    if(dailyLesson.status !== 'cancelled') {
+        handleLessonDetailChange('status', 'held');
+    }
+
     toast({
       title: "Aula Salva!",
       description: `As informações da aula de ${format(currentDate, "dd/MM/yyyy")} foram salvas com sucesso.`,
@@ -159,17 +173,21 @@ export function StudentDashboard({ initialDate }: { initialDate?: string }) {
         return;
       }
       setIsCancelDialogValid(true);
-      setSimulatedData(prev => ({
-        ...prev,
-        lessons: {
-          ...prev.lessons,
-          [dateKey]: {
+      setSimulatedData(prev => {
+        const updatedLesson: DailyLesson = {
             ...(prev.lessons[dateKey] || { teacherId: currentClass.teachers[0]?.id || "", title: "" }),
             status: 'cancelled',
             cancellationReason: cancellationReason,
+        };
+
+        return {
+          ...prev,
+          lessons: {
+            ...prev.lessons,
+            [dateKey]: updatedLesson,
           }
-        }
-      }));
+        };
+      });
       toast({
         title: "Aula cancelada",
         description: "A aula foi marcada como não realizada.",

@@ -13,7 +13,7 @@ import {
   getDay,
 } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { ChevronLeft, ChevronRight, Church, CalendarCheck } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Church, CalendarCheck, CheckCircle, Ban } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { initialClasses, generateFullSimulatedData, SimulatedFullData } from '@/lib/data';
 import { Button } from '@/components/ui/button';
@@ -85,7 +85,7 @@ export function CalendarPage() {
         <div className="flex flex-col p-4 gap-3">
           {sundays.map(day => {
             const dateKey = format(day, 'yyyy-MM-dd');
-            const hasLesson = dailyLessons[dateKey];
+            const lesson = dailyLessons[dateKey];
             const isToday = isSameDay(day, new Date());
 
             return (
@@ -109,11 +109,13 @@ export function CalendarPage() {
                             </span>
                        </div>
                     </div>
-                    {hasLesson && (
+                    {lesson && (
                         <div className="text-right">
-                            <span className="text-xs bg-indigo-500/20 text-indigo-300 px-2 py-1 rounded-full font-medium">
-                                Aula registrada
-                            </span>
+                           {lesson.status === 'cancelled' ? (
+                                <Ban className="w-5 h-5 text-yellow-500" title="Aula não realizada"/>
+                           ) : (
+                                <CheckCircle className="w-5 h-5 text-green-500" title="Aula registrada"/>
+                           )}
                         </div>
                     )}
                 </Link>
