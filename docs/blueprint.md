@@ -1,4 +1,4 @@
-# **App Name**: EBD Júnior Tracker
+# **App Name**:  Diário de classe EBD - ICABV
 
 ## Core Features:
 

@@ -9,8 +9,8 @@ import AppLayout from "./AppLayout";
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
 
 export const metadata: Metadata = {
-  title: "EBD Júnior Tracker",
-  description: "Painel de controle gamificado para Escola Bíblica Dominical.",
+  title: "Diário de classe EBD - ICABV",
+  description: "Painel de controle para Escola Bíblica Dominical.",
 };
 
 export default function RootLayout({
