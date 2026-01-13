@@ -11,6 +11,8 @@ import { DataContext } from '@/contexts/DataContext';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
+import Image from 'next/image';
+
 
 const profiles = [
   {
@@ -45,6 +47,12 @@ export default function ProfileSelectionPage() {
   const [password, setPassword] = useState('');
   const [passwordError, setPasswordError] = useState('');
   const [selectedRole, setSelectedRole] = useState<string | null>(null);
+
+  useEffect(() => {
+    // Limpa a sessão sempre que o usuário volta para a tela de login
+    sessionStorage.removeItem('userRole');
+    sessionStorage.removeItem('teacherId');
+  }, []);
 
   const teachersByClass = useMemo(() => {
     if (!fullData) return new Map<string, TeacherWithClass[]>();
@@ -108,8 +116,8 @@ export default function ProfileSelectionPage() {
         "bg-gradient-to-br from-slate-900 via-background to-background"
     )}>
       <div className="text-center mb-8">
-         <div className="inline-block p-3 bg-primary rounded-xl mb-3 shadow-lg shadow-primary/20">
-            <Church size={32} className="text-primary-foreground" />
+         <div className="inline-block p-3 bg-primary/10 rounded-2xl mb-3 shadow-lg shadow-primary/20 border border-primary/20">
+            <Image src="/logo.png" alt="Logo" width={40} height={40} className="rounded-md" />
         </div>
         <h1 className="text-2xl font-bold text-white">Diário de classe EBD</h1>
         <p className="text-slate-400 mt-1">Selecione seu perfil para continuar</p>

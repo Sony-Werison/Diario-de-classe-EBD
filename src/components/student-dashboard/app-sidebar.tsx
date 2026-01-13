@@ -10,7 +10,7 @@ import {
 import { cn } from "@/lib/utils";
 import { LogOut, Settings, FileText, Calendar, User, ClipboardEdit } from "lucide-react";
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState, useContext } from "react";
 import { DataContext } from "@/contexts/DataContext";
 
@@ -32,12 +32,14 @@ const NavLink = ({
   href,
   icon: Icon,
   label,
-  isMobile = false
+  isMobile = false,
+  onClick
 }: {
   href: string;
   icon: React.ElementType;
   label: string;
   isMobile?: boolean;
+  onClick?: () => void;
 }) => {
   const pathname = usePathname();
   let active = pathname.startsWith(href) && (href !== '/' || pathname === '/');
@@ -46,11 +48,11 @@ const NavLink = ({
     active = true;
   }
 
-
   if (isMobile) {
     return (
        <Link
           href={href}
+          onClick={onClick}
           className={cn(
             "flex flex-col items-center justify-center gap-1 text-xs p-2 rounded-lg transition-colors w-20",
             active
@@ -70,6 +72,7 @@ const NavLink = ({
         <TooltipTrigger asChild>
           <Link
             href={href}
+            onClick={onClick}
             className={cn(
               "w-12 h-12 rounded-xl flex items-center justify-center cursor-pointer transition-colors",
               active
@@ -87,6 +90,11 @@ const NavLink = ({
       </Tooltip>
     </TooltipProvider>
   )
+};
+
+const handleLogout = () => {
+  sessionStorage.removeItem('userRole');
+  sessionStorage.removeItem('teacherId');
 };
 
 export function AppSidebar() {
@@ -137,23 +145,19 @@ export function AppSidebar() {
       </div>
       
       <div className="mt-auto">
-        <NavLink href="/" icon={LogOut} label="Sair" />
+        <NavLink href="/" icon={LogOut} label="Sair" onClick={handleLogout} />
       </div>
     </aside>
   );
 }
 
 export function AppBottomNav() {
-  const pathname = usePathname();
-  // Filter out "Sair" for the bottom nav
-  const linksForBottomNav = mobileNavLinks.filter(l => l.href !== '/');
-
   return (
     <nav className="sm:hidden fixed bottom-0 left-0 right-0 bg-card border-t border-border h-16 flex items-center justify-around z-50">
-        {linksForBottomNav.map(link => (
+        {mobileNavLinks.map(link => (
           <NavLink key={link.href} {...link} isMobile />
         ))}
-         <NavLink href="/" icon={LogOut} label="Sair" isMobile />
+         <NavLink href="/" icon={LogOut} label="Sair" isMobile onClick={handleLogout} />
     </nav>
   )
 }
