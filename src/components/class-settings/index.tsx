@@ -107,7 +107,7 @@ export function ClassSettings() {
           name,
           birthDate,
           totalXp: 0,
-          checks: { presence: false, task: false, verse: false, behavior: false, material: false }
+          checks: { presence: false, task: false, verse: false, behavior: false, material: false, dailyTasks: {} }
         };
         newStudents = [...c.students, newStudent];
       }

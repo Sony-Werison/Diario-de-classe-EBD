@@ -87,6 +87,8 @@ export const initialClasses: ClassConfig[] = [
       { id: "j-1", name: "Davi Silva", birthDate: "2012-05-10", checks: {} as any, totalXp: 450 },
       { id: "j-2", name: "Ester Gomes", birthDate: "2011-09-22", checks: {} as any, totalXp: 520 },
       { id: "j-3", name: "Samuel Santos", birthDate: "2013-02-15", checks: {} as any, totalXp: 380 },
+      { id: "j-4", name: "Livia Oliveira", birthDate: "2012-11-30", checks: {} as any, totalXp: 410 },
+      { id: "j-5", name: "Pedro Lima", birthDate: "2011-06-05", checks: {} as any, totalXp: 490 },
     ],
   },
    {
@@ -99,6 +101,7 @@ export const initialClasses: ClassConfig[] = [
     students: [
       { id: "a-1", name: "Gabriel Martins", birthDate: "2008-07-12", checks: {} as any, totalXp: 800 },
       { id: "a-2", name: "Laura Fernandes", birthDate: "2009-01-25", checks: {} as any, totalXp: 750 },
+      { id: "a-3", name: "Matheus Ferreira", birthDate: "2008-09-18", checks: {} as any, totalXp: 780 },
     ],
   },
   {
@@ -110,6 +113,7 @@ export const initialClasses: ClassConfig[] = [
     taskMode: 'daily',
     students: [
        { id: "jv-1", name: "Beatriz Alves", birthDate: "2004-10-30", checks: {} as any, totalXp: 1200 },
+       { id: "jv-2", name: "Thiago Mendes", birthDate: "2003-12-05", checks: {} as any, totalXp: 1100 },
     ],
   }
 ];

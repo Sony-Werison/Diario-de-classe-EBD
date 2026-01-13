@@ -127,7 +127,7 @@ export function AppHeader({
           </Button>
           
           <Link href="/calendar" className="flex items-center gap-2 hover:bg-secondary rounded-full px-3 py-1 transition-colors">
-            <CalendarIcon size={16} className="text-[var(--class-color)]"/>
+            <CalendarIcon size={16} className="text-primary"/>
             <span className="text-sm font-semibold capitalize whitespace-nowrap">
                 {formattedDate}
             </span>
