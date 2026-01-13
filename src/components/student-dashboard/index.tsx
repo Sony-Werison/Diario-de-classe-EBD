@@ -45,7 +45,7 @@ const defaultChecks: StudentChecks = {
 export function StudentDashboard({ initialDate, classId: initialClassId }: { initialDate?: string, classId?: string }) {
   const router = useRouter();
   const dataContext = useContext(DataContext);
-  const { fullData, updateAndSaveData, isLoading, isDemo } = dataContext || { fullData: null, updateAndSaveData: () => {}, isLoading: true, isDemo: false };
+  const { fullData, updateAndSaveData, isLoading } = dataContext || { fullData: null, updateAndSaveData: () => {}, isLoading: true };
 
   const [currentClassId, setCurrentClassId] = useState<string>('');
   const [currentDate, setCurrentDate] = useState<Date>(() => initialDate ? startOfDay(parseISO(initialDate)) : startOfDay(new Date()));
@@ -56,7 +56,7 @@ export function StudentDashboard({ initialDate, classId: initialClassId }: { ini
   const [cancellationReason, setCancellationReason] = useState("");
   const [userRole, setUserRole] = useState<string>('');
   const [currentUser, setCurrentUser] = useState('');
-  const isReadOnly = userRole === 'viewer' || isDemo;
+  const isReadOnly = userRole === 'viewer';
   
   // These states hold the current data for the dashboard
   const [dailyLesson, setDailyLesson] = useState<DailyLesson | undefined>();
@@ -66,7 +66,7 @@ export function StudentDashboard({ initialDate, classId: initialClassId }: { ini
 
   useEffect(() => {
     setIsClient(true);
-    const role = isDemo ? 'demo' : sessionStorage.getItem('userRole') || 'admin';
+    const role = sessionStorage.getItem('userRole') || 'admin';
     setUserRole(role);
 
     if (fullData) {
@@ -74,9 +74,7 @@ export function StudentDashboard({ initialDate, classId: initialClassId }: { ini
         let currentUserName = role;
         
         const teacherId = sessionStorage.getItem('teacherId');
-        if (role === 'demo') {
-            currentUserName = 'Demonstração';
-        } else if (role === 'teacher' && teacherId) {
+        if (role === 'teacher' && teacherId) {
             availableClasses = fullData.classes.filter(c => c.teachers.some(t => t.id === teacherId));
             const allTeachers = fullData.classes.flatMap(c => c.teachers);
             const teacher = allTeachers.find(t => t.id === teacherId);
@@ -95,7 +93,7 @@ export function StudentDashboard({ initialDate, classId: initialClassId }: { ini
             router.push('/calendar');
         }
     }
-  }, [fullData, initialClassId, initialDate, router, isDemo]);
+  }, [fullData, initialClassId, initialDate, router]);
 
   const currentClass = useMemo(() => classes.find(c => c.id === currentClassId), [classes, currentClassId]);
   const dateKey = useMemo(() => currentDate ? format(currentDate, "yyyy-MM-dd") : '', [currentDate]);

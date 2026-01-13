@@ -68,7 +68,7 @@ const colorPresets = [
 
 export function ClassSettings() {
   const dataContext = useContext(DataContext);
-  const { fullData: data, updateAndSaveData, isLoading, isDemo } = dataContext || { fullData: null, updateAndSaveData: () => {}, isLoading: true, isDemo: false };
+  const { fullData: data, updateAndSaveData, isLoading } = dataContext || { fullData: null, updateAndSaveData: () => {}, isLoading: true };
 
   const [currentClassId, setCurrentClassId] = useState<string>('');
   const [isStudentDialogOpen, setIsStudentDialogOpen] = useState(false);
@@ -78,12 +78,12 @@ export function ClassSettings() {
   const { toast } = useToast();
   const [userRole, setUserRole] = useState<string>('');
   const [isClient, setIsClient] = useState(false);
-  const isReadOnly = userRole === 'viewer' || isDemo;
+  const isReadOnly = userRole === 'viewer';
 
 
   useEffect(() => {
     setIsClient(true);
-    const role = isDemo ? 'viewer' : sessionStorage.getItem('userRole') || 'admin';
+    const role = sessionStorage.getItem('userRole') || 'admin';
     setUserRole(role);
     
     if (data) {
@@ -98,17 +98,17 @@ export function ClassSettings() {
         }
     }
 
-  }, [data, currentClassId, isDemo]);
+  }, [data, currentClassId]);
   
   const availableClasses = useMemo(() => {
     if (!data || !userRole) return [];
-    if (userRole === 'admin' || userRole === 'viewer' || isDemo) return data.classes;
+    if (userRole === 'admin' || userRole === 'viewer') return data.classes;
     if (userRole === 'teacher') {
       const teacherId = sessionStorage.getItem('teacherId');
       return data.classes.filter(c => c.teachers.some(t => t.id === teacherId));
     }
     return [];
-  }, [data, userRole, isDemo]);
+  }, [data, userRole]);
 
 
   const handleTrackedItemToggle = (item: CheckType | 'task') => {
@@ -406,15 +406,17 @@ export function ClassSettings() {
           </DropdownMenuTrigger>
           <DropdownMenuContent className="w-full sm:w-72 bg-card border-border text-white">
             {availableClasses.map(c => (
-              <DropdownMenuItem key={c.id} onSelect={() => setCurrentClassId(c.id)} className="cursor-pointer focus:bg-secondary">
-                 <Check size={16} className={cn("mr-2", currentClassId === c.id ? 'opacity-100' : 'opacity-0')} />
-                 <div className="w-3 h-3 rounded-full mr-2" style={{backgroundColor: c.color}} />
-                {c.name}
+              <DropdownMenuItem key={c.id} onSelect={() => setCurrentClassId(c.id)} className="cursor-pointer focus:bg-secondary flex items-center gap-2">
+                 <Check size={16} className={cn(currentClassId === c.id ? 'opacity-100' : 'opacity-0')} />
+                 <div className="flex-1 flex items-center gap-2">
+                    <div className="w-3 h-3 rounded-full" style={{backgroundColor: c.color}} />
+                    {c.name}
+                 </div>
               </DropdownMenuItem>
             ))}
           </DropdownMenuContent>
         </DropdownMenu>
-        {userRole === 'admin' && !isDemo && <div className="flex gap-2 w-full sm:w-auto">
+        {userRole === 'admin' && <div className="flex gap-2 w-full sm:w-auto">
             <Button onClick={openNewClassDialog} className="bg-primary hover:bg-primary/90 text-white" disabled={isReadOnly}>
                 <PlusCircle size={16} className="mr-2" />
                 Criar Classe

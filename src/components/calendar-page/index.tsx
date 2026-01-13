@@ -25,7 +25,7 @@ import Image from 'next/image';
 export function CalendarPage() {
   const [currentMonth, setCurrentMonth] = useState(startOfMonth(new Date()));
   const dataContext = useContext(DataContext);
-  const { fullData, isLoading, isDemo } = dataContext || { fullData: null, isLoading: true, isDemo: false };
+  const { fullData, isLoading } = dataContext || { fullData: null, isLoading: true };
 
   const [isClient, setIsClient] = useState(false);
   const [currentClassId, setCurrentClassId] = useState<string>("");
@@ -34,7 +34,7 @@ export function CalendarPage() {
 
   useEffect(() => {
     setIsClient(true);
-    const role = isDemo ? 'demo' : sessionStorage.getItem('userRole') || 'admin';
+    const role = sessionStorage.getItem('userRole') || 'admin';
     setUserRole(role);
 
     if (fullData) {
@@ -42,9 +42,7 @@ export function CalendarPage() {
         let currentUserName = role;
         const teacherId = sessionStorage.getItem('teacherId');
         
-        if (role === 'demo') {
-            currentUserName = 'Demonstração';
-        } else if (role === 'teacher' && teacherId) {
+        if (role === 'teacher' && teacherId) {
             availableClasses = fullData.classes.filter(c => c.teachers.some(t => t.id === teacherId));
             const allTeachers = fullData.classes.flatMap(c => c.teachers);
             const teacher = allTeachers.find(t => t.id === teacherId);
@@ -58,19 +56,19 @@ export function CalendarPage() {
             setCurrentClassId(availableClasses[0].id);
         }
     }
-  }, [fullData, currentClassId, isDemo]);
+  }, [fullData, currentClassId]);
   
   const { classes: allSystemClasses, lessons: allLessons } = fullData || { classes: [], lessons: {} };
 
   const availableClasses = useMemo(() => {
     if (!userRole || !allSystemClasses) return [];
-    if (userRole === 'admin' || userRole === 'viewer' || userRole === 'demo' || isDemo) return allSystemClasses;
+    if (userRole === 'admin' || userRole === 'viewer') return allSystemClasses;
     if (userRole === 'teacher') {
       const teacherId = sessionStorage.getItem('teacherId');
       return allSystemClasses.filter(c => c.teachers.some(t => t.id === teacherId));
     }
     return [];
-  }, [allSystemClasses, userRole, isDemo]);
+  }, [allSystemClasses, userRole]);
 
   const currentClass = useMemo(() => availableClasses.find(c => c.id === currentClassId), [availableClasses, currentClassId]);
 
@@ -143,17 +141,18 @@ export function CalendarPage() {
                   <DropdownMenuItem
                       key={c.id}
                       onSelect={() => setCurrentClassId(c.id)}
-                      className="cursor-pointer"
+                      className="cursor-pointer flex items-center gap-2"
                   >
                       <Check
                       size={16}
                       className={cn(
-                          "mr-2",
                           currentClassId === c.id ? "opacity-100" : "opacity-0"
                       )}
                       />
-                      <div className="w-3 h-3 rounded-full mr-2" style={{backgroundColor: c.color}}/>
-                      {c.name}
+                      <div className="flex-1 flex items-center gap-2">
+                        <div className="w-3 h-3 rounded-full" style={{backgroundColor: c.color}}/>
+                        {c.name}
+                      </div>
                   </DropdownMenuItem>
                   ))}
               </DropdownMenuContent>

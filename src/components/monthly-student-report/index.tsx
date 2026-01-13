@@ -153,10 +153,12 @@ export function MonthlyStudentReport() {
                     </DropdownMenuTrigger>
                     <DropdownMenuContent className="w-[var(--radix-dropdown-menu-trigger-width)] bg-card border-border text-white">
                         {classes.map((c) => (
-                        <DropdownMenuItem key={c.id} onSelect={() => setCurrentClassId(c.id)} className="cursor-pointer focus:bg-secondary">
-                            <Check size={16} className={cn("mr-2", currentClassId === c.id ? "opacity-100" : "opacity-0")} />
-                            <div className="w-3 h-3 rounded-full mr-2" style={{backgroundColor: c.color}}/>
-                            {c.name}
+                        <DropdownMenuItem key={c.id} onSelect={() => setCurrentClassId(c.id)} className="cursor-pointer focus:bg-secondary flex items-center gap-2">
+                            <Check size={16} className={cn(currentClassId === c.id ? "opacity-100" : "opacity-0")} />
+                            <div className="flex-1 flex items-center gap-2">
+                              <div className="w-3 h-3 rounded-full" style={{backgroundColor: c.color}}/>
+                              {c.name}
+                            </div>
                         </DropdownMenuItem>
                         ))}
                     </DropdownMenuContent>
@@ -171,9 +173,11 @@ export function MonthlyStudentReport() {
                     </DropdownMenuTrigger>
                     <DropdownMenuContent className="w-[var(--radix-dropdown-menu-trigger-width)] bg-card border-border text-white">
                         {currentClass.students.map((s) => (
-                        <DropdownMenuItem key={s.id} onSelect={() => setSelectedStudentId(s.id)} className="cursor-pointer focus:bg-secondary">
-                             <Check size={16} className={cn("mr-2", selectedStudentId === s.id ? "opacity-100" : "opacity-0")} />
-                            {s.name}
+                        <DropdownMenuItem key={s.id} onSelect={() => setSelectedStudentId(s.id)} className="cursor-pointer focus:bg-secondary flex items-center gap-2">
+                             <Check size={16} className={cn(selectedStudentId === s.id ? "opacity-100" : "opacity-0")} />
+                             <div className="flex-1">
+                              {s.name}
+                             </div>
                         </DropdownMenuItem>
                         ))}
                     </DropdownMenuContent>

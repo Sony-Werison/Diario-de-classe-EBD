@@ -139,7 +139,7 @@ export function MonthlyReport() {
                 <DropdownMenuItem
                     key={c.id}
                     onSelect={() => setCurrentClassId(c.id)}
-                    className="cursor-pointer focus:bg-card"
+                    className="cursor-pointer focus:bg-card flex items-center gap-2"
                 >
                     <Check
                     size={16}
@@ -148,8 +148,10 @@ export function MonthlyReport() {
                         currentClassId === c.id ? "opacity-100" : "opacity-0"
                     )}
                     />
-                    <div className="w-3 h-3 rounded-full mr-2" style={{backgroundColor: c.color}}/>
-                    {c.name}
+                    <div className="flex-1 flex items-center gap-2">
+                      <div className="w-3 h-3 rounded-full" style={{backgroundColor: c.color}}/>
+                      {c.name}
+                    </div>
                 </DropdownMenuItem>
                 ))}
             </DropdownMenuContent>

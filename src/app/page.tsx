@@ -32,12 +32,6 @@ const profiles = [
     icon: Shield,
     description: "Acesso total para configurar classes e visualizar todos os relatórios.",
     role: "admin"
-  },
-  {
-    name: "Demonstração",
-    icon: PlayCircle,
-    description: "Faça um tour interativo por todas as funcionalidades do aplicativo.",
-    role: "demo"
   }
 ];
 
@@ -58,19 +52,11 @@ export default function ProfileSelectionPage() {
     // Limpa a sessão sempre que o usuário volta para a tela de login
     sessionStorage.removeItem('userRole');
     sessionStorage.removeItem('teacherId');
-    sessionStorage.removeItem('isDemo');
   }, []);
 
   const handleProfileSelect = async (role: string) => {
     setPassword('');
     setPasswordError('');
-    
-    if (role === 'demo') {
-      sessionStorage.setItem('isDemo', 'true');
-      router.push('/calendar');
-      return;
-    }
-    
     setSelectedRole(role);
   };
 
@@ -79,7 +65,6 @@ export default function ProfileSelectionPage() {
 
     // The 'viewer' role doesn't have a password, it's direct access
     if (selectedRole === 'viewer') {
-        sessionStorage.removeItem('isDemo');
         sessionStorage.setItem('userRole', 'viewer');
         sessionStorage.removeItem('teacherId');
         setSelectedRole(null);
@@ -89,7 +74,6 @@ export default function ProfileSelectionPage() {
 
     const correctPassword = passwords[selectedRole as keyof typeof passwords];
     if (password === correctPassword) {
-      sessionStorage.removeItem('isDemo');
       if (selectedRole === 'admin') {
         sessionStorage.setItem('userRole', 'admin');
         sessionStorage.removeItem('teacherId');
@@ -135,7 +119,7 @@ export default function ProfileSelectionPage() {
         "bg-gradient-to-br from-slate-900 via-background to-background"
     )}>
       <div className="text-center mb-8">
-         <Image src="/logo.png" alt="Logo" width={64} height={64} className="rounded-2xl mx-auto mb-4" />
+         <Image src="/logo.png" alt="Logo" width={64} height={64} className="mx-auto mb-4" />
         <h1 className="text-2xl font-bold text-white">Diário de classe EBD</h1>
         <p className="text-slate-400 mt-1">Selecione seu perfil para continuar</p>
       </div>
@@ -148,11 +132,11 @@ export default function ProfileSelectionPage() {
               key={profile.name}
               onClick={() => handleProfileSelect(profile.role)}
               className="w-full bg-card border border-border rounded-lg p-4 text-left transition-colors hover:bg-secondary disabled:opacity-50"
-              disabled={!passwords && profile.role !== 'viewer' && profile.role !== 'demo'}
+              disabled={!passwords && profile.role !== 'viewer'}
             >
               <div className="flex items-center justify-between mb-2">
                 <div className="p-2 bg-slate-800 border border-slate-700 rounded-md">
-                    <Icon size={20} className={cn("text-primary", profile.role === 'demo' && "text-green-400")} />
+                    <Icon size={20} className={cn("text-primary")} />
                 </div>
                  <ArrowRight size={18} className="text-slate-600" />
               </div>
@@ -193,7 +177,7 @@ export default function ProfileSelectionPage() {
         </DialogContent>
       </Dialog>
       
-      <Dialog open={!!selectedRole && selectedRole !== 'demo'} onOpenChange={(isOpen) => !isOpen && setSelectedRole(null)}>
+      <Dialog open={!!selectedRole} onOpenChange={(isOpen) => !isOpen && setSelectedRole(null)}>
         <DialogContent className="bg-card border-border text-white">
           <DialogHeader>
             <DialogTitle>Acesso Restrito</DialogTitle>

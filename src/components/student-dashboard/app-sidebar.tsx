@@ -96,25 +96,22 @@ const NavLink = ({
 const handleLogout = () => {
   sessionStorage.removeItem('userRole');
   sessionStorage.removeItem('teacherId');
-  sessionStorage.removeItem('isDemo');
 };
 
 export function AppSidebar() {
   const dataContext = useContext(DataContext);
-  const { fullData, isDemo } = dataContext || {};
+  const { fullData } = dataContext || {};
 
   const [currentUser, setCurrentUser] = useState('');
   const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
     setIsClient(true);
-    const role = isDemo ? 'demo' : sessionStorage.getItem('userRole') || 'admin';
+    const role = sessionStorage.getItem('userRole') || 'admin';
     const teacherId = sessionStorage.getItem('teacherId');
     let currentUserName = role;
     
-    if (isDemo) {
-        currentUserName = "Demonstração";
-    } else if (fullData && role === 'teacher' && teacherId) {
+    if (fullData && role === 'teacher' && teacherId) {
         const allTeachers = fullData.classes.flatMap(c => c.teachers);
         const teacher = allTeachers.find(t => t.id === teacherId);
         if (teacher) {
@@ -123,7 +120,7 @@ export function AppSidebar() {
     }
     setCurrentUser(currentUserName);
     
-  }, [fullData, isDemo]);
+  }, [fullData]);
 
   return (
     <aside className="w-20 bg-card border-r border-border flex-col items-center py-6 gap-4 shrink-0 hidden sm:flex">

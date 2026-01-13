@@ -14,7 +14,7 @@ import { SimulatedFullData } from "@/lib/data";
 
 export default function SettingsPage() {
   const dataContext = useContext(DataContext);
-  const { fullData: data, updateAndSaveData, isLoading, isDemo } = dataContext || { fullData: null, updateAndSaveData: () => {}, isLoading: true, isDemo: false };
+  const { fullData: data, updateAndSaveData, isLoading } = dataContext || { fullData: null, updateAndSaveData: () => {}, isLoading: true };
 
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -24,14 +24,14 @@ export default function SettingsPage() {
   const [adminPassword, setAdminPassword] = useState('');
   const [teacherPassword, setTeacherPassword] = useState('');
   
-  const isAdmin = userRole === 'admin' && !isDemo;
+  const isAdmin = userRole === 'admin';
 
 
   useEffect(() => {
     setIsClient(true);
-    const role = isDemo ? 'demo' : sessionStorage.getItem('userRole') || 'admin';
+    const role = sessionStorage.getItem('userRole') || 'admin';
     setUserRole(role);
-  }, [isDemo]);
+  }, []);
   
   useEffect(() => {
     if (data?.passwords) {
@@ -136,7 +136,7 @@ export default function SettingsPage() {
               </div>
             </div>
             {isAdmin && <Button onClick={handlePasswordSave} className="mt-4">Salvar Senhas</Button>}
-            {!isAdmin && <p className="text-xs text-yellow-400 mt-4">Você está no modo de {userRole === 'demo' ? 'demonstração' : userRole === 'viewer' ? 'visualização' : 'professor'}. Não é possível alterar as senhas.</p>}
+            {!isAdmin && <p className="text-xs text-yellow-400 mt-4">Você está no modo de {userRole === 'viewer' ? 'visualização' : 'professor'}. Não é possível alterar as senhas.</p>}
           </CardContent>
         </Card>
 
@@ -164,7 +164,7 @@ export default function SettingsPage() {
                   disabled={!isAdmin}
                 />
              </div>
-             {!isAdmin && <p className="text-xs text-yellow-400 mt-4">Você está no modo de {userRole === 'demo' ? 'demonstração' : userRole === 'viewer' ? 'visualização' : 'professor'}. Apenas administradores podem realizar backups.</p>}
+             {!isAdmin && <p className="text-xs text-yellow-400 mt-4">Você está no modo de {userRole === 'viewer' ? 'visualização' : 'professor'}. Apenas administradores podem realizar backups.</p>}
           </CardContent>
         </Card>
       </div>
