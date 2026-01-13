@@ -144,11 +144,11 @@ export function MonthlyStudentReport() {
 
   return (
     <div className="text-white bg-background flex-1 flex flex-col" style={{'--class-color': currentClass?.color} as React.CSSProperties}>
-        <div className="mb-4 flex flex-col sm:flex-row items-center gap-2">
-            <div className="flex w-full flex-col sm:flex-row items-center gap-2">
+        <div className="mb-4 space-y-2">
+             <div className="grid grid-cols-2 gap-2">
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                        <Button variant="outline" className="w-full sm:min-w-48 justify-between bg-card border-border hover:bg-card focus:bg-card">
+                        <Button variant="outline" className="w-full justify-between bg-card border-border hover:bg-card focus:bg-card">
                           <div className="flex items-center gap-2">
                             <div className="w-3 h-3 rounded-full" style={{backgroundColor: currentClass?.color}}/>
                             <span className="truncate">{currentClass?.name}</span>
@@ -169,7 +169,7 @@ export function MonthlyStudentReport() {
 
                 {currentClass && <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                        <Button variant="outline" className="w-full sm:min-w-48 justify-between bg-card border-border hover:bg-card focus:bg-card" disabled={currentClass.students.length === 0}>
+                        <Button variant="outline" className="w-full justify-between bg-card border-border hover:bg-card focus:bg-card" disabled={currentClass.students.length === 0}>
                             <span className="truncate">{selectedStudent?.name || "Selecione um aluno"}</span>
                             <ChevronDown className="h-4 w-4 shrink-0" />
                         </Button>
@@ -185,7 +185,7 @@ export function MonthlyStudentReport() {
                 </DropdownMenu>}
             </div>
             
-            <div className="flex items-center gap-2 bg-card border border-border px-2 py-1 rounded-md justify-between w-full sm:w-auto sm:ml-auto">
+            <div className="flex items-center gap-2 bg-card border border-border px-2 py-1 rounded-md justify-between w-full">
                 <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleMonthChange('prev')}>
                     <ChevronLeft size={16} />
                 </Button>
@@ -214,7 +214,7 @@ export function MonthlyStudentReport() {
                         
                         return (
                              <div key={dateKey} className="bg-slate-800 p-3 border-b border-slate-700/50">
-                                <div className="flex items-center justify-between gap-3">
+                                <div className="flex items-start justify-between gap-3">
                                     <div className="flex-1 space-y-2 min-w-0">
                                       <div>
                                         <p className="text-sm font-semibold text-slate-200">{format(day, "dd 'de' MMMM", { locale: ptBR })}</p>
@@ -233,28 +233,28 @@ export function MonthlyStudentReport() {
                                       </div>
                                     </div>
                                     <div className="flex flex-col items-end gap-1.5 shrink-0">
-                                        <div className="flex flex-wrap justify-end gap-1">
-                                            {(Object.keys(checkConfig) as (CheckType | 'task')[]).map(type => {
-                                                if (!currentClass.trackedItems[type] || (type === 'task' && currentClass.taskMode === 'daily')) return null;
+                                        {(Object.keys(checkConfig) as (CheckType | 'task')[]).map(type => {
+                                            if (!currentClass.trackedItems[type] || (type === 'task' && currentClass.taskMode === 'daily')) return null;
 
-                                                const CheckIcon = checkConfig[type].Icon;
-                                                return (
-                                                <div key={type} className="flex flex-col items-center gap-1">
-                                                    <div
+                                            const CheckIcon = checkConfig[type].Icon;
+                                            return (
+                                            <div key={type} className="flex items-center gap-1.5">
+                                                <span className="text-[10px] text-slate-500 font-semibold w-12 text-right">{checkConfig[type].label}</span>
+                                                <div
                                                     className={cn(
-                                                        "w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200 border",
+                                                        "w-6 h-6 rounded-lg flex items-center justify-center transition-all duration-200 border",
                                                         checks?.[type] ? checkConfig[type].activeClass : checkConfig[type].inactiveClass,
                                                     )}
                                                     >
-                                                    {isLessonCancelled && !checks?.[type] && type !== 'task' ? <Ban size={16} className="text-yellow-500" /> : <CheckIcon size={16} />}
-                                                    </div>
-                                                    <span className="text-[9px] text-slate-500 font-semibold">{checkConfig[type].label}</span>
+                                                    {isLessonCancelled && !checks?.[type] && type !== 'task' ? <Ban size={14} className="text-yellow-500" /> : <CheckIcon size={14} />}
                                                 </div>
-                                                )
-                                            })}
-                                        </div>
+                                            </div>
+                                            )
+                                        })}
+
                                          {currentClass.trackedItems.task && currentClass.taskMode === 'daily' && (
-                                            <div className="flex flex-col items-center gap-1">
+                                            <div className="flex flex-col items-end gap-1 mt-1">
+                                                <span className="text-[10px] text-slate-500 font-semibold">{checkConfig.task.label}</span>
                                                 <div className="flex items-center justify-center gap-1 border border-slate-700 rounded-lg p-1 bg-slate-700/50">
                                                     {weekDays.map(day => (
                                                         <button
@@ -268,7 +268,6 @@ export function MonthlyStudentReport() {
                                                         </button>
                                                     ))}
                                                 </div>
-                                                <span className="text-[9px] text-slate-500 font-semibold">{checkConfig.task.label}</span>
                                             </div>
                                         )}
                                     </div>
