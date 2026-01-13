@@ -4,7 +4,7 @@ import { format, getDaysInMonth, getDay } from "date-fns";
 export type CheckType = 'presence' | 'task' | 'verse' | 'behavior' | 'material';
 
 export type Student = {
-  id: number;
+  id: string;
   name: string;
   birthDate: string; // YYYY-MM-DD
   checks: Record<CheckType, boolean>;
@@ -26,6 +26,7 @@ export type DailyLesson = {
 export type ClassConfig = {
   id: string;
   name: string;
+  color: string;
   teachers: Teacher[];
   trackedItems: Record<CheckType, boolean>;
   students: Student[];
@@ -39,44 +40,61 @@ export const POINTS: Record<CheckType, number> = {
     material: 15
 };
 
-const initialStudents: Student[] = [
-    { id: 1, name: "Davi Silva", birthDate: "2012-05-10", checks: { presence: false, task: false, verse: false, behavior: false, material: false }, totalXp: 450 },
-    { id: 2, name: "Ester Gomes", birthDate: "2011-09-22", checks: { presence: false, task: false, verse: false, behavior: false, material: false }, totalXp: 520 },
-    { id: 3, name: "Samuel Santos", birthDate: "2013-02-15", checks: { presence: false, task: false, verse: false, behavior: false, material: false }, totalXp: 380 },
-    { id: 4, name: "Rebeca Lima", birthDate: "2012-11-30", checks: { presence: false, task: false, verse: false, behavior: false, material: false }, totalXp: 600 },
-    { id: 5, name: "João Pedro", birthDate: "2014-07-18", checks: { presence: false, task: false, verse: false, behavior: false, material: false }, totalXp: 210 },
-    { id: 6, name: "Lia Oliveira", birthDate: "2011-03-05", checks: { presence: false, task: false, verse: false, behavior: false, material: false }, totalXp: 490 },
-    { id: 7, name: "Lucas Melo", birthDate: "2013-10-01", checks: { presence: false, task: false, verse: false, behavior: false, material: false }, totalXp: 310 },
-];
-
 export const initialClasses: ClassConfig[] = [
   {
-    id: "juniors-2",
-    name: "Júniors 2",
-    teachers: [{id: 'teacher-1', name: "Carlos Andrade"}, {id: 'teacher-2', name: "Daniela Souza"}],
-    trackedItems: {
-      presence: true,
-      task: true,
-      verse: true,
-      behavior: true,
-      material: true,
-    },
-    students: initialStudents,
-  },
-    {
-    id: "primarios-1",
-    name: "Primários 1",
-    teachers: [{id: 'teacher-3', name: "Ana Paula"}],
-    trackedItems: {
-      presence: true,
-      task: true,
-      verse: false,
-      behavior: true,
-      material: false,
-    },
+    id: "maternal",
+    name: "Maternal",
+    color: "hsl(340, 80%, 60%)",
+    teachers: [{id: 'teacher-1', name: "Tia Ana"}],
+    trackedItems: { presence: true, task: false, verse: false, behavior: false, material: false },
     students: [
-      { id: 8, name: "Ana Clara", birthDate: "2015-01-20", checks: { presence: false, task: false, verse: false, behavior: false, material: false }, totalXp: 150 },
-      { id: 9, name: "Miguel Costa", birthDate: "2016-04-12", checks: { presence: false, task: false, verse: false, behavior: false, material: false }, totalXp: 220 },
+      { id: "m-1", name: "Júlia Pereira", birthDate: "2021-03-10", checks: {} as any, totalXp: 50 },
+      { id: "m-2", name: "Lucas Almeida", birthDate: "2021-08-22", checks: {} as any, totalXp: 40 },
+    ],
+  },
+  {
+    id: "infantil",
+    name: "Infantil",
+    color: "hsl(45, 90%, 50%)",
+    teachers: [{id: 'teacher-2', name: "Tia Maria"}],
+    trackedItems: { presence: true, task: true, verse: true, behavior: true, material: false },
+    students: [
+       { id: "i-1", name: "Sofia Rodrigues", birthDate: "2019-05-15", checks: {} as any, totalXp: 150 },
+       { id: "i-2", name: "Davi Santos", birthDate: "2019-11-01", checks: {} as any, totalXp: 180 },
+       { id: "i-3", name: "Isabella Costa", birthDate: "2020-02-20", checks: {} as any, totalXp: 160 },
+    ],
+  },
+   {
+    id: "juniores",
+    name: "Juniores",
+    color: "hsl(150, 78%, 35%)",
+    teachers: [{id: 'teacher-3', name: "Carlos Andrade"}, {id: 'teacher-4', name: "Daniela Souza"}],
+    trackedItems: { presence: true, task: true, verse: false, behavior: true, material: true },
+    students: [
+      { id: "j-1", name: "Davi Silva", birthDate: "2012-05-10", checks: {} as any, totalXp: 450 },
+      { id: "j-2", name: "Ester Gomes", birthDate: "2011-09-22", checks: {} as any, totalXp: 520 },
+      { id: "j-3", name: "Samuel Santos", birthDate: "2013-02-15", checks: {} as any, totalXp: 380 },
+    ],
+  },
+   {
+    id: "adolescentes",
+    name: "Adolescentes",
+    color: "hsl(210, 80%, 55%)",
+    teachers: [{id: 'teacher-5', name: "Fernando Lima"}],
+    trackedItems: { presence: true, task: true, verse: false, behavior: false, material: true },
+    students: [
+      { id: "a-1", name: "Gabriel Martins", birthDate: "2008-07-12", checks: {} as any, totalXp: 800 },
+      { id: "a-2", name: "Laura Fernandes", birthDate: "2009-01-25", checks: {} as any, totalXp: 750 },
+    ],
+  },
+  {
+    id: "jovens",
+    name: "Jovens",
+    color: "hsl(300, 75%, 60%)",
+    teachers: [{id: 'teacher-6', name: "Ricardo Borges"}],
+    trackedItems: { presence: true, task: true, verse: false, behavior: false, material: false },
+    students: [
+       { id: "jv-1", name: "Beatriz Alves", birthDate: "2004-10-30", checks: {} as any, totalXp: 1200 },
     ],
   }
 ];
@@ -90,27 +108,28 @@ export type SimulatedDayData = {
 }
 
 export type SimulatedStudentData = {
-  studentId: number;
+  studentId: string;
   monthData: SimulatedDayData[];
 }
 
 export type SimulatedFullData = {
   lessons: Record<string, DailyLesson>;
-  studentRecords: Record<string, Record<string, Record<number, Record<CheckType, boolean>>>>; // [classId][dateKey][studentId] -> checks
+  studentRecords: Record<string, Record<string, Record<string, Record<CheckType, boolean>>>>; // [classId][dateKey][studentId] -> checks
 }
 
 // Function to generate consistent random data for a student for a specific month
-export const generateSimulatedDataForStudent = (studentId: number, month: Date, classConfig: ClassConfig): SimulatedStudentData => {
+export const generateSimulatedDataForStudent = (studentId: string, month: Date, classConfig: ClassConfig): SimulatedStudentData => {
     const daysInMonth = getDaysInMonth(month);
     const monthData: SimulatedDayData[] = [];
     const year = month.getFullYear();
     const monthIndex = month.getMonth();
+    const studentSeed = studentId.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0);
 
     for (let day = 1; day <= daysInMonth; day++) {
         const date = new Date(year, monthIndex, day);
         // Only generate data for Sundays
         if (getDay(date) === 0) {
-            const seed = studentId * day * (monthIndex + 1) * year;
+            const seed = studentSeed * day * (monthIndex + 1) * year;
             const random = () => {
                 let x = Math.sin(seed + day) * 10000;
                 return x - Math.floor(x);
@@ -221,3 +240,5 @@ export const saveSimulatedData = (data: SimulatedFullData) => {
     console.error("Failed to save to localStorage", error);
   }
 };
+
+    

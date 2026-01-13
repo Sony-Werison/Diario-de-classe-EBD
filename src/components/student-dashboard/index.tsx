@@ -46,7 +46,7 @@ export function StudentDashboard({ initialDate }: { initialDate?: string }) {
   
   // These states hold the current data for the dashboard
   const [dailyLesson, setDailyLesson] = useState<DailyLesson | undefined>();
-  const [dailyStudentChecks, setDailyStudentChecks] = useState<Record<number, Record<CheckType, boolean>>>({});
+  const [dailyStudentChecks, setDailyStudentChecks] = useState<Record<string, Record<CheckType, boolean>>>({});
 
   const currentClass = useMemo(() => classes.find(c => c.id === currentClassId) || classes[0], [classes, currentClassId]);
 
@@ -79,7 +79,7 @@ export function StudentDashboard({ initialDate }: { initialDate?: string }) {
   const dateKey = useMemo(() => currentDate ? format(currentDate, "yyyy-MM-dd") : '', [currentDate]);
 
 
-  const handleToggleCheck = useCallback((studentId: number, type: CheckType) => {
+  const handleToggleCheck = useCallback((studentId: string, type: CheckType) => {
     setDailyStudentChecks(prevChecks => {
         const newChecksForStudent = { ...(prevChecks[studentId] || { presence: false, task: false, verse: false, behavior: false, material: false }) };
         newChecksForStudent[type] = !newChecksForStudent[type];
@@ -100,7 +100,7 @@ export function StudentDashboard({ initialDate }: { initialDate?: string }) {
 
   const handleLessonDetailChange = useCallback((field: keyof DailyLesson, value: string) => {
     setDailyLesson(prev => ({
-      ...(prev || { teacherId: currentClass.teachers[0]?.id || "", title: "", status: 'held' }),
+      ...(prev || { teacherId: currentClass.teachers[0]?.id || "", title: "", status: 'held', color: 'hsl(150, 78%, 35%)' }),
       [field]: value,
     }) as DailyLesson);
   }, [currentClass.teachers]);
@@ -139,10 +139,6 @@ export function StudentDashboard({ initialDate }: { initialDate?: string }) {
     setIsDeleteAlertOpen(false);
     if (!currentDate) return;
   
-    // Clear local component state before potentially unmounting
-    setDailyLesson(undefined);
-    setDailyStudentChecks({});
-
     // Perform data mutation
     const data = getSimulatedData();
     delete data.lessons[dateKey];
@@ -151,7 +147,7 @@ export function StudentDashboard({ initialDate }: { initialDate?: string }) {
     }
     saveSimulatedData(data);
   
-    // Redirect after mutation
+    // Redirect after mutation, which will re-load data
     router.push('/');
     
     toast({
@@ -298,7 +294,10 @@ export function StudentDashboard({ initialDate }: { initialDate?: string }) {
             onLessonDetailChange={handleLessonDetailChange}
             onSave={handleSave}
             onOpenDeleteAlert={() => setIsDeleteAlertOpen(true)}
-            onOpenCancelDialog={() => setIsCancelDialogOpen(true)}
+            onOpenCancelDialog={() => {
+                setCancellationReason(dailyLesson?.cancellationReason || "");
+                setIsCancelDialogOpen(true);
+            }}
         />
         <main className="flex-1 p-3 sm:p-4 md:p-6 bg-background">
           <div className="bg-slate-800/50 rounded-t-xl">
@@ -419,3 +418,5 @@ export function StudentDashboard({ initialDate }: { initialDate?: string }) {
       </div>
   );
 }
+
+    

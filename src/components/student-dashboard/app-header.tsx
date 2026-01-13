@@ -68,10 +68,10 @@ export function AppHeader({
   )?.name;
   
   return (
-    <header className="bg-slate-800 border-b border-slate-700 p-3 flex flex-col shadow-lg z-10 shrink-0 gap-4">
+    <header className="bg-slate-800 border-b border-slate-700 p-3 flex flex-col shadow-lg z-10 shrink-0 gap-4" style={{'--class-color': currentClass.color} as React.CSSProperties}>
       <div className="flex items-center justify-between w-full">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-primary-foreground font-bold text-xl shrink-0">
+          <div className="w-8 h-8 bg-[var(--class-color)] rounded-lg flex items-center justify-center text-white font-bold text-xl shrink-0">
             <Church size={20} />
           </div>
           <DropdownMenu>
@@ -100,6 +100,7 @@ export function AppHeader({
                       currentClass.id === c.id ? "opacity-100" : "opacity-0"
                     )}
                   />
+                  <div className="w-3 h-3 rounded-full mr-2" style={{backgroundColor: c.color}} />
                   {c.name}
                 </DropdownMenuItem>
               ))}
@@ -126,8 +127,8 @@ export function AppHeader({
           </Button>
           
           <Link href="/" className="flex items-center gap-2 hover:bg-slate-700/50 rounded-full px-3 py-1 transition-colors">
-            <CalendarIcon size={16} className="text-indigo-400"/>
-            <span className="text-sm font-semibold text-indigo-300 capitalize whitespace-nowrap">
+            <CalendarIcon size={16} className="text-[var(--class-color)]"/>
+            <span style={{color: 'var(--class-color)'}} className="text-sm font-semibold capitalize whitespace-nowrap">
                 {formattedDate}
             </span>
           </Link>
@@ -183,7 +184,7 @@ export function AppHeader({
          <div className="flex gap-2 w-full md:w-auto">
             {dailyLesson?.status !== 'cancelled' ? (
               <>
-                <Button onClick={onSave} className="bg-primary hover:bg-primary/90 w-full md:w-auto">
+                <Button onClick={onSave} className="bg-[var(--class-color)] text-white hover:opacity-90 w-full md:w-auto">
                   <Save size={16} className="mr-2" />
                   Salvar
                 </Button>
@@ -205,3 +206,5 @@ export function AppHeader({
     </header>
   );
 }
+
+    

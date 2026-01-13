@@ -15,8 +15,9 @@ import { cn } from "@/lib/utils";
 import { format, parseISO, startOfMonth, endOfMonth } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip, Legend } from "recharts";
-import { itemLabels } from "../report-helpers";
+import { itemLabels, itemIcons } from "../report-helpers";
+import { Progress } from '../ui/progress';
+
 
 type PerformanceMetric = {
   name: string;
@@ -27,7 +28,7 @@ type PerformanceMetric = {
 export function IndividualReport() {
   const [classes] = useState<ClassConfig[]>(initialClasses);
   const [currentClassId, setCurrentClassId] = useState<string>(initialClasses[0].id);
-  const [selectedStudentId, setSelectedStudentId] = useState<number | null>(null);
+  const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null);
   const [simulatedData, setSimulatedData] = useState<SimulatedFullData>({ lessons: {}, studentRecords: {} });
   const [isClient, setIsClient] = useState(false);
   const [currentMonth, setCurrentMonth] = useState(startOfMonth(new Date()));
@@ -130,7 +131,9 @@ export function IndividualReport() {
         // For presence, the average is out of total sundays, not attendances
         if (key === 'presence') {
            const studentPresenceAvg = totalSundays > 0 ? (studentCheckCounts[key] / totalSundays) * 100 : 0;
-           const classPresenceAvg = totalSundays > 0 ? (classCheckCounts[key] / (totalSundays * currentClass.students.length)) * 100 : 0;
+           const classPresenceAvg = totalSundays > 0 && currentClass.students.length > 0
+             ? (classCheckCounts[key] / (totalSundays * currentClass.students.length)) * 100
+             : 0;
             metrics.push({
                 name: itemLabels[key],
                 student: Math.round(studentPresenceAvg),
@@ -153,20 +156,24 @@ export function IndividualReport() {
   if (!isClient) return null;
 
   return (
-    <div className="text-white bg-background flex-1 flex flex-col">
+    <div className="text-white bg-background flex-1 flex flex-col" style={{'--class-color': currentClass.color} as React.CSSProperties}>
         <div className="mb-6 flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
             <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                         <Button variant="outline" className="w-full sm:w-60 justify-between bg-card border-border hover:bg-secondary">
-                        <span className="truncate">{currentClass.name}</span>
-                        <ChevronDown className="h-4 w-4 shrink-0" />
+                          <div className="flex items-center gap-2">
+                            <div className="w-3 h-3 rounded-full" style={{backgroundColor: currentClass.color}}/>
+                            <span className="truncate">{currentClass.name}</span>
+                          </div>
+                          <ChevronDown className="h-4 w-4 shrink-0" />
                         </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent className="w-full sm:w-60 bg-card border-border text-white">
                         {classes.map((c) => (
                         <DropdownMenuItem key={c.id} onSelect={() => setCurrentClassId(c.id)} className="cursor-pointer hover:bg-secondary focus:bg-secondary">
                             <Check size={16} className={cn("mr-2", currentClassId === c.id ? "opacity-100" : "opacity-0")} />
+                            <div className="w-3 h-3 rounded-full mr-2" style={{backgroundColor: c.color}}/>
                             {c.name}
                         </DropdownMenuItem>
                         ))}
@@ -183,7 +190,7 @@ export function IndividualReport() {
                     <DropdownMenuContent className="w-full sm:w-60 bg-card border-border text-white">
                         {currentClass.students.map((s) => (
                         <DropdownMenuItem key={s.id} onSelect={() => setSelectedStudentId(s.id)} className="cursor-pointer hover:bg-secondary focus:bg-secondary">
-                             <Check size={16} className={cn("mr-2", selectedStudentId === s.id ? "opacity-100" : "opacity-0")} />
+                             <Check size={16} className={cn("selectedStudentId === s.id ? "opacity-100" : "opacity-0")} />
                             {s.name}
                         </DropdownMenuItem>
                         ))}
@@ -198,28 +205,42 @@ export function IndividualReport() {
                     <CardTitle className="flex items-center gap-2 justify-between">
                         <div className='flex items-center gap-2'>
                             <TrendingUp size={20} />
-                            Desempenho Mensal (%)
+                            Desempenho Mensal
                         </div>
                         <div className="text-sm font-semibold capitalize">
                             {format(currentMonth, "MMMM yyyy", { locale: ptBR })}
                         </div>
                     </CardTitle>
                 </CardHeader>
-                <CardContent className="h-96">
-                        <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={performanceData} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
-                            <XAxis dataKey="name" stroke="#888888" fontSize={12} tickLine={false} axisLine={false} interval={0} />
-                            <YAxis stroke="#888888" fontSize={12} tickLine={false} axisLine={false} unit="%" />
-                            <Tooltip
-                                cursor={{ fill: 'hsl(var(--secondary))', radius: 8 }}
-                                contentStyle={{ backgroundColor: 'hsl(var(--card))', border: '1px solid hsl(var(--border))' }}
-                                formatter={(value: number) => `${value}%`}
-                            />
-                            <Legend wrapperStyle={{fontSize: "0.8rem"}} />
-                            <Bar dataKey="student" name={selectedStudent.name} fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
-                            <Bar dataKey="class" name="Média da Turma" fill="hsl(var(--accent))" radius={[4, 4, 0, 0]} />
-                        </BarChart>
-                    </ResponsiveContainer>
+                <CardContent className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {performanceData.map(metric => {
+                      const Icon = itemIcons[Object.keys(itemLabels).find(key => itemLabels[key as CheckType] === metric.name) as CheckType];
+                      return (
+                        <div key={metric.name} className="bg-slate-800/50 rounded-lg p-4">
+                          <div className="flex items-center gap-3 mb-4">
+                             <Icon size={18} className="text-[var(--class-color)]"/>
+                             <h4 className="font-bold text-slate-200">{metric.name}</h4>
+                          </div>
+
+                          <div className="space-y-3">
+                              <div>
+                                <div className="flex justify-between items-center mb-1">
+                                    <span className="text-xs text-slate-300 font-medium">{selectedStudent.name}</span>
+                                    <span className="text-sm font-bold text-white">{metric.student}%</span>
+                                </div>
+                                <Progress value={metric.student} indicatorClassName="bg-[var(--class-color)]" className="h-2"/>
+                              </div>
+                               <div>
+                                <div className="flex justify-between items-center mb-1">
+                                    <span className="text-xs text-slate-400 font-medium">Média da Turma</span>
+                                    <span className="text-sm font-bold text-slate-300">{metric.class}%</span>
+                                </div>
+                                <Progress value={metric.class} indicatorClassName="bg-accent" className="h-2"/>
+                              </div>
+                          </div>
+                        </div>
+                      )
+                  })}
                 </CardContent>
             </Card>
         ) : (
@@ -234,3 +255,5 @@ export function IndividualReport() {
     </div>
   );
 }
+
+    

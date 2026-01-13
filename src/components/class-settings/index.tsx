@@ -21,7 +21,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { PlusCircle, Trash2, Edit, ChevronDown, Check } from "lucide-react";
+import { PlusCircle, Trash2, Edit, ChevronDown, Check, Palette } from "lucide-react";
 import { initialClasses, CheckType, Student, ClassConfig } from "@/lib/data";
 import {
   DropdownMenu,
@@ -29,6 +29,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 
 const itemLabels: Record<CheckType, string> = {
@@ -52,6 +53,15 @@ const calculateAge = (birthDateString: string) => {
     }
     return age;
 }
+
+const colorPresets = [
+  "hsl(150, 78%, 35%)", // Green (default)
+  "hsl(210, 80%, 55%)", // Blue
+  "hsl(45, 90%, 50%)",  // Yellow
+  "hsl(300, 75%, 60%)", // Purple
+  "hsl(0, 80%, 60%)",   // Red
+  "hsl(25, 90%, 55%)",  // Orange
+];
 
 
 export function ClassSettings() {
@@ -86,7 +96,7 @@ export function ClassSettings() {
         newStudents = c.students.map(s => s.id === editingStudent.id ? {...s, name, birthDate} : s);
       } else {
         const newStudent: Student = {
-          id: Date.now(),
+          id: `student-${Date.now()}`,
           name,
           birthDate,
           totalXp: 0,
@@ -106,7 +116,7 @@ export function ClassSettings() {
     setIsStudentDialogOpen(true);
   }
 
-  const handleDeleteStudent = (studentId: number) => {
+  const handleDeleteStudent = (studentId: string) => {
      setClasses(prevClasses => prevClasses.map(c => 
       c.id === currentClassId 
       ? { ...c, students: c.students.filter(s => s.id !== studentId) }
@@ -124,15 +134,17 @@ export function ClassSettings() {
     const formData = new FormData(e.currentTarget);
     const name = formData.get("name") as string;
     const teacherName = formData.get("teacher") as string;
+    const color = formData.get("color") as string;
 
     if (editingClass) {
-      setClasses(prev => prev.map(c => c.id === editingClass.id ? {...c, name, teachers: [{id: `teacher-${Date.now()}`, name: teacherName}]} : c));
+      setClasses(prev => prev.map(c => c.id === editingClass.id ? {...c, name, color, teachers: [{id: `teacher-${Date.now()}`, name: teacherName}]} : c));
     } else {
       const newClass: ClassConfig = {
         id: `class-${Date.now()}`,
         name,
+        color,
         teachers: [{id: `teacher-${Date.now()}`, name: teacherName}],
-        trackedItems: { presence: true, task: true, verse: true, behavior: true, material: true },
+        trackedItems: { presence: true, task: true, verse: false, behavior: false, material: false },
         students: []
       };
       setClasses(prev => [...prev, newClass]);
@@ -155,7 +167,7 @@ export function ClassSettings() {
 
 
   return (
-    <div className="p-4 sm:p-6 text-white">
+    <div className="p-4 sm:p-6 text-white" style={{'--class-color': currentClass.color} as React.CSSProperties}>
       <header className="mb-6">
         <h1 className="text-2xl font-bold">Personalização das Classes</h1>
         <p className="text-slate-400">
@@ -167,7 +179,10 @@ export function ClassSettings() {
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="outline" className="w-full sm:w-72 justify-between bg-card border-border hover:bg-secondary">
-              <span className="truncate">{currentClass.name}</span>
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 rounded-full" style={{backgroundColor: currentClass.color}} />
+                <span className="truncate">{currentClass.name}</span>
+              </div>
               <ChevronDown className="h-4 w-4 shrink-0" />
             </Button>
           </DropdownMenuTrigger>
@@ -175,13 +190,14 @@ export function ClassSettings() {
             {classes.map(c => (
               <DropdownMenuItem key={c.id} onSelect={() => setCurrentClassId(c.id)} className="cursor-pointer hover:bg-secondary focus:bg-secondary">
                  <Check size={16} className={cn("mr-2", currentClassId === c.id ? 'opacity-100' : 'opacity-0')} />
+                 <div className="w-3 h-3 rounded-full mr-2" style={{backgroundColor: c.color}} />
                 {c.name}
               </DropdownMenuItem>
             ))}
           </DropdownMenuContent>
         </DropdownMenu>
         <div className="flex gap-2 w-full sm:w-auto">
-            <Button onClick={openNewClassDialog} className="w-full sm:w-auto bg-primary hover:bg-primary/90">
+            <Button onClick={openNewClassDialog} className="w-full sm:w-auto bg-[var(--class-color)] hover:opacity-90 text-white">
                 <PlusCircle size={16} className="mr-2" />
                 Criar Classe
             </Button>
@@ -214,6 +230,7 @@ export function ClassSettings() {
                       id={item}
                       checked={currentClass.trackedItems[item]}
                       onCheckedChange={() => handleTrackedItemToggle(item)}
+                      className="data-[state=checked]:bg-[var(--class-color)]"
                     />
                   </div>
                 ))}
@@ -226,7 +243,7 @@ export function ClassSettings() {
           <Card className="bg-card border-border">
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle>Alunos da Classe "{currentClass.name}"</CardTitle>
-               <Button size="sm" onClick={openNewStudentDialog} className="bg-primary hover:bg-primary/90">
+               <Button size="sm" onClick={openNewStudentDialog} className="bg-[var(--class-color)] hover:opacity-90 text-white">
                 <PlusCircle size={16} className="mr-2" />
                 Adicionar Aluno
               </Button>
@@ -295,7 +312,7 @@ export function ClassSettings() {
             </div>
             <div className="flex justify-end gap-2 pt-4">
                  <Button type="button" variant="secondary" onClick={() => setIsStudentDialogOpen(false)}>Cancelar</Button>
-                 <Button type="submit" className="bg-primary hover:bg-primary/90">{editingStudent ? "Salvar Alterações" : "Adicionar Aluno"}</Button>
+                 <Button type="submit" className="bg-[var(--class-color)] hover:opacity-90">{editingStudent ? "Salvar Alterações" : "Adicionar Aluno"}</Button>
             </div>
           </form>
         </DialogContent>
@@ -315,9 +332,38 @@ export function ClassSettings() {
               <Label htmlFor="teacher">Professor(a)</Label>
               <Input id="teacher" name="teacher" defaultValue={editingClass?.teachers[0]?.name} className="bg-secondary border-border" placeholder="Ex: Ana Maria" />
             </div>
+            <div>
+                <Label htmlFor="color">Cor da Classe</Label>
+                <div className="flex items-center gap-2">
+                    <Popover>
+                        <PopoverTrigger asChild>
+                            <Button variant="outline" className="w-full justify-start text-left font-normal" style={{'--class-color': editingClass?.color} as React.CSSProperties}>
+                                <div className="flex items-center gap-2">
+                                    <div className="w-5 h-5 rounded-full" style={{backgroundColor: editingClass?.color}} />
+                                    <span>{editingClass?.color}</span>
+                                </div>
+                            </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0 border-none bg-card">
+                           <div className="grid grid-cols-3 gap-2 p-2">
+                                {colorPresets.map(color => (
+                                    <button
+                                        key={color}
+                                        type="button"
+                                        className="w-8 h-8 rounded-full border-2 border-transparent"
+                                        style={{backgroundColor: color}}
+                                        onClick={() => setEditingClass(prev => prev ? {...prev, color} : null)}
+                                    />
+                                ))}
+                           </div>
+                        </PopoverContent>
+                    </Popover>
+                    <Input id="color" name="color" value={editingClass?.color || ""} onChange={(e) => setEditingClass(prev => prev ? {...prev, color: e.target.value} : null)} className="w-32 bg-secondary border-border" />
+                </div>
+            </div>
             <div className="flex justify-end gap-2 pt-4">
                  <Button type="button" variant="secondary" onClick={() => setIsClassDialogOpen(false)}>Cancelar</Button>
-                 <Button type="submit" className="bg-primary hover:bg-primary/90">{editingClass ? "Salvar Alterações" : "Criar Classe"}</Button>
+                 <Button type="submit" style={{backgroundColor: editingClass?.color}} className="hover:opacity-90">{editingClass ? "Salvar Alterações" : "Criar Classe"}</Button>
             </div>
           </form>
         </DialogContent>
@@ -325,3 +371,5 @@ export function ClassSettings() {
     </div>
   );
 }
+
+    

@@ -1,3 +1,4 @@
+
 "use client";
 
 import { Student, CheckType } from "@/lib/data";
@@ -13,7 +14,7 @@ interface StudentRowProps {
     checkedItemsCount: number;
     totalTrackedItems: number;
   };
-  onToggleCheck: (id: number, type: CheckType) => void;
+  onToggleCheck: (id: string, type: CheckType) => void;
   trackedItems: Record<CheckType, boolean>;
 }
 
@@ -61,11 +62,17 @@ export function StudentRow({ student, onToggleCheck, trackedItems }: StudentRowP
             </div>
 
             <div className="w-1/4 pl-4 pr-2 flex-col justify-center hidden sm:flex">
-                 {/* Espaço vazio para alinhar com o cabeçalho */}
+                <div className="flex justify-between text-xs mb-1">
+                <span className={cn("font-bold", dailyScore > 0 ? "text-green-400" : "text-slate-400")}>
+                    {Math.round(completionPercent)}%
+                </span>
+                <span className="text-slate-500">{checkedItemsCount}/{totalTrackedItems}</span>
+                </div>
+                <Progress value={completionPercent} className="h-2 bg-slate-900 border border-slate-700" indicatorClassName={cn(completionPercent === 100 ? "bg-gradient-to-r from-yellow-400 to-yellow-600" : "bg-gradient-to-r from-blue-600 to-indigo-400")} />
             </div>
         </div>
 
-      <div className="w-full sm:w-1/4 mt-3 sm:mt-0 sm:pl-4 sm:pr-2 flex flex-col justify-center">
+      <div className="w-full sm:hidden mt-3 sm:mt-0 sm:pl-4 sm:pr-2 flex flex-col justify-center">
         <div className="flex justify-between text-xs mb-1">
           <span className={cn("font-bold", dailyScore > 0 ? "text-green-400" : "text-slate-400")}>
             {Math.round(completionPercent)}%
@@ -78,3 +85,5 @@ export function StudentRow({ student, onToggleCheck, trackedItems }: StudentRowP
     </div>
   );
 }
+
+    
