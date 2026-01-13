@@ -40,7 +40,7 @@ export function StudentDashboard({ initialDate }: { initialDate?: string }) {
   const { toast } = useToast();
   const [isClient, setIsClient] = useState(false);
   const [isDeleteAlertOpen, setIsDeleteAlertOpen] = useState(false);
-  const [isCancelDialogVali, setIsCancelDialogValid] = useState(true);
+  const [isCancelDialogValid, setIsCancelDialogValid] = useState(true);
   const [isCancelDialogOpen, setIsCancelDialogOpen] = useState(false);
   const [cancellationReason, setCancellationReason] = useState("");
   
