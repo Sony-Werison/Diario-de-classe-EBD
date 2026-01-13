@@ -1,5 +1,5 @@
 
-import { get, put } from '@vercel/blob';
+import { put } from '@vercel/blob';
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { getInitialData } from '@/lib/data';
@@ -8,6 +8,7 @@ const DATA_BLOB_KEY = 'data.json';
 
 export async function GET(request: NextRequest) {
   try {
+    const { get } = await import('@vercel/blob/client');
     const blob = await get(DATA_BLOB_KEY, {
       token: process.env.BLOB_READ_WRITE_TOKEN
     });
