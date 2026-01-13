@@ -145,10 +145,10 @@ export function MonthlyStudentReport() {
   return (
     <div className="text-white bg-background flex-1 flex flex-col" style={{'--class-color': currentClass?.color} as React.CSSProperties}>
         <div className="mb-6 flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-start">
-            <div className="flex flex-wrap items-center gap-4">
+            <div className="flex flex-wrap items-center gap-4 w-full">
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                        <Button variant="outline" className="sm:min-w-48 justify-between bg-card border-border hover:bg-card">
+                        <Button variant="outline" className="w-full sm:min-w-48 justify-between bg-card border-border hover:bg-card">
                           <div className="flex items-center gap-2">
                             <div className="w-3 h-3 rounded-full" style={{backgroundColor: currentClass?.color}}/>
                             <span className="truncate">{currentClass?.name}</span>
@@ -169,7 +169,7 @@ export function MonthlyStudentReport() {
 
                 {currentClass && <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                        <Button variant="outline" className="sm:min-w-48 justify-between bg-card border-border hover:bg-card" disabled={currentClass.students.length === 0}>
+                        <Button variant="outline" className="w-full sm:min-w-48 justify-between bg-card border-border hover:bg-card" disabled={currentClass.students.length === 0}>
                             <span className="truncate">{selectedStudent?.name || "Selecione um aluno"}</span>
                             <ChevronDown className="h-4 w-4 shrink-0" />
                         </Button>
@@ -185,7 +185,7 @@ export function MonthlyStudentReport() {
                 </DropdownMenu>}
             </div>
             
-            <div className="flex items-center gap-2 bg-card border border-border px-2 py-1 rounded-md justify-between sm:ml-auto">
+            <div className="flex items-center gap-2 bg-card border border-border px-2 py-1 rounded-md justify-between sm:ml-auto w-full sm:w-auto">
                 <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleMonthChange('prev')}>
                     <ChevronLeft size={16} />
                 </Button>
