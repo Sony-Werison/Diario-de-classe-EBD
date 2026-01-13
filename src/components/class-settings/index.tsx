@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -21,15 +21,14 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { PlusCircle, Trash2, Edit, ChevronDown, Check, Palette } from "lucide-react";
-import { initialClasses, CheckType, Student, ClassConfig, TaskMode, Teacher } from "@/lib/data";
+import { PlusCircle, Trash2, Edit, ChevronDown, Check } from "lucide-react";
+import { getSimulatedData, saveSimulatedData, CheckType, Student, ClassConfig, TaskMode, Teacher } from "@/lib/data";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { RadioGroup, RadioGroupItem } from "../ui/radio-group";
 
@@ -66,27 +65,52 @@ const colorPresets = [
 
 
 export function ClassSettings() {
-  const [classes, setClasses] = useState<ClassConfig[]>(initialClasses);
-  const [currentClassId, setCurrentClassId] = useState<string>(initialClasses[0].id);
+  const [data, setData] = useState(getSimulatedData());
+  const [currentClassId, setCurrentClassId] = useState<string>(data.classes[0].id);
   const [isStudentDialogOpen, setIsStudentDialogOpen] = useState(false);
   const [isClassDialogOpen, setIsClassDialogOpen] = useState(false);
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
   const [editingClass, setEditingClass] = useState<ClassConfig | null>(null);
+  const [isClient, setIsClient] = useState(false);
 
+  const { classes } = data;
   const currentClass = classes.find(c => c.id === currentClassId) || classes[0];
 
+  useEffect(() => {
+    setIsClient(true);
+    const handleStorageChange = () => {
+      setData(getSimulatedData());
+    };
+    window.addEventListener('storage', handleStorageChange);
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+    };
+  }, []);
+
+  const updateAndSaveData = (updater: (prev: typeof data) => typeof data) => {
+    const newData = updater(data);
+    setData(newData);
+    saveSimulatedData(newData);
+  };
+
   const handleTrackedItemToggle = (item: CheckType | 'task') => {
-    setClasses(prevClasses => prevClasses.map(c => 
-      c.id === currentClassId 
-      ? { ...c, trackedItems: { ...c.trackedItems, [item]: !c.trackedItems[item] } }
-      : c
-    ));
+    updateAndSaveData(prev => ({
+        ...prev,
+        classes: prev.classes.map(c =>
+            c.id === currentClassId
+                ? { ...c, trackedItems: { ...c.trackedItems, [item]: !c.trackedItems[item] } }
+                : c
+        )
+    }));
   };
   
     const handleTaskModeChange = (mode: TaskMode) => {
-        setClasses(prevClasses => prevClasses.map(c =>
-            c.id === currentClassId ? { ...c, taskMode: mode } : c
-        ));
+        updateAndSaveData(prev => ({
+            ...prev,
+            classes: prev.classes.map(c =>
+                c.id === currentClassId ? { ...c, taskMode: mode } : c
+            )
+        }));
     };
 
   const handleSaveStudent = (e: React.FormEvent<HTMLFormElement>) => {
@@ -95,24 +119,27 @@ export function ClassSettings() {
     const name = formData.get("name") as string;
     const birthDate = formData.get("birthDate") as string;
 
-    setClasses(prevClasses => prevClasses.map(c => {
-      if (c.id !== currentClassId) return c;
+    updateAndSaveData(prev => {
+        const newClasses = prev.classes.map(c => {
+            if (c.id !== currentClassId) return c;
 
-      let newStudents;
-      if (editingStudent) {
-        newStudents = c.students.map(s => s.id === editingStudent.id ? {...s, name, birthDate} : s);
-      } else {
-        const newStudent: Student = {
-          id: `student-${Date.now()}`,
-          name,
-          birthDate,
-          totalXp: 0,
-          checks: { presence: false, task: false, verse: false, behavior: false, material: false, dailyTasks: {} }
-        };
-        newStudents = [...c.students, newStudent];
-      }
-      return {...c, students: newStudents };
-    }));
+            let newStudents;
+            if (editingStudent) {
+                newStudents = c.students.map(s => s.id === editingStudent.id ? { ...s, name, birthDate } : s);
+            } else {
+                const newStudent: Student = {
+                    id: `student-${Date.now()}`,
+                    name,
+                    birthDate,
+                    totalXp: 0,
+                    checks: { presence: false, task: false, verse: false, behavior: false, material: false, dailyTasks: {} }
+                };
+                newStudents = [...c.students, newStudent];
+            }
+            return { ...c, students: newStudents };
+        });
+        return { ...prev, classes: newClasses };
+    });
     
     setEditingStudent(null);
     setIsStudentDialogOpen(false);
@@ -124,11 +151,14 @@ export function ClassSettings() {
   }
 
   const handleDeleteStudent = (studentId: string) => {
-     setClasses(prevClasses => prevClasses.map(c => 
-      c.id === currentClassId 
-      ? { ...c, students: c.students.filter(s => s.id !== studentId) }
-      : c
-    ));
+    updateAndSaveData(prev => ({
+        ...prev,
+        classes: prev.classes.map(c =>
+            c.id === currentClassId
+                ? { ...c, students: c.students.filter(s => s.id !== studentId) }
+                : c
+        )
+    }));
   }
   
   const openNewStudentDialog = () => {
@@ -148,7 +178,7 @@ export function ClassSettings() {
       .map(teacher => ({...teacher, name: (formData.get(`teacher-${teacher.id}`) as string)?.trim() }))
       .filter(teacher => teacher.name); // Remove teachers with empty names
 
-    const finalClassData = {
+    const finalClassData: ClassConfig = {
         ...editingClass,
         name,
         color,
@@ -157,13 +187,16 @@ export function ClassSettings() {
     };
 
     if (editingClass.id) { // Editing existing class
-      setClasses(prev => prev.map(c => c.id === editingClass.id ? finalClassData : c));
+      updateAndSaveData(prev => ({
+          ...prev,
+          classes: prev.classes.map(c => c.id === editingClass.id ? finalClassData : c)
+      }));
     } else { // Creating new class
       const newClass: ClassConfig = {
         ...finalClassData,
         id: `class-${Date.now()}`,
       };
-      setClasses(prev => [...prev, newClass]);
+      updateAndSaveData(prev => ({ ...prev, classes: [...prev.classes, newClass] }));
       setCurrentClassId(newClass.id);
     }
 
@@ -189,16 +222,6 @@ export function ClassSettings() {
     setIsClassDialogOpen(true);
   }
   
-  const handleTeacherNameChange = (teacherId: string, newName: string) => {
-    setEditingClass(prev => {
-        if (!prev) return null;
-        return {
-            ...prev,
-            teachers: prev.teachers.map(t => t.id === teacherId ? {...t, name: newName} : t)
-        }
-    })
-  }
-
   const addTeacher = () => {
     setEditingClass(prev => {
         if (!prev) return null;
@@ -212,13 +235,18 @@ export function ClassSettings() {
   const removeTeacher = (teacherId: string) => {
      setEditingClass(prev => {
         if (!prev) return null;
-        return {
-            ...prev,
-            teachers: prev.teachers.filter(t => t.id !== teacherId)
+        const newTeachers = prev.teachers.filter(t => t.id !== teacherId);
+         // Prevent removing the last input field
+        if (newTeachers.length === 0) {
+            newTeachers.push({ id: `new-teacher-${Date.now()}`, name: '' });
         }
+        return { ...prev, teachers: newTeachers };
     });
   }
 
+  if (!isClient) {
+    return null; // Render nothing on the server
+  }
 
   return (
     <div className="p-4 sm:p-6 text-white" style={{'--class-color': currentClass.color} as React.CSSProperties}>
@@ -382,11 +410,11 @@ export function ClassSettings() {
           <form onSubmit={handleSaveStudent} className="space-y-4">
             <div>
               <Label htmlFor="name">Nome do Aluno</Label>
-              <Input id="name" name="name" defaultValue={editingStudent?.name} className="bg-secondary border-border" required />
+              <Input id="name" name="name" defaultValue={editingStudent?.name} className="bg-input border-border" required />
             </div>
             <div>
               <Label htmlFor="birthDate">Data de Nascimento</Label>
-              <Input id="birthDate" name="birthDate" type="date" defaultValue={editingStudent?.birthDate} className="bg-secondary border-border" required />
+              <Input id="birthDate" name="birthDate" type="date" defaultValue={editingStudent?.birthDate} className="bg-input border-border" required />
             </div>
             <div className="flex justify-end gap-2 pt-4">
                  <Button type="button" variant="secondary" onClick={() => setIsStudentDialogOpen(false)}>Cancelar</Button>
@@ -404,8 +432,8 @@ export function ClassSettings() {
           {editingClass && (
             <form onSubmit={handleSaveClass} className="space-y-4">
                 <div>
-                <Label htmlFor="name">Nome da Classe</Label>
-                <Input id="name" name="name" defaultValue={editingClass.name} className="bg-secondary border-border" required placeholder="Ex: Primários" />
+                <Label htmlFor="class-name">Nome da Classe</Label>
+                <Input id="class-name" name="name" defaultValue={editingClass.name} className="bg-input border-border" required placeholder="Ex: Primários" />
                 </div>
                 <div>
                     <Label>Professor(es)</Label>
@@ -415,10 +443,10 @@ export function ClassSettings() {
                                 <Input 
                                     name={`teacher-${teacher.id}`} 
                                     defaultValue={teacher.name} 
-                                    className="bg-secondary border-border" 
+                                    className="bg-input border-border" 
                                     placeholder={`Nome do Professor ${index + 1}`} 
                                 />
-                                <Button type="button" variant="ghost" size="icon" className="h-9 w-9 text-red-500 hover:text-red-400" onClick={() => removeTeacher(teacher.id)} disabled={editingClass.teachers.length <= 1}>
+                                <Button type="button" variant="ghost" size="icon" className="h-9 w-9 text-red-500 hover:text-red-400 shrink-0" onClick={() => removeTeacher(teacher.id)}>
                                     <Trash2 size={16} />
                                 </Button>
                             </div>
@@ -442,13 +470,13 @@ export function ClassSettings() {
                     </RadioGroup>
                 </div>
                 <div>
-                    <Label htmlFor="color">Cor da Classe</Label>
+                    <Label>Cor da Classe</Label>
                     <div className="flex items-center gap-2 mt-2">
                         {colorPresets.map(color => (
                             <button
                                 key={color}
                                 type="button"
-                                className={cn("w-7 h-7 rounded-full border-2", editingClass.color === color ? 'border-white' : 'border-transparent')}
+                                className={cn("w-7 h-7 rounded-full border-2 transition-all", editingClass.color === color ? 'border-white ring-2 ring-white/50' : 'border-transparent hover:border-white/50')}
                                 style={{backgroundColor: color}}
                                 onClick={() => setEditingClass(prev => prev ? {...prev, color} : null)}
                             />
@@ -466,5 +494,3 @@ export function ClassSettings() {
     </div>
   );
 }
-
-    
