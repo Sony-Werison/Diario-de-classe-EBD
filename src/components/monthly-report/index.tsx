@@ -150,7 +150,7 @@ export function MonthlyReport() {
                 <DropdownMenuItem
                     key={c.id}
                     onSelect={() => setCurrentClassId(c.id)}
-                    className="cursor-pointer focus:bg-secondary"
+                    className="cursor-pointer focus:bg-card"
                 >
                     <Check
                     size={16}
@@ -257,3 +257,5 @@ export function MonthlyReport() {
     </div>
   );
 }
+
+    

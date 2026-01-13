@@ -148,7 +148,7 @@ export function MonthlyStudentReport() {
             <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                        <Button variant="outline" className="w-full sm:w-60 justify-between bg-card border-border">
+                        <Button variant="outline" className="w-full sm:w-auto sm:min-w-48 justify-between bg-card border-border">
                           <div className="flex items-center gap-2">
                             <div className="w-3 h-3 rounded-full" style={{backgroundColor: currentClass?.color}}/>
                             <span className="truncate">{currentClass?.name}</span>
@@ -156,9 +156,9 @@ export function MonthlyStudentReport() {
                           <ChevronDown className="h-4 w-4 shrink-0" />
                         </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent className="w-full sm:w-60 bg-card border-border text-white">
+                    <DropdownMenuContent className="w-[var(--radix-dropdown-menu-trigger-width)] bg-card border-border text-white">
                         {classes.map((c) => (
-                        <DropdownMenuItem key={c.id} onSelect={() => setCurrentClassId(c.id)} className="cursor-pointer focus:bg-secondary">
+                        <DropdownMenuItem key={c.id} onSelect={() => setCurrentClassId(c.id)} className="cursor-pointer focus:bg-card">
                             <Check size={16} className={cn("mr-2", currentClassId === c.id ? "opacity-100" : "opacity-0")} />
                             <div className="w-3 h-3 rounded-full mr-2" style={{backgroundColor: c.color}}/>
                             {c.name}
@@ -169,14 +169,14 @@ export function MonthlyStudentReport() {
 
                 {currentClass && <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                        <Button variant="outline" className="w-full sm:w-60 justify-between bg-card border-border" disabled={currentClass.students.length === 0}>
+                        <Button variant="outline" className="w-full sm:w-auto sm:min-w-48 justify-between bg-card border-border" disabled={currentClass.students.length === 0}>
                             <span className="truncate">{selectedStudent?.name || "Selecione um aluno"}</span>
                             <ChevronDown className="h-4 w-4 shrink-0" />
                         </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent className="w-full sm:w-60 bg-card border-border text-white">
+                    <DropdownMenuContent className="w-[var(--radix-dropdown-menu-trigger-width)] bg-card border-border text-white">
                         {currentClass.students.map((s) => (
-                        <DropdownMenuItem key={s.id} onSelect={() => setSelectedStudentId(s.id)} className="cursor-pointer focus:bg-secondary">
+                        <DropdownMenuItem key={s.id} onSelect={() => setSelectedStudentId(s.id)} className="cursor-pointer focus:bg-card">
                              <Check size={16} className={cn("mr-2", selectedStudentId === s.id ? "opacity-100" : "opacity-0")} />
                             {s.name}
                         </DropdownMenuItem>
@@ -290,3 +290,5 @@ export function MonthlyStudentReport() {
     </div>
   );
 }
+
+    
