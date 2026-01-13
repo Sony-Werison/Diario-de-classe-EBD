@@ -149,54 +149,52 @@ export function MonthlyStudentReport() {
                         const isLessonCancelled = lesson?.status === 'cancelled';
 
                         return (
-                            <div key={dateKey} className="bg-slate-800 p-3 flex items-center border-b border-slate-700/50">
-                                <div className="w-1/3">
-                                    <p className="text-sm font-semibold text-slate-200">{format(day, "dd 'de' MMMM", { locale: ptBR })}</p>
-                                    <p className={cn("text-xs truncate", isLessonCancelled ? "text-yellow-400 italic" : "text-slate-400")}>
-                                        {isLessonCancelled ? lesson.cancellationReason : lesson?.title || "Sem título"}
-                                    </p>
-                                </div>
-                                <div className="flex-1 flex justify-center items-center gap-4">
-                                     {(Object.keys(checkConfig) as (CheckType | 'task')[]).map(type => {
-                                        if (!currentClass.trackedItems[type]) return null;
-
-                                        if (type === 'task' && currentClass.taskMode === 'daily') {
+                             <div key={dateKey} className={cn("bg-slate-800 p-3 flex flex-col sm:flex-row sm:items-center border-b border-slate-700/50", currentClass.taskMode === 'daily' && 'gap-3')}>
+                                <div className="flex items-center w-full">
+                                    <div className="w-1/3">
+                                        <p className="text-sm font-semibold text-slate-200">{format(day, "dd 'de' MMMM", { locale: ptBR })}</p>
+                                        <p className={cn("text-xs truncate", isLessonCancelled ? "text-yellow-400 italic" : "text-slate-400")}>
+                                            {isLessonCancelled ? lesson.cancellationReason : lesson?.title || "Sem título"}
+                                        </p>
+                                    </div>
+                                    <div className="flex-1 flex justify-center items-center gap-4">
+                                        {(Object.keys(checkConfig) as CheckType[]).map(type => {
+                                            if (!currentClass.trackedItems[type] || type === 'task' && currentClass.taskMode === 'daily') return null;
+                                            const CheckIcon = checkConfig[type].Icon;
                                             return (
-                                                <div key="daily-task-group" className="flex flex-col items-center gap-1">
-                                                    <div className="flex items-center justify-center gap-1 border border-slate-700 rounded-lg p-1 bg-slate-900/50">
-                                                        {weekDays.map(day => (
-                                                            <div
-                                                                key={day.key}
-                                                                className={cn(
-                                                                    "w-7 h-8 rounded-md flex items-center justify-center transition-all duration-200 text-xs font-bold",
-                                                                    checks?.dailyTasks?.[day.key] ? checkConfig.task.activeClass : checkConfig.task.inactiveClass,
-                                                                )}
-                                                                >
-                                                                {day.label}
-                                                            </div>
-                                                        ))}
+                                                <div key={type} className="flex flex-col items-center gap-1">
+                                                    <div
+                                                        className={cn(
+                                                            "w-10 h-10 rounded-lg flex items-center justify-center transition-all duration-200 border",
+                                                            checks?.[type] ? checkConfig[type].activeClass : checkConfig[type].inactiveClass,
+                                                        )}
+                                                    >
+                                                        {isLessonCancelled ? <Ban size={20} className="text-yellow-500"/> : <CheckIcon size={20} />}
                                                     </div>
-                                                    <span className="text-[10px] text-slate-500 font-semibold">{checkConfig.task.label}</span>
+                                                    <span className="text-[10px] text-slate-500 font-semibold">{checkConfig[type].label}</span>
                                                 </div>
-                                            );
-                                        }
-
-                                        const CheckIcon = checkConfig[type].Icon;
-                                        return (
-                                            <div key={type} className="flex flex-col items-center gap-1">
-                                                <div
-                                                    className={cn(
-                                                        "w-10 h-10 rounded-lg flex items-center justify-center transition-all duration-200 border",
-                                                        checks?.[type as CheckType] ? checkConfig[type].activeClass : checkConfig[type].inactiveClass,
-                                                    )}
-                                                >
-                                                    {isLessonCancelled ? <Ban size={20} className="text-yellow-500"/> : <CheckIcon size={20} />}
-                                                </div>
-                                                <span className="text-[10px] text-slate-500 font-semibold">{checkConfig[type].label}</span>
-                                            </div>
-                                        )
-                                    })}
+                                            )
+                                        })}
+                                    </div>
                                 </div>
+                                {currentClass.trackedItems.task && currentClass.taskMode === 'daily' && (
+                                     <div className="flex flex-col items-center gap-1 w-full pt-2 sm:pt-0 sm:w-auto">
+                                        <div className="flex items-center justify-center gap-1 border border-slate-700 rounded-lg p-1 bg-slate-900/50">
+                                            {weekDays.map(day => (
+                                                <div
+                                                    key={day.key}
+                                                    className={cn(
+                                                        "w-7 h-8 rounded-md flex items-center justify-center transition-all duration-200 text-xs font-bold",
+                                                        checks?.dailyTasks?.[day.key] ? checkConfig.task.activeClass : checkConfig.task.inactiveClass,
+                                                    )}
+                                                    >
+                                                    {day.label}
+                                                </div>
+                                            ))}
+                                        </div>
+                                        <span className="text-[10px] text-slate-500 font-semibold">{checkConfig.task.label}</span>
+                                    </div>
+                                )}
                             </div>
                         )
                     })
@@ -214,3 +212,5 @@ export function MonthlyStudentReport() {
     </div>
   );
 }
+
+    

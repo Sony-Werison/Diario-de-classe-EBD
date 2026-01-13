@@ -142,7 +142,7 @@ export function ClassSettings() {
 
     const formData = new FormData(e.currentTarget);
     const name = formData.get("name") as string;
-    const color = formData.get("color") as string;
+    const color = editingClass.color;
     const taskMode = formData.get("taskMode") as TaskMode;
     const teachers = editingClass.teachers
       .map(teacher => ({...teacher, name: (formData.get(`teacher-${teacher.id}`) as string)?.trim() }))
@@ -444,18 +444,15 @@ export function ClassSettings() {
                 <div>
                     <Label htmlFor="color">Cor da Classe</Label>
                     <div className="flex items-center gap-2 mt-2">
-                       <Input id="color" name="color" value={editingClass.color} onChange={(e) => setEditingClass(prev => prev ? {...prev, color: e.target.value} : null)} className="w-32 bg-secondary border-border" />
-                        <div className="flex items-center gap-1">
-                            {colorPresets.map(color => (
-                                <button
-                                    key={color}
-                                    type="button"
-                                    className={cn("w-6 h-6 rounded-full border-2", editingClass.color === color ? 'border-white' : 'border-transparent')}
-                                    style={{backgroundColor: color}}
-                                    onClick={() => setEditingClass(prev => prev ? {...prev, color} : null)}
-                                />
-                            ))}
-                        </div>
+                        {colorPresets.map(color => (
+                            <button
+                                key={color}
+                                type="button"
+                                className={cn("w-7 h-7 rounded-full border-2", editingClass.color === color ? 'border-white' : 'border-transparent')}
+                                style={{backgroundColor: color}}
+                                onClick={() => setEditingClass(prev => prev ? {...prev, color} : null)}
+                            />
+                        ))}
                     </div>
                 </div>
                 <div className="flex justify-end gap-2 pt-4">

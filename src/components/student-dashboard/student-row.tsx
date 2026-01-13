@@ -44,7 +44,7 @@ export function StudentRow({ student, onToggleCheck, onToggleDailyTask, trackedI
   const singleItem = totalTrackedItems <= 1 && taskMode === 'unique';
   
   return (
-    <div className="bg-slate-800 p-3 flex flex-col sm:flex-row sm:items-center border-b border-slate-700/50 transition-colors hover:bg-slate-700/50 group">
+    <div className={cn("bg-slate-800 p-3 flex flex-col sm:flex-row sm:items-center border-b border-slate-700/50 transition-colors hover:bg-slate-700/50 group", taskMode === 'daily' && 'gap-3')}>
         <div className="flex items-center w-full">
             <div className="w-1/3">
                 <div className="pl-2">
@@ -55,34 +55,10 @@ export function StudentRow({ student, onToggleCheck, onToggleDailyTask, trackedI
             
             <div className="flex-1 flex justify-center items-center gap-4">
                 {(Object.keys(checkConfig) as (CheckType | 'task')[]).map(type => {
-                    if (!trackedItems[type]) return null;
+                    if (!trackedItems[type] || (type === 'task' && taskMode === 'daily')) return null;
 
                     let isDisabled = !checks.presence && ['material', 'verse', 'behavior'].includes(type);
-                    if (isLessonCancelled) isDisabled = false;
-
-                    if (type === 'task' && taskMode === 'daily') {
-                        return (
-                            <div key="daily-task-group" className="flex flex-col items-center gap-1">
-                                <div className="flex items-center justify-center gap-1 border border-slate-700 rounded-lg p-1 bg-slate-700/50">
-                                    {weekDays.map(day => (
-                                        <button
-                                            key={day.key}
-                                            onClick={() => onToggleDailyTask(id, day.key)}
-                                            className={cn(
-                                                "w-7 h-8 rounded-md flex items-center justify-center transition-all duration-200 text-xs font-bold",
-                                                (checks.dailyTasks as any)?.[day.key] ? checkConfig.task.activeClass : 'text-slate-400 bg-slate-700/50',
-                                                'hover:border-slate-500' // Always allow hover for tasks
-                                            )}
-                                            aria-label={`Marcar tarefa de ${day.label} para ${name}`}
-                                            >
-                                            {isLessonCancelled && !(checks.dailyTasks as any)?.[day.key] ? <Ban size={16} className="text-yellow-500/80"/> : day.label}
-                                        </button>
-                                    ))}
-                                </div>
-                                <span className="text-[10px] text-slate-500 font-semibold">{checkConfig.task.label}</span>
-                            </div>
-                        );
-                    }
+                    if (isLessonCancelled || type === 'task') isDisabled = false;
 
                     const CheckIcon = checkConfig[type].Icon;
                     return (
@@ -117,6 +93,28 @@ export function StudentRow({ student, onToggleCheck, onToggleDailyTask, trackedI
                 </div>
             )}
         </div>
+        
+        {trackedItems.task && taskMode === 'daily' && (
+            <div className="flex flex-col items-center gap-1 w-full pt-2 sm:pt-0 sm:w-auto">
+                <div className="flex items-center justify-center gap-1 border border-slate-700 rounded-lg p-1 bg-slate-700/50">
+                    {weekDays.map(day => (
+                        <button
+                            key={day.key}
+                            onClick={() => onToggleDailyTask(id, day.key)}
+                            className={cn(
+                                "w-7 h-8 rounded-md flex items-center justify-center transition-all duration-200 text-xs font-bold",
+                                (checks.dailyTasks as any)?.[day.key] ? checkConfig.task.activeClass : 'text-slate-400 bg-slate-700/50',
+                                'hover:border-slate-500' // Always allow hover for tasks
+                            )}
+                            aria-label={`Marcar tarefa de ${day.label} para ${name}`}
+                            >
+                            {isLessonCancelled && !(checks.dailyTasks as any)?.[day.key] ? <Ban size={16} className="text-yellow-500/80"/> : day.label}
+                        </button>
+                    ))}
+                </div>
+                <span className="text-[10px] text-slate-500 font-semibold">{checkConfig.task.label}</span>
+            </div>
+        )}
 
       {(!singleItem || taskMode === 'daily') && (
         <div className="w-full sm:hidden mt-3 sm:mt-0 sm:pl-4 sm:pr-2 flex flex-col justify-center">
@@ -133,3 +131,5 @@ export function StudentRow({ student, onToggleCheck, onToggleDailyTask, trackedI
     </div>
   );
 }
+
+    
