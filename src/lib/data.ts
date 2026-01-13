@@ -1,7 +1,7 @@
 
 import { format, getDaysInMonth, getDay } from "date-fns";
 
-export type CheckType = 'presence' | 'verse' | 'behavior' | 'material';
+export type CheckType = 'presence' | 'verse' | 'behavior' | 'material' | 'inClassTask';
 export type TaskMode = 'unique' | 'daily';
 
 // For daily tasks, the key is a 3-letter day abbreviation (e.g., 'mon', 'tue')
@@ -45,6 +45,7 @@ export type ClassConfig = {
 export const POINTS: Record<CheckType | 'task', number> = {
     presence: 10,
     task: 20,
+    inClassTask: 15,
     verse: 40,
     behavior: 15,
     material: 15
@@ -56,7 +57,7 @@ export const initialClasses: ClassConfig[] = [
     name: "Maternal",
     color: "hsl(340, 80%, 60%)",
     teachers: [{id: 'teacher-1', name: "Ana"}],
-    trackedItems: { presence: true, task: false, verse: false, behavior: false, material: false },
+    trackedItems: { presence: true, task: false, verse: false, behavior: false, material: false, inClassTask: false },
     taskMode: 'unique',
     students: [
       { id: "m-1", name: "Júlia Pereira", birthDate: "2021-03-10", checks: {} as any, totalXp: 50 },
@@ -68,7 +69,7 @@ export const initialClasses: ClassConfig[] = [
     name: "Infantil",
     color: "hsl(45, 90%, 50%)",
     teachers: [{id: 'teacher-2', name: "Maria"}],
-    trackedItems: { presence: true, task: true, verse: true, behavior: true, material: false },
+    trackedItems: { presence: true, task: true, verse: true, behavior: true, material: false, inClassTask: true },
     taskMode: 'unique',
     students: [
        { id: "i-1", name: "Sofia Rodrigues", birthDate: "2019-05-15", checks: {} as any, totalXp: 150 },
@@ -81,7 +82,7 @@ export const initialClasses: ClassConfig[] = [
     name: "Juniores",
     color: "hsl(150, 78%, 35%)",
     teachers: [{id: 'teacher-3', name: "Carlos Andrade"}, {id: 'teacher-4', name: "Daniela Souza"}],
-    trackedItems: { presence: true, task: true, verse: false, behavior: true, material: true },
+    trackedItems: { presence: true, task: true, verse: false, behavior: true, material: true, inClassTask: true },
     taskMode: 'unique',
     students: [
       { id: "j-1", name: "Davi Silva", birthDate: "2012-05-10", checks: {} as any, totalXp: 450 },
@@ -96,7 +97,7 @@ export const initialClasses: ClassConfig[] = [
     name: "Adolescentes",
     color: "hsl(210, 80%, 55%)",
     teachers: [{id: 'teacher-5', name: "Fernando Lima"}],
-    trackedItems: { presence: true, task: true, verse: false, behavior: false, material: true },
+    trackedItems: { presence: true, task: true, verse: false, behavior: false, material: true, inClassTask: true },
     taskMode: 'daily',
     students: [
       { id: "a-1", name: "Gabriel Martins", birthDate: "2008-07-12", checks: {} as any, totalXp: 800 },
@@ -109,7 +110,7 @@ export const initialClasses: ClassConfig[] = [
     name: "Jovens",
     color: "hsl(300, 75%, 60%)",
     teachers: [{id: 'teacher-6', name: "Ricardo Borges"}],
-    trackedItems: { presence: true, task: true, verse: false, behavior: false, material: false },
+    trackedItems: { presence: true, task: true, verse: false, behavior: false, material: false, inClassTask: true },
     taskMode: 'daily',
     students: [
        { id: "jv-1", name: "Beatriz Alves", birthDate: "2004-10-30", checks: {} as any, totalXp: 1200 },
@@ -157,9 +158,9 @@ export const generateSimulatedDataForStudent = (studentId: string, month: Date, 
                 return x - Math.floor(x);
             };
 
-            const checks: StudentChecks = { presence: false, verse: false, behavior: false, material: false, task: false, dailyTasks: {} };
+            const checks: StudentChecks = { presence: false, verse: false, behavior: false, material: false, task: false, inClassTask: false, dailyTasks: {} };
             
-            const allItems: (CheckType | 'task')[] = ['presence', 'material', 'task', 'verse', 'behavior'];
+            const allItems: (CheckType | 'task')[] = ['presence', 'material', 'task', 'verse', 'behavior', 'inClassTask'];
             
             let isPresent = false;
              if (classConfig.trackedItems.presence) {
@@ -275,9 +276,13 @@ export const getSimulatedData = (): SimulatedFullData => {
       }
 
       parsedData.classes.forEach((c: ClassConfig) => {
-        if (!c.taskMode) {
+        if (c.taskMode === undefined) {
           c.taskMode = c.id === 'adolescentes' || c.id === 'jovens' ? 'daily' : 'unique';
           needsUpdate = true;
+        }
+        if (c.trackedItems.inClassTask === undefined) {
+            c.trackedItems.inClassTask = c.id !== 'maternal';
+            needsUpdate = true;
         }
       });
       

@@ -3,12 +3,12 @@
 "use client";
 
 import React, { useState, useMemo, useCallback, useEffect } from "react";
-import { initialClasses, POINTS, CheckType, ClassConfig, DailyLesson, getSimulatedData, saveSimulatedData, StudentChecks } from "@/lib/data";
+import { POINTS, CheckType, ClassConfig, DailyLesson, getSimulatedData, saveSimulatedData, StudentChecks } from "@/lib/data";
 import { AppHeader } from "./app-header";
 import { StatCard } from "./stat-card";
 import { StudentListHeader } from "./student-list-header";
 import { StudentRow } from "./student-row";
-import { CheckCircle, BookOpen, Pencil, Star, Users, Smile, Notebook, Ban, Trash2 } from "lucide-react";
+import { CheckCircle, BookOpen, Pencil, Star, Users, Smile, Notebook, Ban, Trash2, ClipboardCheck } from "lucide-react";
 import { startOfDay, format, parseISO } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from 'next/navigation';
@@ -37,14 +37,15 @@ const defaultChecks: StudentChecks = {
     verse: false,
     behavior: false,
     task: false,
+    inClassTask: false,
     dailyTasks: { mon: false, tue: false, wed: false, thu: false, fri: false, sat: false }
 };
 
 
 export function StudentDashboard({ initialDate, classId: initialClassId }: { initialDate?: string, classId?: string }) {
   const router = useRouter();
-  const [classes, setClasses] = useState<ClassConfig[]>(initialClasses);
-  const [currentClassId, setCurrentClassId] = useState<string>(initialClassId || initialClasses[0].id);
+  const [classes, setClasses] = useState<ClassConfig[]>([]);
+  const [currentClassId, setCurrentClassId] = useState<string>('');
   const [currentDate, setCurrentDate] = useState<Date>(() => initialDate ? startOfDay(parseISO(initialDate)) : startOfDay(new Date()));
   const { toast } = useToast();
   const [isClient, setIsClient] = useState(false);
@@ -56,16 +57,17 @@ export function StudentDashboard({ initialDate, classId: initialClassId }: { ini
   const [dailyLesson, setDailyLesson] = useState<DailyLesson | undefined>();
   const [dailyStudentChecks, setDailyStudentChecks] = useState<Record<string, StudentChecks>>({});
 
-  const currentClass = useMemo(() => classes.find(c => c.id === currentClassId) || classes[0], [classes, currentClassId]);
-
   useEffect(() => {
     const data = getSimulatedData();
     setClasses(data.classes);
-    if(initialClassId) {
-      setCurrentClassId(initialClassId);
+    const resolvedClassId = initialClassId || data.classes[0]?.id;
+    if(resolvedClassId) {
+        setCurrentClassId(resolvedClassId);
     }
     setIsClient(true);
   }, [initialClassId]);
+
+  const currentClass = useMemo(() => classes.find(c => c.id === currentClassId), [classes, currentClassId]);
 
   useEffect(() => {
     // On mount or date change, load data from our central source
@@ -159,11 +161,12 @@ export function StudentDashboard({ initialDate, classId: initialClassId }: { ini
   }, []);
 
   const handleLessonDetailChange = useCallback((field: keyof DailyLesson, value: string) => {
+    if(!currentClass) return;
     setDailyLesson(prev => ({
       ...(prev || { teacherId: currentClass.teachers[0]?.id || "", title: "", status: 'held', cancellationReason: '' }),
       [field]: value,
     }) as DailyLesson);
-  }, [currentClass.teachers]);
+  }, [currentClass]);
   
   const handleSundayNavigation = (direction: 'prev' | 'next') => {
     const newDate = new Date(currentDate);
@@ -231,6 +234,7 @@ export function StudentDashboard({ initialDate, classId: initialClassId }: { ini
         toast({ title: "O motivo é obrigatório", variant: "destructive" });
         return;
       }
+      if(!currentClass) return;
       
       const updatedLesson: DailyLesson = {
           ...(dailyLesson || { teacherId: currentClass.teachers[0]?.id || "", title: "", status: 'held' }),
@@ -256,35 +260,21 @@ export function StudentDashboard({ initialDate, classId: initialClassId }: { ini
   }
 
   const {
-    presencePercent,
-    versePercent,
-    taskPercent,
-    behaviorPercent,
-    materialPercent,
-    totalScore,
     studentsWithScores
   } = useMemo(() => {
-    const students = currentClass.students;
-    const totalStudents = students.length;
-
-    if (totalStudents === 0 || !isClient) {
-      return { presencePercent: 0, versePercent: 0, taskPercent: 0, behaviorPercent: 0, materialPercent: 0, totalScore: 0, studentsWithScores: [] };
+    if (!currentClass || !isClient) {
+      return { studentsWithScores: [] };
     }
 
-    let presenceCount = 0;
-    let verseCount = 0;
-    let taskCount = 0;
-    let behaviorCount = 0;
-    let materialCount = 0;
-    let totalScore = 0;
+    const students = currentClass.students;
 
     const studentsWithScores = students.map(student => {
       const studentChecks = dailyStudentChecks[student.id] || defaultChecks;
 
       const dailyScore = (Object.keys(POINTS) as (CheckType | 'task')[]).reduce((acc, key) => {
         if ((studentChecks as any)[key] && currentClass.trackedItems[key]) {
-           // Behavior, verse, and material points only count if the student is present
-          if (['behavior', 'verse', 'material'].includes(key) && !studentChecks.presence) {
+           // These criteria only count if the student is present
+          if (['behavior', 'verse', 'material', 'inClassTask'].includes(key) && !studentChecks.presence) {
             return acc;
           }
           return acc + (POINTS[key] || 0);
@@ -292,19 +282,6 @@ export function StudentDashboard({ initialDate, classId: initialClassId }: { ini
         return acc;
       }, 0);
 
-      if (studentChecks.presence) presenceCount++;
-      // Task can be counted even if absent
-      if (studentChecks.task) taskCount++;
-
-      // These depend on presence
-      if (studentChecks.presence) {
-        if (studentChecks.verse) verseCount++;
-        if (studentChecks.behavior) behaviorCount++;
-        if (studentChecks.material) materialCount++;
-      }
-      
-      totalScore += dailyScore;
-      
       const age = calculateAge(student.birthDate);
 
       const activeTrackedItems = (Object.keys(currentClass.trackedItems) as (CheckType | 'task')[]).filter(
@@ -314,7 +291,7 @@ export function StudentDashboard({ initialDate, classId: initialClassId }: { ini
       const checkedItemsCount = activeTrackedItems.filter(
         key => {
           if ((studentChecks as any)[key]) {
-            if (['behavior', 'verse', 'material'].includes(key) && !studentChecks.presence) {
+            if (['behavior', 'verse', 'material', 'inClassTask'].includes(key) && !studentChecks.presence) {
                 return false;
             }
             return true;
@@ -324,7 +301,7 @@ export function StudentDashboard({ initialDate, classId: initialClassId }: { ini
       ).length;
 
       const totalItemsForPercentage = activeTrackedItems.filter(key => {
-          if (['behavior', 'verse', 'material'].includes(key)) {
+          if (['behavior', 'verse', 'material', 'inClassTask'].includes(key)) {
             return studentChecks.presence;
           }
           return true;
@@ -340,23 +317,63 @@ export function StudentDashboard({ initialDate, classId: initialClassId }: { ini
         return a.name.localeCompare(b.name);
     });
 
-    const presentStudentsCount = students.filter(s => (dailyStudentChecks[s.id] || {}).presence).length;
-    const totalStudentsForTask = totalStudents;
-
     return {
-      presencePercent: totalStudents > 0 ? Math.round((presenceCount / totalStudents) * 100) : 0,
-      versePercent: presentStudentsCount > 0 ? Math.round((verseCount / presentStudentsCount) * 100) : 0,
-      taskPercent: totalStudentsForTask > 0 ? Math.round((taskCount / totalStudentsForTask) * 100) : 0,
-      behaviorPercent: presentStudentsCount > 0 ? Math.round((behaviorCount / presentStudentsCount) * 100) : 0,
-      materialPercent: presentStudentsCount > 0 ? Math.round((materialCount / presentStudentsCount) * 100) : 0,
-      totalScore,
       studentsWithScores,
     };
   }, [currentClass, dailyStudentChecks, isClient]);
 
-  const trackedItems = currentClass.trackedItems;
+  const {
+    presencePercent,
+    versePercent,
+    taskPercent,
+    inClassTaskPercent,
+    behaviorPercent,
+    materialPercent,
+    totalScore
+  } = useMemo(() => {
+    if (!currentClass || currentClass.students.length === 0 || !isClient) {
+        return { presencePercent: 0, versePercent: 0, taskPercent: 0, inClassTaskPercent: 0, behaviorPercent: 0, materialPercent: 0, totalScore: 0 };
+    }
+    
+    let presenceCount = 0;
+    let verseCount = 0;
+    let taskCount = 0;
+    let inClassTaskCount = 0;
+    let behaviorCount = 0;
+    let materialCount = 0;
+    let totalScore = 0;
 
-  if (!isClient || !initialDate || !dailyLesson) {
+    studentsWithScores.forEach(student => {
+        totalScore += student.dailyScore;
+        const checks = student.checks;
+        if(checks.presence) presenceCount++;
+        if(checks.task) taskCount++;
+        // These depend on presence
+        if(checks.presence) {
+            if(checks.verse) verseCount++;
+            if(checks.behavior) behaviorCount++;
+            if(checks.material) materialCount++;
+            if(checks.inClassTask) inClassTaskCount++;
+        }
+    });
+
+    const presentStudentsCount = studentsWithScores.filter(s => s.checks.presence).length;
+
+    return {
+        presencePercent: Math.round((presenceCount / studentsWithScores.length) * 100),
+        versePercent: presentStudentsCount > 0 ? Math.round((verseCount / presentStudentsCount) * 100) : 0,
+        taskPercent: studentsWithScores.length > 0 ? Math.round((taskCount / studentsWithScores.length) * 100) : 0,
+        inClassTaskPercent: presentStudentsCount > 0 ? Math.round((inClassTaskCount / presentStudentsCount) * 100) : 0,
+        behaviorPercent: presentStudentsCount > 0 ? Math.round((behaviorCount / presentStudentsCount) * 100) : 0,
+        materialPercent: presentStudentsCount > 0 ? Math.round((materialCount / presentStudentsCount) * 100) : 0,
+        totalScore
+    }
+  }, [currentClass, studentsWithScores, isClient]);
+
+
+  const trackedItems = currentClass?.trackedItems;
+
+  if (!isClient || !initialDate || !dailyLesson || !currentClass) {
     return null; // or a loading spinner
   }
   
@@ -420,8 +437,15 @@ export function StudentDashboard({ initialDate, classId: initialClassId }: { ini
               progress={materialPercent}
               color="pink"
             />}
+             {trackedItems.inClassTask && <StatCard 
+              title="T. em Sala"
+              value={`${inClassTaskPercent}%`}
+              Icon={ClipboardCheck}
+              progress={inClassTaskPercent}
+              color="indigo"
+            />}
             {trackedItems.task && <StatCard 
-              title="Tarefas"
+              title="T. de Casa"
               value={`${taskPercent}%`}
               Icon={Pencil}
               progress={taskPercent}

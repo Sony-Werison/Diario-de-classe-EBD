@@ -5,7 +5,7 @@
 import { Student, CheckType, StudentChecks, DailyTasks } from "@/lib/data";
 import { cn } from "@/lib/utils";
 import { Progress } from "@/components/ui/progress";
-import { CheckCircle, Notebook, Pencil, BookOpen, Smile, Ban } from "lucide-react";
+import { CheckCircle, Notebook, Pencil, BookOpen, Smile, Ban, ClipboardCheck } from "lucide-react";
 
 interface StudentRowProps {
   student: Student & { 
@@ -25,7 +25,8 @@ interface StudentRowProps {
 const checkConfig: Record<CheckType | 'task', { Icon: React.ElementType; activeClass: string; inactiveClass: string; label: string; }> = {
   presence: { Icon: CheckCircle, activeClass: 'bg-blue-500 border-blue-500 text-white', inactiveClass: 'text-slate-400 bg-slate-700/50', label: 'Presença' },
   material: { Icon: Notebook, activeClass: 'bg-pink-500 border-pink-500 text-white', inactiveClass: 'text-slate-400 bg-slate-700/50', label: 'Material' },
-  task: { Icon: Pencil, activeClass: 'bg-purple-500 border-purple-500 text-white', inactiveClass: 'text-slate-400 bg-slate-700/50', label: 'Tarefa' },
+  inClassTask: { Icon: ClipboardCheck, activeClass: 'bg-indigo-500 border-indigo-500 text-white', inactiveClass: 'text-slate-400 bg-slate-700/50', label: 'T. Sala'},
+  task: { Icon: Pencil, activeClass: 'bg-purple-500 border-purple-500 text-white', inactiveClass: 'text-slate-400 bg-slate-700/50', label: 'T. Casa' },
   verse: { Icon: BookOpen, activeClass: 'bg-yellow-500 border-yellow-500 text-black', inactiveClass: 'text-slate-400 bg-slate-700/50', label: 'Versículo' },
   behavior: { Icon: Smile, activeClass: 'bg-emerald-500 border-emerald-500 text-white', inactiveClass: 'text-slate-400 bg-slate-700/50', label: 'Comport.' },
 };
@@ -46,10 +47,19 @@ export function StudentRow({ student, onToggleCheck, onToggleDailyTask, trackedI
     <div className={cn("bg-slate-800 p-2 border-b border-slate-700/50")}>
       <div className="flex items-center justify-between gap-3">
         {/* Coluna Esquerda: Nome e Idade */}
-        <div className="flex-1 space-y-2">
+        <div className="flex-1 space-y-1">
             <div>
                 <p className="text-sm font-semibold text-slate-200">{name}</p>
                 <p className="text-xs text-slate-400">{age !== null ? `${age} anos` : 'Idade não informada'}</p>
+            </div>
+             <div className="flex flex-col justify-center">
+                <div className="flex justify-between text-xs mb-0.5">
+                <span className={cn("font-bold text-primary")}>
+                    {Math.round(completionPercent)}%
+                </span>
+                <span className="text-slate-500">{checkedItemsCount}/{totalTrackedItems}</span>
+                </div>
+                <Progress value={completionPercent} className="h-1 bg-slate-900 border border-slate-700" indicatorClassName={cn(completionPercent === 100 ? "bg-gradient-to-r from-yellow-400 to-yellow-600" : "bg-primary")} />
             </div>
         </div>
 
@@ -59,7 +69,7 @@ export function StudentRow({ student, onToggleCheck, onToggleDailyTask, trackedI
                 {(Object.keys(checkConfig) as (CheckType | 'task')[]).map(type => {
                     if (!trackedItems[type] || (type === 'task' && taskMode === 'daily')) return null;
 
-                    let isDisabled = !checks.presence && ['material', 'verse', 'behavior'].includes(type);
+                    let isDisabled = !checks.presence && ['material', 'verse', 'behavior', 'inClassTask'].includes(type);
                     if (isLessonCancelled || type === 'task') isDisabled = false;
 
                     const CheckIcon = checkConfig[type].Icon;
@@ -105,17 +115,6 @@ export function StudentRow({ student, onToggleCheck, onToggleDailyTask, trackedI
                 </div>
             )}
         </div>
-      </div>
-      
-      {/* Barra de Progresso */}
-      <div className="mt-2 flex flex-col justify-center">
-          <div className="flex justify-between text-xs mb-1">
-          <span className={cn("font-bold", dailyScore > 0 ? "text-[var(--class-color)]" : "text-slate-400")}>
-              {Math.round(completionPercent)}%
-          </span>
-          <span className="text-slate-500">{checkedItemsCount}/{totalTrackedItems}</span>
-          </div>
-          <Progress value={completionPercent} className="h-1.5 bg-slate-900 border border-slate-700" indicatorClassName={cn(completionPercent === 100 ? "bg-gradient-to-r from-yellow-400 to-yellow-600" : "bg-[var(--class-color)]")} />
       </div>
     </div>
   );

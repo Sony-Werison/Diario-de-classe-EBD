@@ -35,7 +35,8 @@ import { RadioGroup, RadioGroupItem } from "../ui/radio-group";
 const itemLabels: Record<CheckType | 'task', string> = {
   presence: "Presença",
   material: "Material",
-  task: "Tarefa",
+  task: "Tarefa de Casa",
+  inClassTask: "Tarefa em Sala",
   verse: "Versículo",
   behavior: "Comportamento",
 };
@@ -100,6 +101,7 @@ export function ClassSettings() {
   };
 
   const handleTrackedItemToggle = (item: CheckType | 'task') => {
+    if (!currentClass) return;
     updateAndSaveData(prev => ({
         ...prev,
         classes: prev.classes.map(c =>
@@ -138,7 +140,7 @@ export function ClassSettings() {
                     name,
                     birthDate,
                     totalXp: 0,
-                    checks: { presence: false, task: false, verse: false, behavior: false, material: false, dailyTasks: {} }
+                    checks: { presence: false, task: false, inClassTask: false, verse: false, behavior: false, material: false, dailyTasks: {} }
                 };
                 newStudents = [...c.students, newStudent];
             }
@@ -216,7 +218,7 @@ export function ClassSettings() {
         name: '',
         color: colorPresets[0],
         teachers: [{id: `new-teacher-${Date.now()}`, name: ''}],
-        trackedItems: { presence: true, task: true, verse: false, behavior: false, material: false },
+        trackedItems: { presence: true, task: true, verse: false, behavior: false, material: false, inClassTask: true },
         taskMode: 'unique',
         students: []
     });
@@ -267,7 +269,7 @@ export function ClassSettings() {
       <div className="mb-6 flex flex-col sm:flex-row gap-4 items-start sm:items-center">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="outline" className="w-full sm:w-72 justify-between bg-card border-border hover:bg-secondary">
+            <Button variant="outline" className="w-full sm:w-72 justify-between bg-card border-border">
               <div className="flex items-center gap-2">
                 <div className="w-3 h-3 rounded-full" style={{backgroundColor: currentClass.color}} />
                 <span className="truncate">{currentClass.name}</span>
@@ -277,7 +279,7 @@ export function ClassSettings() {
           </DropdownMenuTrigger>
           <DropdownMenuContent className="w-full sm:w-72 bg-card border-border text-white">
             {classes.map(c => (
-              <DropdownMenuItem key={c.id} onSelect={() => setCurrentClassId(c.id)} className="cursor-pointer hover:bg-secondary focus:bg-secondary">
+              <DropdownMenuItem key={c.id} onSelect={() => setCurrentClassId(c.id)} className="cursor-pointer focus:bg-secondary">
                  <Check size={16} className={cn("mr-2", currentClassId === c.id ? 'opacity-100' : 'opacity-0')} />
                  <div className="w-3 h-3 rounded-full mr-2" style={{backgroundColor: c.color}} />
                 {c.name}
@@ -286,7 +288,7 @@ export function ClassSettings() {
           </DropdownMenuContent>
         </DropdownMenu>
         <div className="flex gap-2 w-full sm:w-auto">
-            <Button onClick={openNewClassDialog} className="w-full sm:w-auto bg-[var(--class-color)] hover:opacity-90 text-white">
+            <Button onClick={openNewClassDialog} className="w-full sm:w-auto bg-primary hover:bg-primary/90 text-white">
                 <PlusCircle size={16} className="mr-2" />
                 Criar Classe
             </Button>
@@ -319,7 +321,7 @@ export function ClassSettings() {
                       id={item}
                       checked={currentClass.trackedItems[item]}
                       onCheckedChange={() => handleTrackedItemToggle(item)}
-                      className="data-[state=checked]:bg-[var(--class-color)]"
+                      className="data-[state=checked]:bg-primary"
                     />
                   </div>
                 ))}
@@ -330,7 +332,7 @@ export function ClassSettings() {
           {currentClass.trackedItems.task && (
             <Card className="bg-card border-border">
                 <CardHeader>
-                    <CardTitle>Modo de Tarefa</CardTitle>
+                    <CardTitle>Modo de Tarefa de Casa</CardTitle>
                 </CardHeader>
                 <CardContent>
                     <RadioGroup value={currentClass.taskMode} onValueChange={handleTaskModeChange}>
@@ -356,7 +358,7 @@ export function ClassSettings() {
           <Card className="bg-card border-border">
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle>Alunos da Classe "{currentClass.name}"</CardTitle>
-               <Button size="sm" onClick={openNewStudentDialog} className="bg-[var(--class-color)] hover:opacity-90 text-white">
+               <Button size="sm" onClick={openNewStudentDialog} className="bg-primary hover:bg-primary/90 text-white">
                 <PlusCircle size={16} className="mr-2" />
                 Adicionar Aluno
               </Button>
@@ -365,7 +367,7 @@ export function ClassSettings() {
               <div className="border border-border rounded-lg overflow-hidden">
                 <Table>
                   <TableHeader>
-                    <TableRow className="border-border hover:bg-card">
+                    <TableRow className="border-border">
                       <TableHead className="text-white">Nome</TableHead>
                       <TableHead className="text-white text-center w-24">
                         Idade
@@ -425,7 +427,7 @@ export function ClassSettings() {
             </div>
             <div className="flex justify-end gap-2 pt-4">
                  <Button type="button" variant="secondary" onClick={() => setIsStudentDialogOpen(false)}>Cancelar</Button>
-                 <Button type="submit" className="bg-[var(--class-color)] hover:opacity-90">{editingStudent ? "Salvar Alterações" : "Adicionar Aluno"}</Button>
+                 <Button type="submit" className="bg-primary hover:bg-primary/90">{editingStudent ? "Salvar Alterações" : "Adicionar Aluno"}</Button>
             </div>
           </form>
         </DialogContent>
@@ -464,7 +466,7 @@ export function ClassSettings() {
                     </Button>
                 </div>
                  <div>
-                    <Label>Modo de Tarefa</Label>
+                    <Label>Modo de Tarefa de Casa</Label>
                     <RadioGroup name="taskMode" defaultValue={editingClass.taskMode} className="mt-2 space-y-2">
                         <div className="flex items-center space-x-2">
                             <RadioGroupItem value="unique" id="edit-unique" />
@@ -492,7 +494,7 @@ export function ClassSettings() {
                 </div>
                 <div className="flex justify-end gap-2 pt-4">
                     <Button type="button" variant="secondary" onClick={() => setIsClassDialogOpen(false)}>Cancelar</Button>
-                    <Button type="submit" style={{backgroundColor: editingClass.color}} className="hover:opacity-90">{editingClass.id ? "Salvar Alterações" : "Criar Classe"}</Button>
+                    <Button type="submit" className="bg-primary hover:bg-primary/90">{editingClass.id ? "Salvar Alterações" : "Criar Classe"}</Button>
                 </div>
             </form>
           )}

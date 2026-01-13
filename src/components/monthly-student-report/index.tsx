@@ -9,16 +9,17 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Check, ChevronDown, User, ChevronLeft, ChevronRight, CheckCircle, Notebook, Pencil, BookOpen, Smile, Ban } from "lucide-react";
-import { initialClasses, ClassConfig, getSimulatedData, SimulatedFullData, CheckType, StudentChecks, DailyTasks } from "@/lib/data";
+import { Check, ChevronDown, User, ChevronLeft, ChevronRight, CheckCircle, Notebook, Pencil, BookOpen, Smile, Ban, ClipboardCheck } from "lucide-react";
+import { ClassConfig, getSimulatedData, SimulatedFullData, CheckType, StudentChecks, DailyTasks } from "@/lib/data";
 import { cn } from "@/lib/utils";
-import { format, parseISO, startOfMonth, addMonths, subMonths, getDay } from 'date-fns';
+import { format, startOfMonth, addMonths, subMonths, getDay } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
 const checkConfig: Record<CheckType | 'task', { Icon: React.ElementType; activeClass: string; inactiveClass: string; label: string; }> = {
   presence: { Icon: CheckCircle, activeClass: 'bg-blue-500 border-blue-500 text-white', inactiveClass: 'text-slate-400 bg-slate-700/50', label: 'Presença' },
   material: { Icon: Notebook, activeClass: 'bg-pink-500 border-pink-500 text-white', inactiveClass: 'text-slate-400 bg-slate-700/50', label: 'Material' },
-  task: { Icon: Pencil, activeClass: 'bg-purple-500 border-purple-500 text-white', inactiveClass: 'text-slate-400 bg-slate-700/50', label: 'Tarefa' },
+  inClassTask: { Icon: ClipboardCheck, activeClass: 'bg-indigo-500 border-indigo-500 text-white', inactiveClass: 'text-slate-400 bg-slate-700/50', label: 'T. Sala'},
+  task: { Icon: Pencil, activeClass: 'bg-purple-500 border-purple-500 text-white', inactiveClass: 'text-slate-400 bg-slate-700/50', label: 'T. Casa' },
   verse: { Icon: BookOpen, activeClass: 'bg-yellow-500 border-yellow-500 text-black', inactiveClass: 'text-slate-400 bg-slate-700/50', label: 'Versículo' },
   behavior: { Icon: Smile, activeClass: 'bg-emerald-500 border-emerald-500 text-white', inactiveClass: 'text-slate-400 bg-slate-700/50', label: 'Comport.' },
 };
@@ -35,30 +36,42 @@ const weekDays: { key: keyof DailyTasks, label: string }[] = [
 
 export function MonthlyStudentReport() {
   const [fullData, setFullData] = useState<SimulatedFullData>(getSimulatedData);
-  const [currentClassId, setCurrentClassId] = useState<string>(fullData.classes[0].id);
-  const [selectedStudentId, setSelectedStudentId] = useState<string | null>(fullData.classes[0].students[0]?.id || null);
+  const [currentClassId, setCurrentClassId] = useState<string>('');
+  const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null);
   const [isClient, setIsClient] = useState(false);
   const [currentMonth, setCurrentMonth] = useState(startOfMonth(new Date()));
 
-  const { classes, lessons, studentRecords } = fullData;
-  const currentClass = useMemo(() => classes.find((c) => c.id === currentClassId) || classes[0], [classes, currentClassId]);
-  const selectedStudent = useMemo(() => currentClass.students.find(s => s.id === selectedStudentId), [currentClass.students, selectedStudentId]);
-
   useEffect(() => {
     setIsClient(true);
+     const data = getSimulatedData();
+      setFullData(data);
+       if (data.classes.length > 0) {
+        const firstClass = data.classes[0];
+        setCurrentClassId(firstClass.id);
+        if (firstClass.students.length > 0) {
+            setSelectedStudentId(firstClass.students[0].id);
+        }
+    }
+
     const handleStorageChange = () => {
       const data = getSimulatedData();
       setFullData(data);
     };
     window.addEventListener('storage', handleStorageChange);
+    
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
+  
+  const { classes, lessons, studentRecords } = fullData;
+  const currentClass = useMemo(() => classes.find((c) => c.id === currentClassId), [classes, currentClassId]);
+  const selectedStudent = useMemo(() => currentClass?.students.find(s => s.id === selectedStudentId), [currentClass?.students, selectedStudentId]);
 
-    // Set initial student if class changes
+  useEffect(() => {
     if (currentClass && !currentClass.students.find(s => s.id === selectedStudentId)) {
         setSelectedStudentId(currentClass.students[0]?.id || null);
     }
-    
-    return () => window.removeEventListener('storage', handleStorageChange);
-  }, [currentClassId, currentClass, selectedStudentId]);
+  }, [currentClass, selectedStudentId]);
+
 
   const handleMonthChange = (direction: 'prev' | 'next') => {
       const newMonth = direction === 'next' ? addMonths(currentMonth, 1) : subMonths(currentMonth, 1);
@@ -66,20 +79,29 @@ export function MonthlyStudentReport() {
   }
   
   const sundaysInMonth = useMemo(() => {
-    if (!currentMonth) return [];
-    const monthStart = startOfMonth(currentMonth);
-    const days = Array.from({ length: 35 }, (_, i) => {
-        const day = new Date(monthStart);
-        day.setDate(day.getDate() - getDay(monthStart) + i);
-        return day;
-    });
-    const sundays = days.filter(day => getDay(day) === 0);
-    // Ensure we only show Sundays from the current month
-    return sundays.filter(day => day.getMonth() === currentMonth.getMonth());
-  }, [currentMonth]);
+    if (!currentMonth || !isClient) return [];
+    
+    const sundays: Date[] = [];
+    const month = currentMonth.getMonth();
+    const year = currentMonth.getFullYear();
+    const date = new Date(year, month, 1);
+
+    // Find the first Sunday of the month
+    while (date.getDay() !== 0) {
+        date.setDate(date.getDate() + 1);
+    }
+
+    // Add all Sundays of the month
+    while (date.getMonth() === month) {
+        sundays.push(new Date(date));
+        date.setDate(date.getDate() + 7);
+    }
+    
+    return sundays;
+  }, [currentMonth, isClient]);
 
 
-  if (!isClient) return null;
+  if (!isClient || !currentClass) return null;
 
   return (
     <div className="text-white bg-background flex-1 flex flex-col" style={{'--class-color': currentClass?.color} as React.CSSProperties}>
@@ -87,7 +109,7 @@ export function MonthlyStudentReport() {
             <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                        <Button variant="outline" className="w-full sm:w-60 justify-between bg-card border-border hover:bg-secondary">
+                        <Button variant="outline" className="w-full sm:w-60 justify-between bg-card border-border">
                           <div className="flex items-center gap-2">
                             <div className="w-3 h-3 rounded-full" style={{backgroundColor: currentClass?.color}}/>
                             <span className="truncate">{currentClass?.name}</span>
@@ -97,7 +119,7 @@ export function MonthlyStudentReport() {
                     </DropdownMenuTrigger>
                     <DropdownMenuContent className="w-full sm:w-60 bg-card border-border text-white">
                         {classes.map((c) => (
-                        <DropdownMenuItem key={c.id} onSelect={() => setCurrentClassId(c.id)} className="cursor-pointer hover:bg-secondary focus:bg-secondary">
+                        <DropdownMenuItem key={c.id} onSelect={() => setCurrentClassId(c.id)} className="cursor-pointer focus:bg-secondary">
                             <Check size={16} className={cn("mr-2", currentClassId === c.id ? "opacity-100" : "opacity-0")} />
                             <div className="w-3 h-3 rounded-full mr-2" style={{backgroundColor: c.color}}/>
                             {c.name}
@@ -108,14 +130,14 @@ export function MonthlyStudentReport() {
 
                 {currentClass && <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                        <Button variant="outline" className="w-full sm:w-60 justify-between bg-card border-border hover:bg-secondary" disabled={currentClass.students.length === 0}>
+                        <Button variant="outline" className="w-full sm:w-60 justify-between bg-card border-border" disabled={currentClass.students.length === 0}>
                             <span className="truncate">{selectedStudent?.name || "Selecione um aluno"}</span>
                             <ChevronDown className="h-4 w-4 shrink-0" />
                         </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent className="w-full sm:w-60 bg-card border-border text-white">
                         {currentClass.students.map((s) => (
-                        <DropdownMenuItem key={s.id} onSelect={() => setSelectedStudentId(s.id)} className="cursor-pointer hover:bg-secondary focus:bg-secondary">
+                        <DropdownMenuItem key={s.id} onSelect={() => setSelectedStudentId(s.id)} className="cursor-pointer focus:bg-secondary">
                              <Check size={16} className={cn("mr-2", selectedStudentId === s.id ? "opacity-100" : "opacity-0")} />
                             {s.name}
                         </DropdownMenuItem>
@@ -150,59 +172,54 @@ export function MonthlyStudentReport() {
                         const isLessonCancelled = lesson?.status === 'cancelled';
 
                         return (
-                             <div key={dateKey} className={cn("bg-slate-800 p-3 border-b border-slate-700/50")}>
-                                <div className="flex flex-col gap-3">
-                                  {/* Linha de cima: Data e botões de check */}
-                                  <div className="flex items-center justify-between gap-3">
+                             <div key={dateKey} className="bg-slate-800 p-2 border-b border-slate-700/50">
+                                <div className="flex items-center justify-between gap-3">
                                     <div className="flex-1 space-y-1">
                                       <p className="text-sm font-semibold text-slate-200">{format(day, "dd 'de' MMMM", { locale: ptBR })}</p>
                                       <p className={cn("text-xs truncate", isLessonCancelled ? "text-yellow-400 italic" : "text-slate-400")}>
                                           {isLessonCancelled ? lesson.cancellationReason : lesson?.title || "Sem título"}
                                       </p>
                                     </div>
-                                    <div className="flex items-start gap-2 flex-wrap justify-end max-w-[180px]">
-                                      {(Object.keys(checkConfig) as (CheckType | 'task')[]).map(type => {
-                                        if (!currentClass.trackedItems[type] || (type === 'task' && currentClass.taskMode === 'daily')) return null;
+                                    <div className="flex flex-col items-end gap-1">
+                                        <div className="flex justify-end items-start gap-2 flex-wrap max-w-[180px]">
+                                            {(Object.keys(checkConfig) as (CheckType | 'task')[]).map(type => {
+                                                if (!currentClass.trackedItems[type] || (type === 'task' && currentClass.taskMode === 'daily')) return null;
 
-                                        const CheckIcon = checkConfig[type].Icon;
-                                        return (
-                                          <div key={type} className="flex flex-col items-center gap-1">
-                                            <div
-                                              className={cn(
-                                                "w-9 h-9 rounded-lg flex items-center justify-center transition-all duration-200 border",
-                                                checks?.[type] ? checkConfig[type].activeClass : checkConfig[type].inactiveClass,
-                                              )}
-                                            >
-                                              {isLessonCancelled ? <Ban size={18} className="text-yellow-500" /> : <CheckIcon size={18} />}
+                                                const CheckIcon = checkConfig[type].Icon;
+                                                return (
+                                                <div key={type} className="flex flex-col items-center gap-1">
+                                                    <div
+                                                    className={cn(
+                                                        "w-9 h-9 rounded-lg flex items-center justify-center transition-all duration-200 border",
+                                                        checks?.[type] ? checkConfig[type].activeClass : checkConfig[type].inactiveClass,
+                                                    )}
+                                                    >
+                                                    {isLessonCancelled && !checks?.[type] && type !== 'task' ? <Ban size={18} className="text-yellow-500" /> : <CheckIcon size={18} />}
+                                                    </div>
+                                                    <span className="text-[10px] text-slate-500 font-semibold">{checkConfig[type].label}</span>
+                                                </div>
+                                                )
+                                            })}
+                                        </div>
+                                         {currentClass.trackedItems.task && currentClass.taskMode === 'daily' && (
+                                            <div className="flex flex-col items-center gap-1 self-center">
+                                                <div className="flex items-center justify-center gap-1 border border-slate-700 rounded-lg p-1 bg-slate-700/50">
+                                                    {weekDays.map(day => (
+                                                        <div
+                                                            key={day.key}
+                                                            className={cn(
+                                                                "w-6 h-7 rounded-md flex items-center justify-center transition-all duration-200 text-xs font-bold",
+                                                                checks?.dailyTasks?.[day.key] ? checkConfig.task.activeClass : 'text-slate-400 bg-slate-700/50',
+                                                            )}
+                                                            >
+                                                            {isLessonCancelled && !checks?.dailyTasks?.[day.key] ? <Ban size={14} className="text-yellow-500/80"/> : day.label}
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                                <span className="text-[10px] text-slate-500 font-semibold">{checkConfig.task.label}</span>
                                             </div>
-                                            <span className="text-[10px] text-slate-500 font-semibold">{checkConfig[type].label}</span>
-                                          </div>
-                                        )
-                                      })}
+                                        )}
                                     </div>
-                                  </div>
-
-                                  {/* Linha de baixo: Tarefas diárias */}
-                                  {currentClass.trackedItems.task && currentClass.taskMode === 'daily' && (
-                                    <div className="flex justify-end">
-                                      <div className="flex flex-col items-center gap-1">
-                                          <div className="flex items-center justify-center gap-1 border border-slate-700 rounded-lg p-1 bg-slate-700/50">
-                                              {weekDays.map(day => (
-                                                  <div
-                                                      key={day.key}
-                                                      className={cn(
-                                                          "w-6 h-7 rounded-md flex items-center justify-center transition-all duration-200 text-xs font-bold",
-                                                          checks?.dailyTasks?.[day.key] ? checkConfig.task.activeClass : 'text-slate-400 bg-slate-700/50',
-                                                      )}
-                                                      >
-                                                      {day.label}
-                                                  </div>
-                                              ))}
-                                          </div>
-                                          <span className="text-[10px] text-slate-500 font-semibold">{checkConfig.task.label}</span>
-                                      </div>
-                                    </div>
-                                  )}
                                 </div>
                             </div>
                         )

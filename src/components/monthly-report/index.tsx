@@ -16,30 +16,36 @@ import {
 } from "@/components/ui/tooltip";
 
 import { Check, ChevronDown, ChevronLeft, ChevronRight, Users } from "lucide-react";
-import { initialClasses, ClassConfig, getSimulatedData, SimulatedFullData } from "@/lib/data";
+import { ClassConfig, getSimulatedData, SimulatedFullData } from "@/lib/data";
 import { cn } from "@/lib/utils";
 import { format, getDaysInMonth, startOfMonth, addMonths, subMonths, getDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { itemIcons, itemLabels, itemColors, CheckType } from "../report-helpers";
+import { useRouter } from "next/navigation";
 
 export function MonthlyReport() {
-  const [classes, setClasses] = useState<ClassConfig[]>(initialClasses);
-  const [currentClassId, setCurrentClassId] = useState<string>(initialClasses[0].id);
+  const router = useRouter();
+  const [classes, setClasses] = useState<ClassConfig[]>([]);
+  const [currentClassId, setCurrentClassId] = useState<string>('');
   const [currentMonth, setCurrentMonth] = useState(startOfMonth(new Date(new Date().getFullYear(), 0, 1)));
   const [simulatedData, setSimulatedData] = useState<SimulatedFullData>({ classes: [], lessons: {}, studentRecords: {} });
   const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
     setIsClient(true);
-    // Load data once on mount
+    const data = getSimulatedData();
+    setSimulatedData(data);
+    if (data.classes && data.classes.length > 0) {
+      setClasses(data.classes);
+      setCurrentClassId(data.classes[0].id);
+    }
     const handleStorageChange = () => {
-        const data = getSimulatedData();
-        setSimulatedData(data);
-        if (data.classes) {
-          setClasses(data.classes);
+        const updatedData = getSimulatedData();
+        setSimulatedData(updatedData);
+        if (updatedData.classes) {
+          setClasses(updatedData.classes);
         }
     };
-    handleStorageChange(); // Initial load
     window.addEventListener('storage', handleStorageChange);
     return () => {
         window.removeEventListener('storage', handleStorageChange);
@@ -48,13 +54,16 @@ export function MonthlyReport() {
 
 
   const currentClass = useMemo(
-    () => classes.find((c) => c.id === currentClassId) || classes[0],
+    () => classes.find((c) => c.id === currentClassId),
     [classes, currentClassId]
   );
   
-  const orderedVisibleItems: CheckType[] = useMemo(() => ['presence', 'material', 'task', 'verse', 'behavior'].filter(
-    item => currentClass.trackedItems[item as CheckType]
-  ) as CheckType[], [currentClass.trackedItems]);
+  const orderedVisibleItems: (CheckType | 'task')[] = useMemo(() => {
+    if (!currentClass) return [];
+    return (['presence', 'material', 'inClassTask', 'task', 'verse', 'behavior'] as (CheckType | 'task')[]).filter(
+      item => currentClass.trackedItems[item]
+    )
+  }, [currentClass]);
 
 
   const monthStudentRecords = useMemo(() => {
@@ -92,6 +101,11 @@ export function MonthlyReport() {
     const dateKey = format(day, 'yyyy-MM-dd');
     return monthStudentRecords[dateKey]?.[studentId];
   }
+
+  const handleDayClick = (day: Date) => {
+    const dateKey = format(day, 'yyyy-MM-dd');
+    router.push(`/dashboard/${dateKey}?classId=${currentClassId}`);
+  }
   
   const Legend = () => (
     <div className="px-4 py-3 border-b border-border bg-card">
@@ -122,7 +136,7 @@ export function MonthlyReport() {
             <DropdownMenuTrigger asChild>
                 <Button
                 variant="outline"
-                className="w-full sm:w-60 justify-between bg-card border-border hover:bg-secondary"
+                className="w-full sm:w-60 justify-between bg-card border-border"
                 >
                 <div className="flex items-center gap-2">
                     <div className="w-3 h-3 rounded-full" style={{backgroundColor: currentClass.color}}/>
@@ -136,7 +150,7 @@ export function MonthlyReport() {
                 <DropdownMenuItem
                     key={c.id}
                     onSelect={() => setCurrentClassId(c.id)}
-                    className="cursor-pointer hover:bg-secondary focus:bg-secondary"
+                    className="cursor-pointer focus:bg-secondary"
                 >
                     <Check
                     size={16}
@@ -192,6 +206,7 @@ export function MonthlyReport() {
                                       const studentChecks = getStudentChecksForDay(student.id, day);
                                       return (
                                           <td key={day.toISOString()} className="text-center border-b border-r border-border last:border-r-0 h-full p-2">
+                                            <button onClick={() => handleDayClick(day)} className="w-full h-full flex items-center justify-center cursor-pointer rounded-md hover:bg-secondary/50">
                                               {studentChecks ? (
                                               <TooltipProvider>
                                                   <Tooltip>
@@ -221,6 +236,7 @@ export function MonthlyReport() {
                                               ) : (
                                                   <span className="text-slate-600">-</span>
                                               )}
+                                              </button>
                                           </td>
                                       )
                                   })}
