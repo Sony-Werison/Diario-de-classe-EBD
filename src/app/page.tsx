@@ -135,9 +135,7 @@ export default function ProfileSelectionPage() {
         "bg-gradient-to-br from-slate-900 via-background to-background"
     )}>
       <div className="text-center mb-8">
-         <div className="inline-block p-3 bg-primary/10 rounded-2xl mb-3 shadow-lg shadow-primary/20 border border-primary/20">
-            <Image src="/logo.png" alt="Logo" width={40} height={40} className="rounded-md" />
-        </div>
+         <Image src="/logo.png" alt="Logo" width={64} height={64} className="rounded-2xl mx-auto mb-4" />
         <h1 className="text-2xl font-bold text-white">Diário de classe EBD</h1>
         <p className="text-slate-400 mt-1">Selecione seu perfil para continuar</p>
       </div>
