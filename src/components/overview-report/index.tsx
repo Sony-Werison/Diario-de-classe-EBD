@@ -1,11 +1,13 @@
 
+
 "use client";
 
 import React, { useState, useMemo, useEffect } from 'react';
 import { getSimulatedData, ClassConfig, SimulatedFullData, CheckType } from '@/lib/data';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Users, Cake, ArrowUp, ArrowDown, CheckCircle, Notebook, Pencil, BookOpen, Smile, ClipboardCheck } from 'lucide-react';
+import { Users, Cake, ArrowUp, ArrowDown } from 'lucide-react';
 import { itemIcons } from '../report-helpers';
+import { startOfMonth, startOfYear } from 'date-fns';
 
 const calculateAge = (birthDateString: string) => {
     if (!birthDateString) return 0;
@@ -43,25 +45,14 @@ const AgeStat: React.FC<{ Icon: React.ElementType, label: string, studentName: s
     </div>
 );
 
-const calculateClassStats = (classConfig: ClassConfig, studentRecords: SimulatedFullData['studentRecords']) => {
+const calculateStatsForPeriod = (classConfig: ClassConfig, studentRecords: SimulatedFullData['studentRecords'], startDate: Date) => {
     const students = classConfig.students;
     if (students.length === 0) {
         return {
-            totalStudents: 0,
-            avgAge: 0,
-            minAgeStudent: { name: '-', age: 0 },
-            maxAgeStudent: { name: '-', age: 0 },
             attendanceRate: 0,
             criteriaRates: {}
         };
     }
-
-    const ages = students.map(s => calculateAge(s.birthDate)).filter(age => age > 0);
-    const avgAge = ages.reduce((sum, age) => sum + age, 0) / ages.length;
-    
-    const sortedByAge = [...students].sort((a, b) => calculateAge(a.birthDate) - calculateAge(b.birthDate));
-    const minAgeStudent = sortedByAge[0];
-    const maxAgeStudent = sortedByAge[sortedByAge.length - 1];
 
     const classRecords = studentRecords[classConfig.id] || {};
     let totalPossibleAttendance = 0;
@@ -72,6 +63,8 @@ const calculateClassStats = (classConfig: ClassConfig, studentRecords: Simulated
     };
 
     for (const dateKey in classRecords) {
+        if (new Date(dateKey) < startDate) continue;
+
         const dayRecords = classRecords[dateKey];
         totalPossibleAttendance += students.length;
 
@@ -87,7 +80,6 @@ const calculateClassStats = (classConfig: ClassConfig, studentRecords: Simulated
                     if (!criteriaCounts.total[item]) criteriaCounts.total[item] = 0;
                     if (!criteriaCounts.checked[item]) criteriaCounts.checked[item] = 0;
                     
-                    // Count only if student was present for non-task items
                      if (item === 'presence' || item === 'task') {
                          criteriaCounts.total[item]++;
                          if(record?.[item]) criteriaCounts.checked[item]++;
@@ -110,14 +102,43 @@ const calculateClassStats = (classConfig: ClassConfig, studentRecords: Simulated
         criteriaRates[item] = total > 0 ? (checked / total) * 100 : 0;
     }
 
+    return {
+        attendanceRate,
+        criteriaRates,
+    };
+};
+
+const calculateClassStats = (classConfig: ClassConfig, studentRecords: SimulatedFullData['studentRecords']) => {
+    const students = classConfig.students;
+    if (students.length === 0) {
+        return {
+            totalStudents: 0,
+            avgAge: 0,
+            minAgeStudent: { name: '-', age: 0 },
+            maxAgeStudent: { name: '-', age: 0 },
+            monthStats: { attendanceRate: 0, criteriaRates: {} },
+            yearStats: { attendanceRate: 0, criteriaRates: {} },
+        };
+    }
+
+    const ages = students.map(s => calculateAge(s.birthDate)).filter(age => age > 0);
+    const avgAge = ages.length > 0 ? ages.reduce((sum, age) => sum + age, 0) / ages.length : 0;
+    
+    const sortedByAge = [...students].sort((a, b) => calculateAge(a.birthDate) - calculateAge(b.birthDate));
+    const minAgeStudent = sortedByAge[0];
+    const maxAgeStudent = sortedByAge[sortedByAge.length - 1];
+
+    const today = new Date();
+    const monthStats = calculateStatsForPeriod(classConfig, studentRecords, startOfMonth(today));
+    const yearStats = calculateStatsForPeriod(classConfig, studentRecords, startOfYear(today));
 
     return {
         totalStudents: students.length,
         avgAge: Math.round(avgAge),
         minAgeStudent: { name: minAgeStudent.name, age: calculateAge(minAgeStudent.birthDate) },
         maxAgeStudent: { name: maxAgeStudent.name, age: calculateAge(maxAgeStudent.birthDate) },
-        attendanceRate,
-        criteriaRates,
+        monthStats,
+        yearStats,
     };
 };
 
@@ -150,6 +171,8 @@ export function OverviewReport() {
     }, [fullData]);
     
     if (!isClient || !fullData) return null; // or a loading spinner
+    
+    const allTrackedItems: (CheckType | 'task')[] = ['presence', 'material', 'inClassTask', 'task', 'verse', 'behavior'];
 
     return (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
@@ -168,22 +191,65 @@ export function OverviewReport() {
                         </div>
 
                         <div className="grid grid-cols-2 gap-2">
-                            <AgeStat Icon={ArrowDown} label="Mais Novo" studentName={classData.stats.minAgeStudent.name} age={classData.stats.minAgeStudent.age} />
-                            <AgeStat Icon={ArrowUp} label="Mais Velho" studentName={classData.stats.maxAgeStudent.name} age={classData.stats.maxAgeStudent.age} />
+                            {classData.stats.totalStudents > 0 ? (
+                                <>
+                                    <AgeStat Icon={ArrowDown} label="Mais Novo" studentName={classData.stats.minAgeStudent.name} age={classData.stats.minAgeStudent.age} />
+                                    <AgeStat Icon={ArrowUp} label="Mais Velho" studentName={classData.stats.maxAgeStudent.name} age={classData.stats.maxAgeStudent.age} />
+                                </>
+                            ) : (
+                                <div className="col-span-2 text-center text-xs text-slate-500 py-2">Sem alunos para calcular idade.</div>
+                            )}
                         </div>
                         
                         <div className="space-y-2 pt-2 border-t border-border mt-auto">
-                            <h4 className="text-sm font-semibold text-slate-300 pt-2">Médias Gerais</h4>
-                            <StatItem Icon={itemIcons.presence} label="Frequência" value={`${classData.stats.attendanceRate.toFixed(0)}%`} iconColor="text-blue-400" />
-                           {classData.trackedItems.task && <StatItem Icon={itemIcons.task} label="Tarefas" value={`${classData.stats.criteriaRates.task?.toFixed(0) || 0}%`} iconColor="text-purple-400" />}
-                           {classData.trackedItems.verse && <StatItem Icon={itemIcons.verse} label="Versículos" value={`${classData.stats.criteriaRates.verse?.toFixed(0) || 0}%`} iconColor="text-yellow-400" />}
-                           {classData.trackedItems.material && <StatItem Icon={itemIcons.material} label="Material" value={`${classData.stats.criteriaRates.material?.toFixed(0) || 0}%`} iconColor="text-pink-400" />}
-                           {classData.trackedItems.inClassTask && <StatItem Icon={itemIcons.inClassTask} label="T. em Sala" value={`${classData.stats.criteriaRates.inClassTask?.toFixed(0) || 0}%`} iconColor="text-indigo-400" />}
-                           {classData.trackedItems.behavior && <StatItem Icon={itemIcons.behavior} label="Comportamento" value={`${classData.stats.criteriaRates.behavior?.toFixed(0) || 0}%`} iconColor="text-emerald-400" />}
+                            <div className="flex justify-between items-center pt-2">
+                                <h4 className="text-sm font-semibold text-slate-300">Médias Gerais</h4>
+                                <div className="grid grid-cols-2 gap-2 text-xs font-bold text-slate-400">
+                                    <span className="text-right">Mês</span>
+                                    <span className="text-right">Ano</span>
+                                </div>
+                            </div>
+                           
+                           {allTrackedItems.map(itemKey => {
+                                if (!classData.trackedItems[itemKey]) return null;
+                                const Icon = itemIcons[itemKey];
+                                const monthlyRate = (itemKey === 'presence' ? classData.stats.monthStats.attendanceRate : classData.stats.monthStats.criteriaRates[itemKey]) || 0;
+                                const yearlyRate = (itemKey === 'presence' ? classData.stats.yearStats.attendanceRate : classData.stats.yearStats.criteriaRates[itemKey]) || 0;
+                                
+                                let label = '';
+                                switch(itemKey) {
+                                    case 'presence': label = 'Frequência'; break;
+                                    case 'task': label = 'Tarefas'; break;
+                                    case 'verse': label = 'Versículos'; break;
+                                    case 'material': label = 'Material'; break;
+                                    case 'inClassTask': label = 'T. em Sala'; break;
+                                    case 'behavior': label = 'Comport.'; break;
+                                }
+
+                                return (
+                                    <div key={itemKey} className="flex items-center justify-between text-sm">
+                                        <div className="flex items-center gap-2">
+                                            <Icon size={14} className="text-slate-400" />
+                                            <span className="text-slate-300">{label}</span>
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-2 font-semibold text-white w-20 text-right">
+                                            <span>{monthlyRate.toFixed(0)}%</span>
+                                            <span>{yearlyRate.toFixed(0)}%</span>
+                                        </div>
+                                    </div>
+                                )
+                           })}
                         </div>
                     </CardContent>
                 </Card>
             ))}
+             {classStats.length === 0 && (
+                <div className="md:col-span-2 xl:col-span-3 text-center py-16 text-slate-500">
+                    <h3 className="font-bold text-lg">Nenhuma classe encontrada</h3>
+                    <p className="text-sm">Vá para a tela de "Ajustes" para criar sua primeira classe.</p>
+                </div>
+            )}
         </div>
     );
 }
+
