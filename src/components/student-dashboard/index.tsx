@@ -2,7 +2,7 @@
 "use client";
 
 import React, { useState, useMemo, useCallback, useEffect } from "react";
-import { initialClasses, POINTS, CheckType, ClassConfig, DailyLesson, getSimulatedData, saveSimulatedData } from "@/lib/data";
+import { initialClasses, POINTS, CheckType, ClassConfig, DailyLesson, getSimulatedData, saveSimulatedData, StudentChecks } from "@/lib/data";
 import { AppHeader } from "./app-header";
 import { StatCard } from "./stat-card";
 import { StudentListHeader, SortKey } from "./student-list-header";
@@ -30,6 +30,16 @@ const calculateAge = (birthDateString: string) => {
     return age;
 }
 
+const defaultChecks: StudentChecks = {
+    presence: false,
+    material: false,
+    verse: false,
+    behavior: false,
+    task: false,
+    dailyTasks: { mon: false, tue: false, wed: false, thu: false, fri: false, sat: false }
+};
+
+
 export function StudentDashboard({ initialDate, classId: initialClassId }: { initialDate?: string, classId?: string }) {
   const router = useRouter();
   const [classes, setClasses] = useState<ClassConfig[]>(initialClasses);
@@ -40,13 +50,12 @@ export function StudentDashboard({ initialDate, classId: initialClassId }: { ini
   const { toast } = useToast();
   const [isClient, setIsClient] = useState(false);
   const [isDeleteAlertOpen, setIsDeleteAlertOpen] = useState(false);
-  const [isCancelDialogVali, setIsCancelDialogVali] = useState(true);
   const [isCancelDialogOpen, setIsCancelDialogOpen] = useState(false);
   const [cancellationReason, setCancellationReason] = useState("");
   
   // These states hold the current data for the dashboard
   const [dailyLesson, setDailyLesson] = useState<DailyLesson | undefined>();
-  const [dailyStudentChecks, setDailyStudentChecks] = useState<Record<string, Record<CheckType, boolean>>>({});
+  const [dailyStudentChecks, setDailyStudentChecks] = useState<Record<string, StudentChecks>>({});
 
   const currentClass = useMemo(() => classes.find(c => c.id === currentClassId) || classes[0], [classes, currentClassId]);
 
@@ -74,7 +83,19 @@ export function StudentDashboard({ initialDate, classId: initialClassId }: { ini
           status: 'held',
           cancellationReason: '',
         };
-        const checks = data.studentRecords[currentClassId]?.[dateKey] || {};
+        
+        const checks: Record<string, StudentChecks> = {};
+        const savedChecks = data.studentRecords[currentClassId]?.[dateKey] || {};
+        currentClass.students.forEach(student => {
+            checks[student.id] = {
+                ...defaultChecks,
+                ...(savedChecks[student.id] || {}),
+                dailyTasks: {
+                    ...defaultChecks.dailyTasks,
+                    ...(savedChecks[student.id]?.dailyTasks || {})
+                }
+            };
+        });
 
         setDailyLesson(lesson as DailyLesson);
         setDailyStudentChecks(checks);
@@ -96,16 +117,21 @@ export function StudentDashboard({ initialDate, classId: initialClassId }: { ini
   };
 
 
-  const handleToggleCheck = useCallback((studentId: string, type: CheckType) => {
+  const handleToggleCheck = useCallback((studentId: string, type: CheckType | 'task') => {
     setDailyStudentChecks(prevChecks => {
-        const newChecksForStudent = { ...(prevChecks[studentId] || { presence: false, task: false, verse: false, behavior: false, material: false }) };
-        newChecksForStudent[type] = !newChecksForStudent[type];
+        const newChecksForStudent = { ...(prevChecks[studentId] || defaultChecks) };
+        (newChecksForStudent as any)[type] = !(newChecksForStudent as any)[type];
 
         // If un-checking presence, un-check everything else
         if (type === 'presence' && !newChecksForStudent.presence) {
             Object.keys(newChecksForStudent).forEach(key => {
-                newChecksForStudent[key as CheckType] = false;
+                if (key !== 'dailyTasks') {
+                    (newChecksForStudent as any)[key as CheckType | 'task'] = false;
+                } else {
+                    newChecksForStudent.dailyTasks = { mon: false, tue: false, wed: false, thu: false, fri: false, sat: false };
+                }
             });
+            newChecksForStudent.task = false;
         }
         
         return {
@@ -115,9 +141,29 @@ export function StudentDashboard({ initialDate, classId: initialClassId }: { ini
     });
   }, []);
 
+  const handleToggleDailyTask = useCallback((studentId: string, day: string) => {
+    setDailyStudentChecks(prevChecks => {
+        const newChecksForStudent = { ...(prevChecks[studentId] || defaultChecks) };
+        const newDailyTasks = { ...(newChecksForStudent.dailyTasks || {}) };
+        newDailyTasks[day] = !newDailyTasks[day];
+
+        // Update main task check if 5 or more days are completed
+        const completedCount = Object.values(newDailyTasks).filter(v => v).length;
+        newChecksForStudent.task = completedCount >= 5;
+
+        return {
+            ...prevChecks,
+            [studentId]: {
+                ...newChecksForStudent,
+                dailyTasks: newDailyTasks
+            }
+        };
+    });
+  }, []);
+
   const handleLessonDetailChange = useCallback((field: keyof DailyLesson, value: string) => {
     setDailyLesson(prev => ({
-      ...(prev || { teacherId: currentClass.teachers[0]?.id || "", title: "", status: 'held', color: 'hsl(150, 78%, 35%)' }),
+      ...(prev || { teacherId: currentClass.teachers[0]?.id || "", title: "", status: 'held' }),
       [field]: value,
     }) as DailyLesson);
   }, [currentClass.teachers]);
@@ -152,7 +198,6 @@ export function StudentDashboard({ initialDate, classId: initialClassId }: { ini
   }
 
   const handleDeleteLesson = () => {
-    setIsDeleteAlertOpen(false);
     if (!currentDate) return;
   
     const data = getSimulatedData();
@@ -161,7 +206,8 @@ export function StudentDashboard({ initialDate, classId: initialClassId }: { ini
       delete data.studentRecords[currentClassId][dateKey];
     }
     saveSimulatedData(data);
-  
+    
+    setIsDeleteAlertOpen(false);
     router.push('/calendar');
     
     toast({
@@ -173,7 +219,7 @@ export function StudentDashboard({ initialDate, classId: initialClassId }: { ini
   
   const handleConfirmCancelLesson = () => {
       if(!cancellationReason.trim()) {
-        setIsCancelDialogVali(false);
+        toast({ title: "O motivo é obrigatório", variant: "destructive" });
         return;
       }
       
@@ -185,12 +231,16 @@ export function StudentDashboard({ initialDate, classId: initialClassId }: { ini
 
       setDailyLesson(updatedLesson);
 
-      // Save to trigger re-render on calendar
       const data = getSimulatedData();
       data.lessons[dateKey] = updatedLesson;
+      if (!data.studentRecords[currentClassId]) {
+        data.studentRecords[currentClassId] = {};
+      }
+      data.studentRecords[currentClassId][dateKey] = {}; // Clear checks for cancelled lesson
       saveSimulatedData(data);
       
       setIsCancelDialogOpen(false);
+      setDailyStudentChecks({});
       
       toast({
         title: "Aula cancelada",
@@ -232,12 +282,11 @@ export function StudentDashboard({ initialDate, classId: initialClassId }: { ini
     let totalScore = 0;
 
     const studentsWithScores = students.map(student => {
-      const studentChecks = dailyStudentChecks[student.id] || { presence: false, task: false, verse: false, behavior: false, material: false };
+      const studentChecks = dailyStudentChecks[student.id] || defaultChecks;
 
-      const dailyScore = Object.entries(studentChecks).reduce((acc, [key, value]) => {
-        const checkType = key as CheckType;
-        if (value && currentClass.trackedItems[checkType]) {
-          return acc + (POINTS[checkType] || 0);
+      const dailyScore = (Object.keys(POINTS) as (CheckType | 'task')[]).reduce((acc, key) => {
+        if ((studentChecks as any)[key] && currentClass.trackedItems[key]) {
+          return acc + (POINTS[key] || 0);
         }
         return acc;
       }, 0);
@@ -251,12 +300,12 @@ export function StudentDashboard({ initialDate, classId: initialClassId }: { ini
       
       const age = calculateAge(student.birthDate);
 
-      const activeTrackedItems = Object.keys(currentClass.trackedItems).filter(
-        key => currentClass.trackedItems[key as CheckType]
-      ) as CheckType[];
+      const activeTrackedItems = (Object.keys(currentClass.trackedItems) as (CheckType | 'task')[]).filter(
+        key => currentClass.trackedItems[key]
+      );
       
       const checkedItemsCount = activeTrackedItems.filter(
-        key => studentChecks[key]
+        key => (studentChecks as any)[key]
       ).length;
 
       const completionPercent = activeTrackedItems.length > 0
@@ -319,6 +368,7 @@ export function StudentDashboard({ initialDate, classId: initialClassId }: { ini
                 onSort={handleSort}
                 sortKey={sortKey}
                 sortDirection={sortDirection}
+                taskMode={currentClass.taskMode}
              />
           </div>
          
@@ -328,7 +378,9 @@ export function StudentDashboard({ initialDate, classId: initialClassId }: { ini
                 key={student.id}
                 student={student}
                 onToggleCheck={handleToggleCheck}
+                onToggleDailyTask={handleToggleDailyTask}
                 trackedItems={trackedItems}
+                taskMode={currentClass.taskMode}
               />
             ))}
              {studentsWithScores.length === 0 && (
@@ -413,18 +465,13 @@ export function StudentDashboard({ initialDate, classId: initialClassId }: { ini
                     <Textarea 
                         id="cancellation-reason"
                         value={cancellationReason}
-                        onChange={(e) => {
-                            setCancellationReason(e.target.value)
-                            if (e.target.value.trim()) setIsCancelDialogVali(true);
-                        }}
+                        onChange={(e) => setCancellationReason(e.target.value)}
                         placeholder="Ex: Feriado, evento especial na igreja, etc."
-                        className={!isCancelDialogVali ? 'border-destructive' : ''}
                     />
-                    {!isCancelDialogVali && <p className="text-xs text-destructive">O motivo é obrigatório.</p>}
                 </div>
                 <div className="flex justify-end gap-2 pt-4">
                     <Button variant="ghost" onClick={() => setIsCancelDialogOpen(false)}>Cancelar</Button>
-                    <Button onClick={handleConfirmCancelLesson}>Confirmar</Button>
+                    <Button onClick={handleConfirmCancelLesson} className="bg-primary text-primary-foreground hover:bg-primary/90">Confirmar</Button>
                 </div>
             </DialogContent>
         </Dialog>

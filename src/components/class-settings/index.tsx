@@ -22,7 +22,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { PlusCircle, Trash2, Edit, ChevronDown, Check, Palette } from "lucide-react";
-import { initialClasses, CheckType, Student, ClassConfig } from "@/lib/data";
+import { initialClasses, CheckType, Student, ClassConfig, TaskMode } from "@/lib/data";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -31,8 +31,9 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
+import { RadioGroup, RadioGroupItem } from "../ui/radio-group";
 
-const itemLabels: Record<CheckType, string> = {
+const itemLabels: Record<CheckType | 'task', string> = {
   presence: "Presença",
   material: "Material",
   task: "Tarefa",
@@ -74,7 +75,7 @@ export function ClassSettings() {
 
   const currentClass = classes.find(c => c.id === currentClassId) || classes[0];
 
-  const handleTrackedItemToggle = (item: CheckType) => {
+  const handleTrackedItemToggle = (item: CheckType | 'task') => {
     setClasses(prevClasses => prevClasses.map(c => 
       c.id === currentClassId 
       ? { ...c, trackedItems: { ...c.trackedItems, [item]: !c.trackedItems[item] } }
@@ -82,6 +83,12 @@ export function ClassSettings() {
     ));
   };
   
+    const handleTaskModeChange = (mode: TaskMode) => {
+        setClasses(prevClasses => prevClasses.map(c =>
+            c.id === currentClassId ? { ...c, taskMode: mode } : c
+        ));
+    };
+
   const handleSaveStudent = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
@@ -134,10 +141,12 @@ export function ClassSettings() {
     const formData = new FormData(e.currentTarget);
     const name = formData.get("name") as string;
     const teacherName = formData.get("teacher") as string;
-    const color = formData.get("color") as string;
+    const color = (e.target as any).color.value; // Access color from form elements directly
+    const taskMode = formData.get("taskMode") as TaskMode;
+
 
     if (editingClass) {
-      setClasses(prev => prev.map(c => c.id === editingClass.id ? {...c, name, color, teachers: [{id: `teacher-${Date.now()}`, name: teacherName}]} : c));
+      setClasses(prev => prev.map(c => c.id === editingClass.id ? {...c, name, color, teachers: [{id: `teacher-${Date.now()}`, name: teacherName}], taskMode} : c));
     } else {
       const newClass: ClassConfig = {
         id: `class-${Date.now()}`,
@@ -145,6 +154,7 @@ export function ClassSettings() {
         color,
         teachers: [{id: `teacher-${Date.now()}`, name: teacherName}],
         trackedItems: { presence: true, task: true, verse: false, behavior: false, material: false },
+        taskMode,
         students: []
       };
       setClasses(prev => [...prev, newClass]);
@@ -156,7 +166,15 @@ export function ClassSettings() {
   }
 
   const openNewClassDialog = () => {
-    setEditingClass(null);
+    setEditingClass({
+        id: '',
+        name: '',
+        color: colorPresets[0],
+        teachers: [{id: '', name: ''}],
+        trackedItems: { presence: true, task: true, verse: false, behavior: false, material: false },
+        taskMode: 'unique',
+        students: []
+    });
     setIsClassDialogOpen(true);
   }
 
@@ -210,7 +228,7 @@ export function ClassSettings() {
 
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-1">
+        <div className="lg:col-span-1 space-y-6">
           <Card className="bg-card border-border">
             <CardHeader>
               <CardTitle>Critérios de Avaliação</CardTitle>
@@ -218,7 +236,7 @@ export function ClassSettings() {
             <CardContent>
               <p className="text-sm text-slate-400 mb-4">Selecione o que será pontuado para a classe <span className="font-bold text-slate-300">{currentClass.name}</span>.</p>
               <div className="space-y-4">
-                {(Object.keys(itemLabels) as CheckType[]).map((item) => (
+                {(Object.keys(itemLabels) as (CheckType | 'task')[]).map((item) => (
                   <div
                     key={item}
                     className="flex items-center justify-between"
@@ -237,6 +255,30 @@ export function ClassSettings() {
               </div>
             </CardContent>
           </Card>
+          
+          {currentClass.trackedItems.task && (
+            <Card className="bg-card border-border">
+                <CardHeader>
+                    <CardTitle>Modo de Tarefa</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <RadioGroup value={currentClass.taskMode} onValueChange={handleTaskModeChange}>
+                        <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="unique" id="unique" />
+                            <Label htmlFor="unique">Tarefa Única</Label>
+                        </div>
+                        <p className="text-xs text-slate-400 pl-6">Uma única marcação de tarefa por aula.</p>
+                        
+                        <div className="flex items-center space-x-2 mt-4">
+                            <RadioGroupItem value="daily" id="daily" />
+                            <Label htmlFor="daily">Tarefa Diária</Label>
+                        </div>
+                         <p className="text-xs text-slate-400 pl-6">Marcação diária (Seg-Sáb) com 1 dia de folga.</p>
+                    </RadioGroup>
+                </CardContent>
+            </Card>
+          )}
+
         </div>
 
         <div className="lg:col-span-2">
@@ -321,55 +363,56 @@ export function ClassSettings() {
        <Dialog open={isClassDialogOpen} onOpenChange={setIsClassDialogOpen}>
         <DialogContent className="bg-card border-border text-white">
           <DialogHeader>
-            <DialogTitle>{editingClass ? "Editar Classe" : "Criar Nova Classe"}</DialogTitle>
+            <DialogTitle>{!editingClass?.id ? "Criar Nova Classe" : "Editar Classe"}</DialogTitle>
           </DialogHeader>
-          <form onSubmit={handleSaveClass} className="space-y-4">
-            <div>
-              <Label htmlFor="name">Nome da Classe</Label>
-              <Input id="name" name="name" defaultValue={editingClass?.name} className="bg-secondary border-border" required placeholder="Ex: Primários" />
-            </div>
-            <div>
-              <Label htmlFor="teacher">Professor(a)</Label>
-              <Input id="teacher" name="teacher" defaultValue={editingClass?.teachers[0]?.name} className="bg-secondary border-border" placeholder="Ex: Ana Maria" />
-            </div>
-            <div>
-                <Label htmlFor="color">Cor da Classe</Label>
-                <div className="flex items-center gap-2">
-                    <Popover>
-                        <PopoverTrigger asChild>
-                            <Button variant="outline" className="w-full justify-start text-left font-normal" style={{'--class-color': editingClass?.color} as React.CSSProperties}>
-                                <div className="flex items-center gap-2">
-                                    <div className="w-5 h-5 rounded-full" style={{backgroundColor: editingClass?.color}} />
-                                    <span>{editingClass?.color}</span>
-                                </div>
-                            </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0 border-none bg-card">
-                           <div className="grid grid-cols-3 gap-2 p-2">
-                                {colorPresets.map(color => (
-                                    <button
-                                        key={color}
-                                        type="button"
-                                        className="w-8 h-8 rounded-full border-2 border-transparent"
-                                        style={{backgroundColor: color}}
-                                        onClick={() => setEditingClass(prev => prev ? {...prev, color} : null)}
-                                    />
-                                ))}
-                           </div>
-                        </PopoverContent>
-                    </Popover>
-                    <Input id="color" name="color" value={editingClass?.color || ""} onChange={(e) => setEditingClass(prev => prev ? {...prev, color: e.target.value} : null)} className="w-32 bg-secondary border-border" />
+          {editingClass && (
+            <form onSubmit={handleSaveClass} className="space-y-4">
+                <div>
+                <Label htmlFor="name">Nome da Classe</Label>
+                <Input id="name" name="name" defaultValue={editingClass.name} className="bg-secondary border-border" required placeholder="Ex: Primários" />
                 </div>
-            </div>
-            <div className="flex justify-end gap-2 pt-4">
-                 <Button type="button" variant="secondary" onClick={() => setIsClassDialogOpen(false)}>Cancelar</Button>
-                 <Button type="submit" style={{backgroundColor: editingClass?.color}} className="hover:opacity-90">{editingClass ? "Salvar Alterações" : "Criar Classe"}</Button>
-            </div>
-          </form>
+                <div>
+                <Label htmlFor="teacher">Professor(a)</Label>
+                <Input id="teacher" name="teacher" defaultValue={editingClass.teachers[0]?.name} className="bg-secondary border-border" placeholder="Ex: Ana Maria" />
+                </div>
+                 <div>
+                    <Label>Modo de Tarefa</Label>
+                    <RadioGroup name="taskMode" defaultValue={editingClass.taskMode} className="mt-2 space-y-2">
+                        <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="unique" id="edit-unique" />
+                            <Label htmlFor="edit-unique">Tarefa Única</Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="daily" id="edit-daily" />
+                            <Label htmlFor="edit-daily">Tarefa Diária</Label>
+                        </div>
+                    </RadioGroup>
+                </div>
+                <div>
+                    <Label htmlFor="color">Cor da Classe</Label>
+                    <div className="flex items-center gap-2 mt-2">
+                       <Input id="color" name="color" value={editingClass.color} onChange={(e) => setEditingClass(prev => prev ? {...prev, color: e.target.value} : null)} className="w-32 bg-secondary border-border" />
+                        <div className="flex items-center gap-1">
+                            {colorPresets.map(color => (
+                                <button
+                                    key={color}
+                                    type="button"
+                                    className={cn("w-6 h-6 rounded-full border-2", editingClass.color === color ? 'border-white' : 'border-transparent')}
+                                    style={{backgroundColor: color}}
+                                    onClick={() => setEditingClass(prev => prev ? {...prev, color} : null)}
+                                />
+                            ))}
+                        </div>
+                    </div>
+                </div>
+                <div className="flex justify-end gap-2 pt-4">
+                    <Button type="button" variant="secondary" onClick={() => setIsClassDialogOpen(false)}>Cancelar</Button>
+                    <Button type="submit" style={{backgroundColor: editingClass.color}} className="hover:opacity-90">{editingClass.id ? "Salvar Alterações" : "Criar Classe"}</Button>
+                </div>
+            </form>
+          )}
         </DialogContent>
       </Dialog>
     </div>
   );
 }
-
-    

@@ -1,13 +1,22 @@
 
 import { format, getDaysInMonth, getDay } from "date-fns";
 
-export type CheckType = 'presence' | 'task' | 'verse' | 'behavior' | 'material';
+export type CheckType = 'presence' | 'verse' | 'behavior' | 'material';
+export type TaskMode = 'unique' | 'daily';
+
+// For daily tasks, the key is a 3-letter day abbreviation (e.g., 'mon', 'tue')
+export type DailyTasks = Record<string, boolean>;
+
+export type StudentChecks = Record<CheckType, boolean> & {
+    task?: boolean; // For unique task mode
+    dailyTasks?: DailyTasks; // For daily task mode
+};
 
 export type Student = {
   id: string;
   name: string;
   birthDate: string; // YYYY-MM-DD
-  checks: Record<CheckType, boolean>;
+  checks: StudentChecks;
   totalXp: number;
 };
 
@@ -28,11 +37,12 @@ export type ClassConfig = {
   name: string;
   color: string;
   teachers: Teacher[];
-  trackedItems: Record<CheckType, boolean>;
+  trackedItems: Record<CheckType | 'task', boolean>;
+  taskMode: TaskMode;
   students: Student[];
 };
 
-export const POINTS: Record<CheckType, number> = {
+export const POINTS: Record<CheckType | 'task', number> = {
     presence: 10,
     task: 20,
     verse: 40,
@@ -47,6 +57,7 @@ export const initialClasses: ClassConfig[] = [
     color: "hsl(340, 80%, 60%)",
     teachers: [{id: 'teacher-1', name: "Ana"}],
     trackedItems: { presence: true, task: false, verse: false, behavior: false, material: false },
+    taskMode: 'unique',
     students: [
       { id: "m-1", name: "Júlia Pereira", birthDate: "2021-03-10", checks: {} as any, totalXp: 50 },
       { id: "m-2", name: "Lucas Almeida", birthDate: "2021-08-22", checks: {} as any, totalXp: 40 },
@@ -58,6 +69,7 @@ export const initialClasses: ClassConfig[] = [
     color: "hsl(45, 90%, 50%)",
     teachers: [{id: 'teacher-2', name: "Maria"}],
     trackedItems: { presence: true, task: true, verse: true, behavior: true, material: false },
+    taskMode: 'unique',
     students: [
        { id: "i-1", name: "Sofia Rodrigues", birthDate: "2019-05-15", checks: {} as any, totalXp: 150 },
        { id: "i-2", name: "Davi Santos", birthDate: "2019-11-01", checks: {} as any, totalXp: 180 },
@@ -70,6 +82,7 @@ export const initialClasses: ClassConfig[] = [
     color: "hsl(150, 78%, 35%)",
     teachers: [{id: 'teacher-3', name: "Carlos Andrade"}, {id: 'teacher-4', name: "Daniela Souza"}],
     trackedItems: { presence: true, task: true, verse: false, behavior: true, material: true },
+    taskMode: 'unique',
     students: [
       { id: "j-1", name: "Davi Silva", birthDate: "2012-05-10", checks: {} as any, totalXp: 450 },
       { id: "j-2", name: "Ester Gomes", birthDate: "2011-09-22", checks: {} as any, totalXp: 520 },
@@ -82,6 +95,7 @@ export const initialClasses: ClassConfig[] = [
     color: "hsl(210, 80%, 55%)",
     teachers: [{id: 'teacher-5', name: "Fernando Lima"}],
     trackedItems: { presence: true, task: true, verse: false, behavior: false, material: true },
+    taskMode: 'daily',
     students: [
       { id: "a-1", name: "Gabriel Martins", birthDate: "2008-07-12", checks: {} as any, totalXp: 800 },
       { id: "a-2", name: "Laura Fernandes", birthDate: "2009-01-25", checks: {} as any, totalXp: 750 },
@@ -93,6 +107,7 @@ export const initialClasses: ClassConfig[] = [
     color: "hsl(300, 75%, 60%)",
     teachers: [{id: 'teacher-6', name: "Ricardo Borges"}],
     trackedItems: { presence: true, task: true, verse: false, behavior: false, material: false },
+    taskMode: 'daily',
     students: [
        { id: "jv-1", name: "Beatriz Alves", birthDate: "2004-10-30", checks: {} as any, totalXp: 1200 },
     ],
@@ -104,7 +119,7 @@ const SIMULATED_DATA_KEY = 'ebd-junior-tracker-data';
 
 export type SimulatedDayData = {
   date: Date;
-  checks: Record<CheckType, boolean>;
+  checks: StudentChecks;
 }
 
 export type SimulatedStudentData = {
@@ -115,7 +130,7 @@ export type SimulatedStudentData = {
 export type SimulatedFullData = {
   classes: ClassConfig[];
   lessons: Record<string, DailyLesson>;
-  studentRecords: Record<string, Record<string, Record<string, Record<CheckType, boolean>>>>; // [classId][dateKey][studentId] -> checks
+  studentRecords: Record<string, Record<string, Record<string, StudentChecks>>>; // [classId][dateKey][studentId] -> checks
 }
 
 // Function to generate consistent random data for a student for a specific month
@@ -136,11 +151,9 @@ export const generateSimulatedDataForStudent = (studentId: string, month: Date, 
                 return x - Math.floor(x);
             };
 
-            const checks: Record<CheckType, boolean> = {} as any;
+            const checks: StudentChecks = { presence: false, verse: false, behavior: false, material: false };
             
-            const orderedVisibleItems: CheckType[] = ['presence', 'material', 'task', 'verse', 'behavior'].filter(
-                item => classConfig.trackedItems[item as CheckType]
-            ) as CheckType[];
+            const allItems: (CheckType | 'task')[] = ['presence', 'material', 'task', 'verse', 'behavior'];
             
             let isPresent = false;
              if (classConfig.trackedItems.presence) {
@@ -148,12 +161,28 @@ export const generateSimulatedDataForStudent = (studentId: string, month: Date, 
                 checks.presence = isPresent;
              }
 
-
-            orderedVisibleItems.forEach(key => {
+            allItems.forEach(key => {
                 if (key !== 'presence' && classConfig.trackedItems[key]) {
-                   checks[key] = isPresent && random() > 0.4; // 60% chance if present
+                    if (key === 'task') {
+                        if (classConfig.taskMode === 'unique') {
+                            checks.task = isPresent && random() > 0.4;
+                        } else {
+                            checks.dailyTasks = {
+                                mon: isPresent && random() > 0.3,
+                                tue: isPresent && random() > 0.3,
+                                wed: isPresent && random() > 0.3,
+                                thu: isPresent && random() > 0.3,
+                                fri: isPresent && random() > 0.3,
+                                sat: isPresent && random() > 0.3,
+                            };
+                            const completedCount = Object.values(checks.dailyTasks).filter(v => v).length;
+                            checks.task = completedCount >= 5;
+                        }
+                    } else {
+                       (checks as any)[key] = isPresent && random() > 0.4; // 60% chance if present
+                    }
                 } else if (!classConfig.trackedItems[key]) {
-                   checks[key] = false;
+                   (checks as any)[key] = false;
                 }
             });
 
@@ -219,9 +248,24 @@ export const getSimulatedData = (): SimulatedFullData => {
     if (savedData) {
       const parsedData = JSON.parse(savedData);
       // Ensure classes are part of the saved data, if not, add them.
-      if (!parsedData.classes) {
-        parsedData.classes = initialClasses;
+      if (!parsedData.classes || parsedData.classes.length !== initialClasses.length) {
+        // A simple check to see if we need to regenerate/update.
+        // A more robust migration strategy would be needed for a real app.
+        const { lessons, studentRecords } = generateFullSimulatedData(initialClasses);
+        const newData = { classes: initialClasses, lessons, studentRecords };
+        localStorage.setItem(SIMULATED_DATA_KEY, JSON.stringify(newData));
+        return newData;
       }
+       // Ensure taskMode is set
+      parsedData.classes.forEach((c: ClassConfig) => {
+        if (!c.taskMode) {
+          c.taskMode = 'unique';
+          if (c.id === 'adolescentes' || c.id === 'jovens') {
+            c.taskMode = 'daily';
+          }
+        }
+      });
+
       return parsedData;
     } else {
       const { lessons, studentRecords } = generateFullSimulatedData(initialClasses);
