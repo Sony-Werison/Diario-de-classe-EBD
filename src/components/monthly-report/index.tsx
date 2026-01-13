@@ -187,7 +187,7 @@ export function MonthlyReport() {
               <table className="w-full border-collapse table-fixed">
                   <thead className="sticky top-0 z-10 bg-card/80 backdrop-blur-sm">
                       <tr>
-                          <th className="p-3 border-b border-r border-border text-left text-xs font-bold uppercase text-slate-400 sticky left-0 bg-card/80 z-20 w-1/3 sm:w-48">
+                          <th className="p-3 border-b border-r border-border text-left text-xs font-bold uppercase text-slate-400 sticky left-0 bg-inherit z-20 w-1/3 sm:w-48">
                             Aluno
                           </th>
                           {sundaysInMonth.map(day => (
@@ -201,7 +201,7 @@ export function MonthlyReport() {
                       {currentClass.students.map(student => {
                           return (
                               <tr key={student.id} className="text-sm">
-                                  <td className="p-2 whitespace-nowrap overflow-hidden text-ellipsis border-b border-r border-border font-medium text-slate-200 sticky left-0 bg-card/50 backdrop-blur-sm z-10">{student.name}</td>
+                                  <td className="p-2 whitespace-nowrap overflow-hidden text-ellipsis border-b border-r border-border font-medium text-slate-200 sticky left-0 bg-card/80 backdrop-blur-sm z-10">{student.name}</td>
                                   {sundaysInMonth.map(day => {
                                       const studentChecks = getStudentChecksForDay(student.id, day);
                                       return (
