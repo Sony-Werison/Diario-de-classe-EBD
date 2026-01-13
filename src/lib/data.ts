@@ -1,3 +1,4 @@
+
 import { format, getDaysInMonth, getDay } from "date-fns";
 
 export type CheckType = 'presence' | 'verse' | 'behavior' | 'material' | 'inClassTask';
@@ -50,7 +51,37 @@ export const POINTS: Record<CheckType | 'task', number> = {
     material: 15
 };
 
-export const initialClasses: ClassConfig[] = [];
+export const initialClasses: ClassConfig[] = [
+  {
+    id: "class-1",
+    name: "Primários",
+    color: "hsl(150, 78%, 35%)",
+    teachers: [
+      { id: 'teacher-1', name: 'Tia Joana' },
+      { id: 'teacher-2', name: 'Tio Pedro' }
+    ],
+    trackedItems: { presence: true, material: true, inClassTask: true, task: true, verse: true, behavior: true },
+    taskMode: 'daily',
+    students: [
+      { id: 'student-1', name: 'Alice', birthDate: '2016-05-10', totalXp: 0, checks: { presence: false, material: false, inClassTask: false, verse: false, behavior: false, task: false, dailyTasks: {} } },
+      { id: 'student-2', name: 'Bruno', birthDate: '2015-08-22', totalXp: 0, checks: { presence: false, material: false, inClassTask: false, verse: false, behavior: false, task: false, dailyTasks: {} } },
+    ]
+  },
+  {
+    id: "class-2",
+    name: "Juniores",
+    color: "hsl(210, 80%, 55%)",
+    teachers: [
+      { id: 'teacher-3', name: 'Irmã Maria' }
+    ],
+    trackedItems: { presence: true, material: true, inClassTask: true, task: true, verse: true, behavior: false },
+    taskMode: 'unique',
+    students: [
+      { id: 'student-3', name: 'Carlos', birthDate: '2013-02-15', totalXp: 0, checks: { presence: false, material: false, inClassTask: false, verse: false, behavior: false, task: false, dailyTasks: {} } },
+      { id: 'student-4', name: 'Daniela', birthDate: '2014-11-30', totalXp: 0, checks: { presence: false, material: false, inClassTask: false, verse: false, behavior: false, task: false, dailyTasks: {} } },
+    ]
+  }
+];
 
 export type SimulatedFullData = {
   classes: ClassConfig[];
@@ -78,7 +109,12 @@ export const getSimulatedData = async (): Promise<SimulatedFullData> => {
         throw new Error(`Failed to fetch data: ${response.statusText}`);
     }
     const data: SimulatedFullData = await response.json();
-    return data;
+    // Simple validation to ensure the loaded data has the correct structure
+    if (data && Array.isArray(data.classes) && data.lessons && data.studentRecords) {
+      return data;
+    }
+    console.warn("Loaded data is invalid, returning initial data.");
+    return getInitialData();
   } catch (error) {
     console.error("Failed to fetch from API", error);
     return getInitialData();

@@ -3,7 +3,7 @@
 
 import { Church, Shield, Eye, ArrowRight, User } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { getSimulatedData, Teacher } from '@/lib/data';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button';
 const profiles = [
   {
     name: "Professor",
-    icon: User, // Changed icon to User for clarity
+    icon: User,
     description: "Acesso para registrar aulas e gerenciar as turmas atribuídas.",
     role: "teacher"
   },
@@ -33,25 +33,17 @@ export default function ProfileSelectionPage() {
   const router = useRouter();
   const [isTeacherSelectOpen, setIsTeacherSelectOpen] = useState(false);
   const [allTeachers, setAllTeachers] = useState<Teacher[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
 
-  useEffect(() => {
-    // Load all teachers from all classes on component mount
-    const loadTeachers = async () => {
-        setIsLoading(true);
-        const data = await getSimulatedData();
-        const teachers = data.classes.flatMap(c => c.teachers);
-        // Remove duplicates
-        const uniqueTeachers = Array.from(new Map(teachers.map(t => [t.id, t])).values());
-        setAllTeachers(uniqueTeachers.sort((a,b) => a.name.localeCompare(b.name)));
-        setIsLoading(false);
-    }
-    loadTeachers();
-  }, []);
-
-  const handleProfileSelect = (role: string) => {
+  const handleProfileSelect = async (role: string) => {
     if (role === 'teacher') {
+      setIsLoading(true);
+      const data = await getSimulatedData();
+      const teachers = data.classes.flatMap(c => c.teachers);
+      const uniqueTeachers = Array.from(new Map(teachers.map(t => [t.id, t])).values());
+      setAllTeachers(uniqueTeachers.sort((a,b) => a.name.localeCompare(b.name)));
       setIsTeacherSelectOpen(true);
+      setIsLoading(false);
     } else {
       sessionStorage.setItem('userRole', role);
       sessionStorage.removeItem('teacherId');
@@ -65,14 +57,6 @@ export default function ProfileSelectionPage() {
     setIsTeacherSelectOpen(false);
     router.push('/calendar');
   };
-
-  if (isLoading) {
-    return (
-        <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">
-             <div className="text-slate-500">Carregando dados...</div>
-        </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">
@@ -91,7 +75,8 @@ export default function ProfileSelectionPage() {
             <button
               key={profile.name}
               onClick={() => handleProfileSelect(profile.role)}
-              className="w-full bg-card border border-border rounded-lg p-4 text-left"
+              className="w-full bg-card border border-border rounded-lg p-4 text-left transition-colors hover:bg-secondary disabled:opacity-50"
+              disabled={isLoading}
             >
               <div className="flex items-center justify-between mb-2">
                 <div className="p-2 bg-slate-800 border border-slate-700 rounded-md">
@@ -105,6 +90,7 @@ export default function ProfileSelectionPage() {
           );
         })}
       </div>
+       {isLoading && <div className="text-sm text-slate-400 mt-4">Carregando professores...</div>}
 
       <Dialog open={isTeacherSelectOpen} onOpenChange={setIsTeacherSelectOpen}>
         <DialogContent className="bg-card border-border text-white">
