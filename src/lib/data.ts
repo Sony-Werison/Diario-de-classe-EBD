@@ -4,7 +4,6 @@ import { format, getDaysInMonth, getDay } from "date-fns";
 export type CheckType = 'presence' | 'verse' | 'behavior' | 'material' | 'inClassTask';
 export type TaskMode = 'unique' | 'daily';
 
-// For daily tasks, the key is a 3-letter day abbreviation (e.g., 'mon', 'tue')
 export type DailyTasks = Record<string, boolean>;
 
 export type StudentChecks = Record<CheckType, boolean> & {
@@ -25,6 +24,11 @@ export type Teacher = {
   id: string;
   name: string;
   photoUrl: string;
+}
+
+export type Passwords = {
+  admin: string;
+  teacher: string;
 }
 
 export type DailyLesson = {
@@ -89,40 +93,42 @@ export type SimulatedFullData = {
   classes: ClassConfig[];
   lessons: Record<string, Record<string, DailyLesson>>; // [classId][dateKey] -> lesson
   studentRecords: Record<string, Record<string, Record<string, StudentChecks>>>; // [classId][dateKey][studentId] -> checks
+  passwords: Passwords;
 }
 
 export const getInitialData = (): SimulatedFullData => {
-  return { classes: initialClasses, lessons: {}, studentRecords: {} };
+  return { 
+    classes: initialClasses, 
+    lessons: {}, 
+    studentRecords: {},
+    passwords: {
+      admin: 'admin123',
+      teacher: 'professorebd',
+    }
+  };
 }
 
 
-// Centralized functions to get and save data from the API
 export const getSimulatedData = async (): Promise<SimulatedFullData> => {
   if (typeof window === 'undefined') {
     return getInitialData();
   }
   try {
-    const response = await fetch('/api/data');
+    const response = await fetch('/api/data', { cache: 'no-store' });
     if (!response.ok) {
         throw new Error(`Failed to fetch data: ${response.statusText}`);
     }
     const data: SimulatedFullData = await response.json();
-    // Simple validation to ensure the loaded data has the correct structure
-    if (data && Array.isArray(data.classes) && data.lessons && data.studentRecords) {
+    if (data && Array.isArray(data.classes) && data.lessons && data.studentRecords && data.passwords) {
       return data;
     }
     console.warn("Loaded data is invalid, returning initial data.");
     return getInitialData();
   } catch (error) {
     console.error("Failed to fetch from API", error);
-    const vercelError = error as any;
-    if (vercelError?.code === 'not_found') {
-        console.log("No data blob found, creating initial data.");
-        const initialData = getInitialData();
-        await saveSimulatedData(initialData);
-        return initialData;
-    }
-    return getInitialData();
+    const initialData = getInitialData();
+    await saveSimulatedData(initialData);
+    return initialData;
   }
 };
 

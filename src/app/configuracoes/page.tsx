@@ -11,10 +11,6 @@ import { useToast } from "@/hooks/use-toast";
 import { DataContext } from "@/contexts/DataContext";
 import { SimulatedFullData } from "@/lib/data";
 
-const PASSWORDS = {
-  admin: 'admin123',
-  teacher: 'professorebd',
-};
 
 export default function SettingsPage() {
   const dataContext = useContext(DataContext);
@@ -24,7 +20,12 @@ export default function SettingsPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [userRole, setUserRole] = useState<string>('');
   const [isClient, setIsClient] = useState(false);
+  
+  const [adminPassword, setAdminPassword] = useState('');
+  const [teacherPassword, setTeacherPassword] = useState('');
+  
   const isViewer = userRole === 'viewer';
+  const isAdmin = userRole === 'admin';
 
 
   useEffect(() => {
@@ -32,6 +33,28 @@ export default function SettingsPage() {
     const role = sessionStorage.getItem('userRole') || 'admin';
     setUserRole(role);
   }, []);
+  
+  useEffect(() => {
+    if (data?.passwords) {
+      setAdminPassword(data.passwords.admin);
+      setTeacherPassword(data.passwords.teacher);
+    }
+  }, [data?.passwords]);
+
+  const handlePasswordSave = () => {
+    if (!isAdmin || !updateAndSaveData) {
+      toast({ title: "Acesso negado", description: "Apenas administradores podem alterar senhas.", variant: "destructive" });
+      return;
+    }
+    updateAndSaveData(prev => ({
+      ...prev!,
+      passwords: {
+        admin: adminPassword,
+        teacher: teacherPassword
+      }
+    }));
+    toast({ title: "Senhas atualizadas!", description: "As novas senhas foram salvas com sucesso." });
+  };
   
 
   const handleExportData = async () => {
@@ -65,7 +88,6 @@ export default function SettingsPage() {
         const text = e.target?.result as string;
         const importedData = JSON.parse(text) as SimulatedFullData;
         
-        // Basic validation
         if (importedData && importedData.classes && importedData.lessons && importedData.studentRecords) {
            updateAndSaveData(() => importedData);
           toast({ title: "Backup importado com sucesso!", description: "Os dados foram restaurados." });
@@ -78,7 +100,6 @@ export default function SettingsPage() {
       }
     };
     reader.readAsText(file);
-    // Reset file input
     if(fileInputRef.current) {
         fileInputRef.current.value = "";
     }
@@ -102,19 +123,20 @@ export default function SettingsPage() {
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-sm text-slate-400">
-              Ajuste as senhas para os diferentes perfis de acesso.
+              {isAdmin ? "Ajuste as senhas para os diferentes perfis de acesso." : "Visualização das senhas. Apenas administradores podem editar."}
             </p>
             <div className="space-y-4">
               <div>
                 <Label htmlFor="admin-password">Senha do Administrador</Label>
-                <Input id="admin-password" type="password" value={PASSWORDS.admin} disabled className="bg-input border-border mt-1" />
+                <Input id="admin-password" type="password" value={adminPassword} onChange={e => setAdminPassword(e.target.value)} disabled={!isAdmin} className="bg-input border-border mt-1" />
               </div>
               <div>
                 <Label htmlFor="teacher-password">Senha do Professor</Label>
-                <Input id="teacher-password" type="password" value={PASSWORDS.teacher} disabled className="bg-input border-border mt-1" />
+                <Input id="teacher-password" type="password" value={teacherPassword} onChange={e => setTeacherPassword(e.target.value)} disabled={!isAdmin} className="bg-input border-border mt-1" />
               </div>
             </div>
-            {isViewer && <p className="text-xs text-yellow-400 mt-4">Você está no modo de visualização. Não é possível alterar as senhas.</p>}
+            {isAdmin && <Button onClick={handlePasswordSave} className="mt-4">Salvar Senhas</Button>}
+            {!isAdmin && <p className="text-xs text-yellow-400 mt-4">Você está no modo de {userRole === 'viewer' ? 'visualização' : 'professor'}. Não é possível alterar as senhas.</p>}
           </CardContent>
         </Card>
 

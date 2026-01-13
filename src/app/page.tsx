@@ -3,13 +3,14 @@
 
 import { Church, Shield, Eye, ArrowRight, User } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useState, useContext } from 'react';
+import { useState, useContext, useEffect } from 'react';
 import { Teacher } from '@/lib/data';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { DataContext } from '@/contexts/DataContext';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { cn } from '@/lib/utils';
 
 const profiles = [
   {
@@ -32,17 +33,13 @@ const profiles = [
   }
 ];
 
-const PASSWORDS = {
-  admin: 'admin123',
-  teacher: 'professorebd',
-};
-
 export default function ProfileSelectionPage() {
   const router = useRouter();
   const [isTeacherSelectOpen, setIsTeacherSelectOpen] = useState(false);
   const [allTeachers, setAllTeachers] = useState<Teacher[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const dataContext = useContext(DataContext);
+  const passwords = dataContext?.fullData?.passwords;
 
   const [password, setPassword] = useState('');
   const [passwordError, setPasswordError] = useState('');
@@ -57,15 +54,13 @@ export default function ProfileSelectionPage() {
       sessionStorage.setItem('userRole', role);
       sessionStorage.removeItem('teacherId');
       router.push('/calendar');
-    } else {
-      // Open password dialog for admin and teacher
     }
   };
 
   const handlePasswordSubmit = () => {
-    if (!selectedRole) return;
+    if (!selectedRole || !passwords) return;
 
-    const correctPassword = PASSWORDS[selectedRole as keyof typeof PASSWORDS];
+    const correctPassword = passwords[selectedRole as keyof typeof passwords];
     if (password === correctPassword) {
       if (selectedRole === 'admin') {
         sessionStorage.setItem('userRole', 'admin');
@@ -73,13 +68,12 @@ export default function ProfileSelectionPage() {
         setSelectedRole(null);
         router.push('/calendar');
       } else if (selectedRole === 'teacher') {
-        // Password is correct, now open teacher selection
         if (dataContext?.fullData) {
           const teachers = dataContext.fullData.classes.flatMap(c => c.teachers);
           const uniqueTeachers = Array.from(new Map(teachers.map(t => [t.id, t])).values());
           setAllTeachers(uniqueTeachers.sort((a,b) => a.name.localeCompare(b.name)));
           setIsTeacherSelectOpen(true);
-          setSelectedRole(null); // Close password dialog
+          setSelectedRole(null); 
         } else {
           setIsLoading(true);
         }
@@ -105,9 +99,11 @@ export default function ProfileSelectionPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">
+    <div className={cn("min-h-screen flex flex-col items-center justify-center p-4 transition-all duration-500", 
+        "bg-gradient-to-br from-slate-900 via-background to-background"
+    )}>
       <div className="text-center mb-8">
-         <div className="inline-block p-3 bg-primary rounded-xl mb-3">
+         <div className="inline-block p-3 bg-primary rounded-xl mb-3 shadow-lg shadow-primary/20">
             <Church size={32} className="text-primary-foreground" />
         </div>
         <h1 className="text-2xl font-bold text-white">Diário de classe EBD</h1>
@@ -122,7 +118,7 @@ export default function ProfileSelectionPage() {
               key={profile.name}
               onClick={() => handleProfileSelect(profile.role)}
               className="w-full bg-card border border-border rounded-lg p-4 text-left transition-colors hover:bg-secondary disabled:opacity-50"
-              disabled={isLoading}
+              disabled={isLoading || (!passwords && profile.role !== 'viewer')}
             >
               <div className="flex items-center justify-between mb-2">
                 <div className="p-2 bg-slate-800 border border-slate-700 rounded-md">

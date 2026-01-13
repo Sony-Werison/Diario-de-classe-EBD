@@ -21,8 +21,8 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { PlusCircle, Trash2, Edit, ChevronDown, Check, Upload, User, Image as ImageIcon } from "lucide-react";
-import { saveSimulatedData, CheckType, Student, ClassConfig, TaskMode, Teacher, SimulatedFullData } from "@/lib/data";
+import { PlusCircle, Trash2, Edit, ChevronDown, Check, User } from "lucide-react";
+import { Student, ClassConfig, TaskMode, Teacher, SimulatedFullData, CheckType } from "@/lib/data";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -46,7 +46,6 @@ const itemLabels: Record<CheckType | 'task', string> = {
 const calculateAge = (birthDateString: string) => {
     if (!birthDateString) return null;
     const birthDate = new Date(birthDateString);
-    // Fix off-by-one error when converting from YYYY-MM-DD string
     birthDate.setUTCHours(12);
     const today = new Date();
     let age = today.getFullYear() - birthDate.getFullYear();
@@ -58,12 +57,12 @@ const calculateAge = (birthDateString: string) => {
 }
 
 const colorPresets = [
-  "hsl(150, 78%, 35%)", // Green (default)
-  "hsl(210, 80%, 55%)", // Blue
-  "hsl(45, 90%, 50%)",  // Yellow
-  "hsl(300, 75%, 60%)", // Purple
-  "hsl(0, 80%, 60%)",   // Red
-  "hsl(25, 90%, 55%)",  // Orange
+  "hsl(150, 78%, 35%)",
+  "hsl(210, 80%, 55%)",
+  "hsl(45, 90%, 50%)",
+  "hsl(300, 75%, 60%)",
+  "hsl(0, 80%, 60%)",
+  "hsl(25, 90%, 55%)",
 ];
 
 
@@ -77,7 +76,6 @@ export function ClassSettings() {
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
   const [editingClass, setEditingClass] = useState<ClassConfig | null>(null);
   const { toast } = useToast();
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const [userRole, setUserRole] = useState<string>('');
   const [isClient, setIsClient] = useState(false);
   const isViewer = userRole === 'viewer';
@@ -205,7 +203,7 @@ export function ClassSettings() {
       .map(teacher => ({...teacher, name: (formData.get(`teacher-${teacher.id}`) as string)?.trim() }))
       .filter(teacher => teacher.name);
 
-    if (editingClass.id) { // Editing existing class
+    if (editingClass.id) { 
       const finalClassData: ClassConfig = {
           ...editingClass,
           name,
@@ -217,14 +215,14 @@ export function ClassSettings() {
           ...prev!,
           classes: prev!.classes.map(c => c.id === editingClass.id ? finalClassData : c)
       }));
-    } else { // Creating new class
+    } else { 
       const newClass: ClassConfig = {
         ...editingClass,
         id: `class-${Date.now()}`,
         name,
         color,
         taskMode,
-        students: [], // Ensure students array exists for new classes
+        students: [], 
         teachers: teachers.length > 0 ? teachers : [{id: `teacher-${Date.now()}`, name: '', photoUrl: ''}],
       };
       updateAndSaveData(prev => ({ ...prev!, classes: [...prev!.classes, newClass] }));
@@ -238,7 +236,7 @@ export function ClassSettings() {
   const openNewClassDialog = () => {
     if(isViewer) return;
     setEditingClass({
-        id: '', // Empty ID signifies a new class
+        id: '',
         name: '',
         color: colorPresets[0],
         teachers: [{id: `new-teacher-${Date.now()}`, name: '', photoUrl: ''}],
@@ -271,7 +269,6 @@ export function ClassSettings() {
      setEditingClass(prev => {
         if (!prev) return null;
         const newTeachers = prev.teachers.filter(t => t.id !== teacherId);
-         // Prevent removing the last input field
         if (newTeachers.length === 0) {
             newTeachers.push({ id: `new-teacher-${Date.now()}`, name: '', photoUrl: '' });
         }
@@ -334,18 +331,12 @@ export function ClassSettings() {
                             <div className="space-y-2">
                                 {editingClass.teachers.map((teacher, index) => (
                                     <div key={teacher.id} className="flex items-center gap-2">
-                                        <div className="flex-1 space-y-2">
-                                            <Input 
-                                                name={`teacher-${teacher.id}`} 
-                                                defaultValue={teacher.name} 
-                                                className="bg-input border-border" 
-                                                placeholder={`Nome do Professor ${index + 1}`} 
-                                            />
-                                            <Button type="button" variant="outline" className="w-full text-xs" disabled>
-                                                <ImageIcon size={14} className="mr-2"/>
-                                                {teacher.photoUrl ? 'Alterar Foto' : 'Adicionar Foto'}
-                                            </Button>
-                                        </div>
+                                        <Input 
+                                            name={`teacher-${teacher.id}`} 
+                                            defaultValue={teacher.name} 
+                                            className="bg-input border-border" 
+                                            placeholder={`Nome do Professor ${index + 1}`} 
+                                        />
                                         <Button type="button" variant="ghost" size="icon" className="h-9 w-9 text-red-500 hover:text-red-400 shrink-0" onClick={() => removeTeacher(teacher.id)}>
                                             <Trash2 size={16} />
                                         </Button>
@@ -604,14 +595,6 @@ export function ClassSettings() {
                   <Label htmlFor="birthDate">Data de Nascimento</Label>
                   <Input id="birthDate" name="birthDate" type="date" defaultValue={editingStudent?.birthDate} className="bg-input border-border" required />
                 </div>
-                <div>
-                    <Label htmlFor="photo">Foto do Aluno</Label>
-                    <Button type="button" variant="outline" className="w-full mt-1 text-sm" disabled>
-                        <ImageIcon size={16} className="mr-2" />
-                        {editingStudent?.photoUrl ? "Alterar Foto" : "Adicionar Foto"}
-                    </Button>
-                    <p className="text-xs text-slate-500 mt-2">O upload de fotos estará disponível em breve.</p>
-                </div>
                 {!isViewer && <div className="flex justify-end gap-2 pt-4">
                      <Button type="button" variant="secondary" onClick={() => setIsStudentDialogOpen(false)}>Cancelar</Button>
                      <Button type="submit" className="bg-primary hover:bg-primary/90">{editingStudent ? "Salvar Alterações" : "Adicionar Aluno"}</Button>
@@ -638,18 +621,12 @@ export function ClassSettings() {
                         <div className="space-y-2">
                             {editingClass.teachers.map((teacher, index) => (
                                  <div key={teacher.id} className="flex items-center gap-2">
-                                    <div className="flex-1 space-y-2">
-                                        <Input 
-                                            name={`teacher-${teacher.id}`} 
-                                            defaultValue={teacher.name} 
-                                            className="bg-input border-border" 
-                                            placeholder={`Nome do Professor ${index + 1}`} 
-                                        />
-                                        <Button type="button" variant="outline" className="w-full text-xs" disabled>
-                                            <ImageIcon size={14} className="mr-2" />
-                                            {teacher.photoUrl ? 'Alterar Foto' : 'Adicionar Foto'}
-                                        </Button>
-                                    </div>
+                                    <Input 
+                                        name={`teacher-${teacher.id}`} 
+                                        defaultValue={teacher.name} 
+                                        className="bg-input border-border" 
+                                        placeholder={`Nome do Professor ${index + 1}`} 
+                                    />
                                     <Button type="button" variant="ghost" size="icon" className="h-9 w-9 text-red-500 hover:text-red-400 shrink-0" onClick={() => removeTeacher(teacher.id)}>
                                         <Trash2 size={16} />
                                     </Button>
@@ -664,12 +641,12 @@ export function ClassSettings() {
                         <Label>Modo de Tarefa de Casa</Label>
                         <RadioGroup name="taskMode" defaultValue={editingClass.taskMode} className="mt-2 space-y-2">
                             <div className="flex items-center space-x-2">
-                                <RadioGroupItem value="unique" id="edit-unique" />
-                                <Label htmlFor="edit-unique">Tarefa Única</Label>
+                                <RadioGroupItem value="unique" id="edit-unique-2" />
+                                <Label htmlFor="edit-unique-2">Tarefa Única</Label>
                             </div>
                             <div className="flex items-center space-x-2">
-                                <RadioGroupItem value="daily" id="edit-daily" />
-                                <Label htmlFor="edit-daily">Tarefa Diária</Label>
+                                <RadioGroupItem value="daily" id="edit-daily-2" />
+                                <Label htmlFor="edit-daily-2">Tarefa Diária</Label>
                             </div>
                         </RadioGroup>
                     </div>
@@ -699,5 +676,3 @@ export function ClassSettings() {
     </div>
   );
 }
-
-    
