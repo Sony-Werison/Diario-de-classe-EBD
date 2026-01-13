@@ -27,7 +27,7 @@ export function MonthlyReport() {
   const router = useRouter();
   const [classes, setClasses] = useState<ClassConfig[]>([]);
   const [currentClassId, setCurrentClassId] = useState<string>('');
-  const [currentMonth, setCurrentMonth] = useState(startOfMonth(new Date(new Date().getFullYear(), 0, 1)));
+  const [currentMonth, setCurrentMonth] = useState(startOfMonth(new Date()));
   const [simulatedData, setSimulatedData] = useState<SimulatedFullData>({ classes: [], lessons: {}, studentRecords: {} });
   const [isClient, setIsClient] = useState(false);
 
@@ -135,7 +135,7 @@ export function MonthlyReport() {
             <DropdownMenuTrigger asChild>
                 <Button
                 variant="outline"
-                className="w-full sm:w-auto sm:min-w-48 justify-between bg-card border-border hover:bg-card focus:bg-card"
+                className="w-full sm:min-w-48 justify-between bg-card border-border hover:bg-card focus:bg-card"
                 >
                 <div className="flex items-center gap-2">
                     <div className="w-3 h-3 rounded-full" style={{backgroundColor: currentClass.color}}/>
@@ -184,11 +184,11 @@ export function MonthlyReport() {
               <table className="w-full border-collapse table-fixed">
                   <thead className="sticky top-0 z-10 bg-card/80 backdrop-blur-sm">
                       <tr>
-                          <th className="p-3 border-b border-r border-border text-left text-xs font-bold uppercase text-slate-400 sticky left-0 bg-inherit z-20 w-1/3 sm:w-48">
+                          <th className="p-3 border-b border-r border-border text-left text-xs font-bold uppercase text-slate-400 sticky left-0 bg-inherit z-20 w-48">
                             Aluno
                           </th>
                           {sundaysInMonth.map(day => (
-                              <th key={day.toISOString()} className="p-3 text-center border-b border-r border-border last:border-r-0 text-xs font-bold uppercase text-slate-400 w-16">
+                              <th key={day.toISOString()} className="p-3 text-center border-b border-r border-border text-xs font-bold uppercase text-slate-400 w-16">
                                   {format(day, 'dd')}
                               </th>
                           ))}
@@ -197,12 +197,12 @@ export function MonthlyReport() {
                   <tbody>
                       {currentClass.students.map(student => {
                           return (
-                              <tr key={student.id} className="text-sm">
-                                  <td className="p-2 whitespace-nowrap overflow-hidden text-ellipsis border-b border-r border-border font-medium text-slate-200 sticky left-0 bg-card/80 backdrop-blur-sm z-10">{student.name}</td>
+                              <tr key={student.id} className="text-sm border-b border-border last:border-b-0">
+                                  <td className="p-2 whitespace-nowrap overflow-hidden text-ellipsis border-r border-border font-medium text-slate-200 sticky left-0 bg-card/80 backdrop-blur-sm z-10">{student.name}</td>
                                   {sundaysInMonth.map(day => {
                                       const studentChecks = getStudentChecksForDay(student.id, day);
                                       return (
-                                          <td key={day.toISOString()} className="text-center border-b border-r border-border last:border-r-0 h-full p-2">
+                                          <td key={day.toISOString()} className="text-center border-r border-border h-full p-2">
                                             <button onClick={() => handleDayClick(day)} className="w-full h-full flex items-center justify-center cursor-pointer rounded-md">
                                               {studentChecks ? (
                                               <TooltipProvider>

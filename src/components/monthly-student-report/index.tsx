@@ -148,7 +148,7 @@ export function MonthlyStudentReport() {
             <div className="flex w-full flex-col sm:flex-row items-center gap-2">
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                        <Button variant="outline" className="w-full sm:w-auto sm:min-w-48 justify-between bg-card border-border hover:bg-card focus:bg-card">
+                        <Button variant="outline" className="w-full sm:min-w-48 justify-between bg-card border-border hover:bg-card focus:bg-card">
                           <div className="flex items-center gap-2">
                             <div className="w-3 h-3 rounded-full" style={{backgroundColor: currentClass?.color}}/>
                             <span className="truncate">{currentClass?.name}</span>
@@ -169,7 +169,7 @@ export function MonthlyStudentReport() {
 
                 {currentClass && <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                        <Button variant="outline" className="w-full sm:w-auto sm:min-w-48 justify-between bg-card border-border hover:bg-card focus:bg-card" disabled={currentClass.students.length === 0}>
+                        <Button variant="outline" className="w-full sm:min-w-48 justify-between bg-card border-border hover:bg-card focus:bg-card" disabled={currentClass.students.length === 0}>
                             <span className="truncate">{selectedStudent?.name || "Selecione um aluno"}</span>
                             <ChevronDown className="h-4 w-4 shrink-0" />
                         </Button>
@@ -209,28 +209,17 @@ export function MonthlyStudentReport() {
                         if (!lesson && !checks) return null;
 
                         const isLessonCancelled = lesson?.status === 'cancelled';
-                        const { completionPercent, checkedItemsCount, totalTrackedItems } = checks ? calculateDailyProgress(checks, currentClass) : { completionPercent: 0, checkedItemsCount: 0, totalTrackedItems: 0 };
-                        const isComplete = completionPercent === 100;
-
+                        
                         return (
-                             <div key={dateKey} className="bg-slate-800 p-2 border-b border-slate-700/50">
+                             <div key={dateKey} className="bg-slate-800 p-3 border-b border-slate-700/50">
                                 <div className="flex items-center justify-between gap-3">
                                     <div className="flex-1 space-y-2 min-w-0">
-                                      <div className='mb-1'>
+                                      <div>
                                         <p className="text-sm font-semibold text-slate-200">{format(day, "dd 'de' MMMM", { locale: ptBR })}</p>
                                         <p className={cn("text-xs truncate", isLessonCancelled ? "text-yellow-400 italic" : "text-slate-400")}>
                                             {isLessonCancelled ? lesson.cancellationReason : lesson?.title || "Sem título"}
                                         </p>
                                       </div>
-                                       {checks && <div className="flex flex-col justify-center">
-                                            <div className="flex justify-between text-xs mb-0.5">
-                                            <span className={cn("font-bold", isComplete ? "text-primary" : "text-yellow-400")}>
-                                                {completionPercent}%
-                                            </span>
-                                            <span className="text-slate-500">{checkedItemsCount}/{totalTrackedItems}</span>
-                                            </div>
-                                            <Progress value={completionPercent} className="h-1 bg-slate-900 border border-slate-700" indicatorClassName={cn(isComplete ? "bg-primary" : "bg-gradient-to-r from-yellow-400 to-yellow-600")} />
-                                        </div>}
                                     </div>
                                     <div className="flex flex-col items-end gap-1.5 shrink-0">
                                         <div className="flex flex-wrap justify-end gap-1">

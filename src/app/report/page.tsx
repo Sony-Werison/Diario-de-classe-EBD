@@ -16,7 +16,6 @@ export default function ReportPage() {
         <div className="p-4 sm:p-6 text-white bg-background flex-1 flex flex-col pb-20 sm:pb-6">
             <header className="mb-4">
                 <h1 className="text-2xl font-bold">Relatórios</h1>
-                <p className="text-slate-400">Analise o desempenho da turma ou de alunos individuais.</p>
             </header>
             <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
                 <TabsList className="grid grid-cols-3 gap-1 bg-transparent p-0 mb-4 h-auto">

@@ -122,7 +122,6 @@ export function CalendarPage() {
               </div>
               <div>
                 <h1 className="text-2xl font-bold">Aulas</h1>
-                <p className="text-slate-400">Selecione um domingo para ver os detalhes da aula.</p>
               </div>
           </div>
           <div className='flex flex-col sm:flex-row sm:items-center gap-2 w-full sm:w-auto'>

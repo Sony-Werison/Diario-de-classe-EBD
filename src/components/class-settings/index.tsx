@@ -435,10 +435,7 @@ export function ClassSettings() {
   return (
     <div className="p-4 sm:p-6 text-white" style={{'--class-color': currentClass.color} as React.CSSProperties}>
       <header className="mb-6">
-        <h1 className="text-2xl font-bold">Personalização das Classes</h1>
-        <p className="text-slate-400">
-          Crie novas turmas, ajuste os critérios de avaliação e gerencie os alunos.
-        </p>
+        <h1 className="text-2xl font-bold">Personalização</h1>
       </header>
       
       <div className="mb-6 flex flex-col sm:flex-row gap-4 items-start sm:items-center">
