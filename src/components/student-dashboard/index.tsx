@@ -7,8 +7,62 @@ import { StatCard } from "./stat-card";
 import { StudentListHeader, SortKey } from "./student-list-header";
 import { StudentRow } from "./student-row";
 import { CheckCircle, BookOpen, Pencil, Star, Users, Smile, Notebook, Pen } from "lucide-react";
-import { addDays, subDays, startOfDay, format } from "date-fns";
+import { addDays, subDays, startOfDay, format, getDay, getDaysInMonth, isSameDay } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
+
+type SimulatedDayData = {
+    date: Date;
+    checks: Record<CheckType, boolean>;
+};
+
+type SimulatedStudentData = {
+    studentId: number;
+    monthData: SimulatedDayData[];
+};
+
+// Function to generate consistent random data for a student for a specific month
+const generateSimulatedDataForStudent = (studentId: number, month: Date, classConfig: ClassConfig): SimulatedStudentData => {
+    const daysInMonth = getDaysInMonth(month);
+    const monthData: SimulatedDayData[] = [];
+    const year = month.getFullYear();
+    const monthIndex = month.getMonth();
+
+    for (let day = 1; day <= daysInMonth; day++) {
+        const date = new Date(year, monthIndex, day);
+        // Only generate data for Sundays
+        if (getDay(date) === 0) {
+            const seed = studentId * day * (monthIndex + 1) * year;
+            const random = () => {
+                let x = Math.sin(seed + day) * 10000;
+                return x - Math.floor(x);
+            };
+
+            const checks: Record<CheckType, boolean> = {} as any;
+            
+            const orderedVisibleItems: CheckType[] = ['presence', 'material', 'task', 'verse', 'behavior'].filter(
+                item => classConfig.trackedItems[item as CheckType]
+            ) as CheckType[];
+            
+            let isPresent = false;
+             if (classConfig.trackedItems.presence) {
+                isPresent = random() > 0.2; // 80% chance of presence
+                checks.presence = isPresent;
+             }
+
+
+            orderedVisibleItems.forEach(key => {
+                if (key !== 'presence' && classConfig.trackedItems[key]) {
+                   checks[key] = isPresent && random() > 0.4; // 60% chance if present
+                } else if (!classConfig.trackedItems[key]) {
+                   checks[key] = false;
+                }
+            });
+
+            monthData.push({ date, checks });
+        }
+    }
+    return { studentId, monthData };
+};
 
 
 const calculateAge = (birthDateString: string) => {
@@ -24,6 +78,30 @@ const calculateAge = (birthDateString: string) => {
     return age;
 }
 
+const generateFullSimulatedData = (classes: ClassConfig[]): Record<string, DailyLesson> => {
+    const lessons: Record<string, DailyLesson> = {};
+    const today = new Date();
+    // Generate for current and previous month
+    for (let monthOffset = -1; monthOffset <= 0; monthOffset++) {
+        const month = new Date(today.getFullYear(), today.getMonth() + monthOffset, 1);
+        classes.forEach(classConfig => {
+            classConfig.students.forEach(student => {
+                const studentData = generateSimulatedDataForStudent(student.id, month, classConfig);
+                studentData.monthData.forEach(dayData => {
+                    const dateKey = format(dayData.date, "yyyy-MM-dd");
+                    if (!lessons[dateKey]) {
+                        lessons[dateKey] = {
+                            teacherId: classConfig.teachers[0]?.id || "",
+                            title: `Aula de ${format(dayData.date, "dd/MM")}`,
+                        };
+                    }
+                });
+            });
+        });
+    }
+    return lessons;
+};
+
 export function StudentDashboard() {
   const [classes, setClasses] = useState<ClassConfig[]>(initialClasses);
   const [currentClassId, setCurrentClassId] = useState<string>(initialClasses[0].id);
@@ -36,6 +114,8 @@ export function StudentDashboard() {
   
   useEffect(() => {
     setIsClient(true);
+    setDailyLessons(generateFullSimulatedData(initialClasses));
+     setCurrentDate(startOfDay(new Date()));
   }, []);
 
 
@@ -302,3 +382,5 @@ export function StudentDashboard() {
       </div>
   );
 }
+
+    

@@ -136,6 +136,7 @@ export function MonthlyReport() {
 
   useEffect(() => {
     setIsClient(true);
+    // Set initial month to current month only on client
     setCurrentMonth(startOfMonth(new Date()));
   }, []);
 
@@ -168,9 +169,10 @@ export function MonthlyReport() {
   }
 
   const daysInMonth = useMemo(() => {
+    if (!isClient) return [];
     const dayCount = getDaysInMonth(currentMonth);
     return Array.from({ length: dayCount }, (_, i) => new Date(currentMonth.getFullYear(), currentMonth.getMonth(), i + 1));
-  }, [currentMonth]);
+  }, [currentMonth, isClient]);
   
   const sundaysInMonth = useMemo(() => daysInMonth.filter(d => getDay(d) === 0), [daysInMonth]);
 
@@ -274,10 +276,10 @@ export function MonthlyReport() {
       <div className="flex-1 flex flex-col min-h-0">
           <Legend />
           <div className="overflow-auto border border-slate-700 border-t-0 rounded-b-xl" ref={reportRef}>
-              <table className="w-full border-collapse">
+              <table className="w-full border-collapse table-fixed">
                   <thead className="sticky top-0 z-10 bg-slate-900/80 backdrop-blur-sm">
                       <tr>
-                          <th className="p-3 border-b border-r border-slate-700 text-left text-xs font-bold uppercase text-slate-400 sticky left-0 bg-slate-900/80 z-20 min-w-[150px]">Aluno</th>
+                          <th className="p-3 border-b border-r border-slate-700 text-left text-xs font-bold uppercase text-slate-400 sticky left-0 bg-slate-900/80 z-20 w-1/3 sm:w-1/4">Aluno</th>
                           {sundaysInMonth.map(day => (
                               <th key={day.toISOString()} className="p-3 text-center border-b border-r border-slate-700 last:border-r-0 text-xs font-bold uppercase text-slate-400 w-12">
                                   {format(day, 'dd')}
@@ -351,3 +353,5 @@ export function MonthlyReport() {
     </div>
   );
 }
+
+    

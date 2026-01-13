@@ -10,7 +10,7 @@ import {
   ChevronRight,
   Save,
 } from "lucide-react";
-import { format } from "date-fns";
+import { format, isSameDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { ClassConfig, DailyLesson } from "@/lib/data";
 import {
@@ -68,7 +68,9 @@ export function AppHeader({
     (t) => t.id === dailyLesson?.teacherId
   )?.name;
   
-  const recordedDays = Object.keys(dailyLessons).map(dateStr => new Date(dateStr.replace(/-/g, '/')));
+  const recordedDays = Object.keys(dailyLessons)
+    .filter(key => dailyLessons[key].title || dailyLessons[key].teacherId)
+    .map(dateStr => new Date(dateStr.replace(/-/g, '/')));
 
 
   return (
@@ -145,7 +147,10 @@ export function AppHeader({
                 onSelect={(date) => date && onDateChange(date)}
                 initialFocus
                 locale={ptBR}
-                modifiers={{ recorded: recordedDays }}
+                modifiers={{ 
+                  recorded: recordedDays,
+                  today: new Date()
+                }}
                 modifiersClassNames={{
                   recorded: 'day-recorded',
                   today: 'day-today'
@@ -206,3 +211,5 @@ export function AppHeader({
     </header>
   );
 }
+
+    
