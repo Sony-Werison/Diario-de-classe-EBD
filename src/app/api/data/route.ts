@@ -13,24 +13,25 @@ interface VercelBlobError extends Error {
 }
 
 export async function GET(request: NextRequest) {
+  const token = process.env.BLOB_READ_WRITE_TOKEN;
+  if (!token) {
+    return NextResponse.json({ message: "Configuração do servidor incompleta: o token para o Vercel Blob não foi definido." }, { status: 500 });
+  }
+
   try {
-    const blob = await get(DATA_BLOB_KEY, {
-      token: process.env.BLOB_READ_WRITE_TOKEN
-    });
+    const blob = await get(DATA_BLOB_KEY, { token });
     const data = await blob.json();
     return NextResponse.json(data, { status: 200 });
   } catch (error: unknown) {
     const vercelError = error as VercelBlobError;
 
-    // The 'not_found' code indicates the blob doesn't exist.
-    // This is expected on the first run.
     if (vercelError.code === 'not_found') {
       console.log("Blob não encontrado. Criando com dados iniciais.");
       try {
           const initialData = getInitialData();
           await put(DATA_BLOB_KEY, JSON.stringify(initialData), { 
               access: 'protected', 
-              token: process.env.BLOB_READ_WRITE_TOKEN 
+              token
           });
           return NextResponse.json(initialData, { status: 200 });
       } catch (putError: unknown) {
@@ -40,16 +41,15 @@ export async function GET(request: NextRequest) {
       }
     }
     
-    // For any other error during the GET operation
     console.error("Erro ao buscar os dados do Blob:", vercelError);
     return NextResponse.json({ message: "Erro interno ao buscar os dados.", error: vercelError.message || 'Erro desconhecido' }, { status: 500 });
   }
 }
 
 export async function POST(request: NextRequest) {
-  if (!process.env.BLOB_READ_WRITE_TOKEN) {
-    console.error("A variável de ambiente BLOB_READ_WRITE_TOKEN não está definida.");
-    return NextResponse.json({ message: "Configuração do servidor incompleta: token de escrita faltando." }, { status: 500 });
+  const token = process.env.BLOB_READ_WRITE_TOKEN;
+  if (!token) {
+    return NextResponse.json({ message: "Configuração do servidor incompleta: o token para o Vercel Blob não foi definido." }, { status: 500 });
   }
 
   try {
@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
     
     await put(DATA_BLOB_KEY, dataString, { 
         access: 'protected', 
-        token: process.env.BLOB_READ_WRITE_TOKEN 
+        token
     });
     
     return NextResponse.json({ message: "Dados salvos com sucesso" }, { status: 200 });
