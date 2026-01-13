@@ -3,7 +3,7 @@
 "use client";
 
 import React, { useState, useMemo, useCallback, useEffect } from "react";
-import { POINTS, CheckType, ClassConfig, DailyLesson, getSimulatedData, saveSimulatedData, StudentChecks, DailyTasks } from "@/lib/data";
+import { POINTS, CheckType, ClassConfig, DailyLesson, getSimulatedData, saveSimulatedData, StudentChecks, DailyTasks, Teacher } from "@/lib/data";
 import { AppHeader } from "./app-header";
 import { StatCard } from "./stat-card";
 import { StudentListHeader } from "./student-list-header";
@@ -53,6 +53,7 @@ export function StudentDashboard({ initialDate, classId: initialClassId }: { ini
   const [isCancelDialogOpen, setIsCancelDialogOpen] = useState(false);
   const [cancellationReason, setCancellationReason] = useState("");
   const [userRole, setUserRole] = useState<string>('admin');
+  const [currentUser, setCurrentUser] = useState('');
   const isViewer = userRole === 'viewer';
   
   // These states hold the current data for the dashboard
@@ -65,12 +66,19 @@ export function StudentDashboard({ initialDate, classId: initialClassId }: { ini
     
     const data = getSimulatedData();
     let availableClasses = data.classes;
-    if (role === 'teacher') {
-        const teacherId = sessionStorage.getItem('teacherId');
-        if (teacherId) {
-            availableClasses = data.classes.filter(c => c.teachers.some(t => t.id === teacherId));
+    let currentUserName = role;
+    
+    const teacherId = sessionStorage.getItem('teacherId');
+    if (role === 'teacher' && teacherId) {
+        availableClasses = data.classes.filter(c => c.teachers.some(t => t.id === teacherId));
+        
+        const allTeachers = data.classes.flatMap(c => c.teachers);
+        const teacher = allTeachers.find(t => t.id === teacherId);
+        if (teacher) {
+            currentUserName = teacher.name;
         }
     }
+    setCurrentUser(currentUserName);
     setClasses(availableClasses);
     const resolvedClassId = initialClassId || availableClasses[0]?.id;
     if(resolvedClassId) {
@@ -395,6 +403,7 @@ export function StudentDashboard({ initialDate, classId: initialClassId }: { ini
                 setIsCancelDialogOpen(true);
             }}
             isReadOnly={isViewer}
+            currentUser={currentUser}
         />
         <main className="flex-1 p-3 sm:p-4 md:p-6 bg-background">
           <div className="bg-card rounded-t-xl">

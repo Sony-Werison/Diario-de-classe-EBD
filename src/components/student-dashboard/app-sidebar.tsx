@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import {
@@ -22,6 +23,7 @@ const mobileNavLinks = [
   { href: "/calendar", icon: Calendar, label: "Calendário" },
   { href: "/report", icon: FileText, label: "Relatório" },
   { href: "/settings", icon: Settings, label: "Ajustes" },
+  { href: "/", icon: LogOut, label: "Sair" },
 ]
 
 const NavLink = ({
@@ -93,7 +95,7 @@ export function AppSidebar() {
         <NavLink key={link.href} {...link} />
       ))}
       <div className="mt-auto">
-        <NavLink href="/logout" icon={LogOut} label="Sair" />
+        <NavLink href="/" icon={LogOut} label="Sair" />
       </div>
     </aside>
   );

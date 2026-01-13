@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { Button } from "@/components/ui/button";
@@ -12,6 +13,7 @@ import {
   Save,
   Trash2,
   Ban,
+  User,
 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -48,6 +50,7 @@ interface AppHeaderProps {
   onOpenDeleteAlert: () => void;
   onOpenCancelDialog: () => void;
   isReadOnly: boolean;
+  currentUser: string;
 }
 
 export function AppHeader({
@@ -63,6 +66,7 @@ export function AppHeader({
   onOpenDeleteAlert,
   onOpenCancelDialog,
   isReadOnly,
+  currentUser,
 }: AppHeaderProps) {
   const formattedDate = format(currentDate, "EEEE, dd 'de' MMMM", { locale: ptBR });
   const teacherName = currentClass.teachers.find(
@@ -111,9 +115,12 @@ export function AppHeader({
         </div>
 
         <div className="text-right">
-          <p className="text-xs text-slate-400 font-medium truncate">
-            {teacherName || currentClass.teachers[0]?.name || "Sem professor"}
-          </p>
+           <div className="flex items-center gap-2 justify-end">
+              <User size={12} className="text-slate-400"/>
+              <p className="text-xs text-slate-400 font-medium truncate capitalize">
+                {currentUser}
+              </p>
+           </div>
         </div>
       </div>
 
