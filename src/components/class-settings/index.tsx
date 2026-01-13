@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -21,8 +21,8 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { PlusCircle, Trash2, Edit, ChevronDown, Check } from "lucide-react";
-import { getSimulatedData, saveSimulatedData, CheckType, Student, ClassConfig, TaskMode, Teacher } from "@/lib/data";
+import { PlusCircle, Trash2, Edit, ChevronDown, Check, Upload, Download } from "lucide-react";
+import { getSimulatedData, saveSimulatedData, CheckType, Student, ClassConfig, TaskMode, Teacher, SimulatedFullData } from "@/lib/data";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -31,6 +31,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { RadioGroup, RadioGroupItem } from "../ui/radio-group";
+import { useToast } from "@/hooks/use-toast";
 
 const itemLabels: Record<CheckType | 'task', string> = {
   presence: "Presença",
@@ -66,19 +67,19 @@ const colorPresets = [
 
 
 export function ClassSettings() {
-  const [data, setData] = useState(getSimulatedData());
+  const [data, setData] = useState<SimulatedFullData | null>(null);
   const [currentClassId, setCurrentClassId] = useState<string>('');
   const [isStudentDialogOpen, setIsStudentDialogOpen] = useState(false);
   const [isClassDialogOpen, setIsClassDialogOpen] = useState(false);
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
   const [editingClass, setEditingClass] = useState<ClassConfig | null>(null);
-  const [isClient, setIsClient] = useState(false);
+  const { toast } = useToast();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const { classes } = data;
-  const currentClass = classes.find(c => c.id === currentClassId);
 
   useEffect(() => {
-    setIsClient(true);
+    // This effect runs once on the client to load data from localStorage
+    // and prevent hydration mismatch.
     const savedData = getSimulatedData();
     setData(savedData);
     if(savedData.classes.length > 0) {
@@ -97,14 +98,15 @@ export function ClassSettings() {
   const updateAndSaveData = (updater: (prev: typeof data) => typeof data) => {
     const newData = updater(data);
     setData(newData);
-    saveSimulatedData(newData);
+    saveSimulatedData(newData as SimulatedFullData);
+    return newData;
   };
 
   const handleTrackedItemToggle = (item: CheckType | 'task') => {
     if (!currentClass) return;
     updateAndSaveData(prev => ({
         ...prev,
-        classes: prev.classes.map(c =>
+        classes: prev!.classes.map(c =>
             c.id === currentClassId
                 ? { ...c, trackedItems: { ...c.trackedItems, [item]: !c.trackedItems[item] } }
                 : c
@@ -115,7 +117,7 @@ export function ClassSettings() {
     const handleTaskModeChange = (mode: TaskMode) => {
         updateAndSaveData(prev => ({
             ...prev,
-            classes: prev.classes.map(c =>
+            classes: prev!.classes.map(c =>
                 c.id === currentClassId ? { ...c, taskMode: mode } : c
             )
         }));
@@ -128,7 +130,7 @@ export function ClassSettings() {
     const birthDate = formData.get("birthDate") as string;
 
     updateAndSaveData(prev => {
-        const newClasses = prev.classes.map(c => {
+        const newClasses = prev!.classes.map(c => {
             if (c.id !== currentClassId) return c;
 
             let newStudents;
@@ -161,7 +163,7 @@ export function ClassSettings() {
   const handleDeleteStudent = (studentId: string) => {
     updateAndSaveData(prev => ({
         ...prev,
-        classes: prev.classes.map(c =>
+        classes: prev!.classes.map(c =>
             c.id === currentClassId
                 ? { ...c, students: c.students.filter(s => s.id !== studentId) }
                 : c
@@ -197,14 +199,14 @@ export function ClassSettings() {
     if (editingClass.id) { // Editing existing class
       updateAndSaveData(prev => ({
           ...prev,
-          classes: prev.classes.map(c => c.id === editingClass.id ? finalClassData : c)
+          classes: prev!.classes.map(c => c.id === editingClass.id ? finalClassData : c)
       }));
     } else { // Creating new class
       const newClass: ClassConfig = {
         ...finalClassData,
         id: `class-${Date.now()}`,
       };
-      updateAndSaveData(prev => ({ ...prev, classes: [...prev.classes, newClass] }));
+      const newData = updateAndSaveData(prev => ({ ...prev, classes: [...prev!.classes, newClass] }));
       setCurrentClassId(newClass.id);
     }
 
@@ -253,8 +255,66 @@ export function ClassSettings() {
     });
   }
 
-  if (!isClient || !currentClass) {
+  const handleExportData = () => {
+    const dataToExport = getSimulatedData();
+    const dataStr = JSON.stringify(dataToExport, null, 2);
+    const blob = new Blob([dataStr], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    const date = new Date().toISOString().split('T')[0];
+    link.download = `ebd_tracker_backup_${date}.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    toast({ title: "Backup exportado com sucesso!" });
+  };
+
+  const handleImportClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleImportData = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const text = e.target?.result as string;
+        const importedData = JSON.parse(text);
+        
+        // Basic validation
+        if (importedData && importedData.classes && importedData.lessons && importedData.studentRecords) {
+          saveSimulatedData(importedData);
+          setData(importedData); // Refresh UI
+          setCurrentClassId(importedData.classes[0]?.id || '');
+          toast({ title: "Backup importado com sucesso!", description: "Os dados foram restaurados." });
+        } else {
+          throw new Error("Formato de arquivo inválido.");
+        }
+      } catch (error) {
+        console.error("Erro ao importar backup:", error);
+        toast({ title: "Erro na importação", description: "O arquivo de backup é inválido ou está corrompido.", variant: "destructive" });
+      }
+    };
+    reader.readAsText(file);
+    // Reset file input
+    if(fileInputRef.current) {
+        fileInputRef.current.value = "";
+    }
+  };
+
+  if (!data) {
     return null; // Render nothing on the server until client is ready
+  }
+
+  const { classes } = data;
+  const currentClass = classes.find(c => c.id === currentClassId);
+
+  if (!currentClass) {
+     return null;
   }
 
   return (
@@ -352,6 +412,32 @@ export function ClassSettings() {
             </Card>
           )}
 
+          <Card className="bg-card border-border">
+            <CardHeader>
+              <CardTitle>Backup e Restauração</CardTitle>
+            </CardHeader>
+            <CardContent>
+               <p className="text-sm text-slate-400 mb-4">Exporte ou importe todos os dados do aplicativo, incluindo classes, alunos e registros.</p>
+               <div className="flex flex-col sm:flex-row gap-2">
+                  <Button onClick={handleExportData} variant="outline" className="w-full">
+                    <Download size={16} className="mr-2"/>
+                    Exportar Backup
+                  </Button>
+                  <Button onClick={handleImportClick} variant="outline" className="w-full">
+                    <Upload size={16} className="mr-2"/>
+                    Importar Backup
+                  </Button>
+                  <input 
+                    type="file" 
+                    ref={fileInputRef}
+                    className="hidden"
+                    accept=".json"
+                    onChange={handleImportData}
+                  />
+               </div>
+            </CardContent>
+          </Card>
+
         </div>
 
         <div className="lg:col-span-2">
@@ -367,7 +453,7 @@ export function ClassSettings() {
               <div className="border border-border rounded-lg overflow-hidden">
                 <Table>
                   <TableHeader>
-                    <TableRow className="border-border">
+                    <TableRow className="border-border hover:bg-transparent">
                       <TableHead className="text-white">Nome</TableHead>
                       <TableHead className="text-white text-center w-24">
                         Idade
@@ -379,7 +465,7 @@ export function ClassSettings() {
                   </TableHeader>
                   <TableBody>
                     {currentClass.students.map((student) => (
-                      <TableRow key={student.id} className="border-border">
+                      <TableRow key={student.id} className="border-border hover:bg-transparent">
                         <TableCell className="font-medium">
                           {student.name}
                         </TableCell>
@@ -503,3 +589,5 @@ export function ClassSettings() {
     </div>
   );
 }
+
+    
