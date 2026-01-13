@@ -21,15 +21,18 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
     const [isDemo, setIsDemo] = useState(false);
 
     useEffect(() => {
-        const isDemoMode = sessionStorage.getItem('isDemo') === 'true';
-        setIsDemo(isDemoMode);
+        // This effect runs only once on the client
+        const demoStatus = sessionStorage.getItem('isDemo') === 'true';
+        setIsDemo(demoStatus);
 
         const loadData = async () => {
             try {
                 setIsLoading(true);
-                if (isDemoMode) {
+                if (demoStatus) {
+                    // In demo mode, always load fresh initial data. Don't fetch from backend.
                     setFullData(getInitialData());
                 } else {
+                    // In normal mode, fetch user's real data.
                     const data = await getSimulatedData();
                     setFullData(data);
                 }
@@ -44,7 +47,17 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
     }, []);
 
     const updateAndSaveData = useCallback((updater: (prevData: SimulatedFullData) => SimulatedFullData) => {
-        if (isDemo) return; // Prevent saving in demo mode
+        // isDemo state is checked here to prevent saving data in demo mode
+        if (isDemo) {
+            console.warn("Saving is disabled in Demo Mode.");
+            // In demo mode, we can still update the local state for UI interactivity, but we won't save it.
+             setFullData(prevData => {
+                if (!prevData) return null;
+                const newData = updater(prevData);
+                return newData;
+            });
+            return;
+        } 
         
         setFullData(prevData => {
             if (!prevData) return null;

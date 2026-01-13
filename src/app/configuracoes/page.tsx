@@ -29,7 +29,7 @@ export default function SettingsPage() {
 
   useEffect(() => {
     setIsClient(true);
-    const role = isDemo ? 'viewer' : sessionStorage.getItem('userRole') || 'admin';
+    const role = isDemo ? 'demo' : sessionStorage.getItem('userRole') || 'admin';
     setUserRole(role);
   }, [isDemo]);
   
@@ -136,7 +136,7 @@ export default function SettingsPage() {
               </div>
             </div>
             {isAdmin && <Button onClick={handlePasswordSave} className="mt-4">Salvar Senhas</Button>}
-            {!isAdmin && <p className="text-xs text-yellow-400 mt-4">Você está no modo de {userRole === 'viewer' ? 'visualização' : 'professor'}. Não é possível alterar as senhas.</p>}
+            {!isAdmin && <p className="text-xs text-yellow-400 mt-4">Você está no modo de {userRole === 'demo' ? 'demonstração' : userRole === 'viewer' ? 'visualização' : 'professor'}. Não é possível alterar as senhas.</p>}
           </CardContent>
         </Card>
 
@@ -164,7 +164,7 @@ export default function SettingsPage() {
                   disabled={!isAdmin}
                 />
              </div>
-             {!isAdmin && <p className="text-xs text-yellow-400 mt-4">Você está no modo de {userRole === 'viewer' ? 'visualização' : 'professor'}. Apenas administradores podem realizar backups.</p>}
+             {!isAdmin && <p className="text-xs text-yellow-400 mt-4">Você está no modo de {userRole === 'demo' ? 'demonstração' : userRole === 'viewer' ? 'visualização' : 'professor'}. Apenas administradores podem realizar backups.</p>}
           </CardContent>
         </Card>
       </div>

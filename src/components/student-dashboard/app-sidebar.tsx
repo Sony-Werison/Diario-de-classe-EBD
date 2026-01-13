@@ -108,11 +108,13 @@ export function AppSidebar() {
 
   useEffect(() => {
     setIsClient(true);
-    const role = isDemo ? 'visualização' : sessionStorage.getItem('userRole') || 'admin';
+    const role = isDemo ? 'demo' : sessionStorage.getItem('userRole') || 'admin';
     const teacherId = sessionStorage.getItem('teacherId');
     let currentUserName = role;
-
-    if (fullData && role === 'teacher' && teacherId) {
+    
+    if (isDemo) {
+        currentUserName = "Demonstração";
+    } else if (fullData && role === 'teacher' && teacherId) {
         const allTeachers = fullData.classes.flatMap(c => c.teachers);
         const teacher = allTeachers.find(t => t.id === teacherId);
         if (teacher) {

@@ -66,7 +66,7 @@ export function StudentDashboard({ initialDate, classId: initialClassId }: { ini
 
   useEffect(() => {
     setIsClient(true);
-    const role = isDemo ? 'viewer' : sessionStorage.getItem('userRole') || 'admin';
+    const role = isDemo ? 'demo' : sessionStorage.getItem('userRole') || 'admin';
     setUserRole(role);
 
     if (fullData) {
@@ -74,7 +74,9 @@ export function StudentDashboard({ initialDate, classId: initialClassId }: { ini
         let currentUserName = role;
         
         const teacherId = sessionStorage.getItem('teacherId');
-        if (role === 'teacher' && teacherId) {
+        if (role === 'demo') {
+            currentUserName = 'Demonstração';
+        } else if (role === 'teacher' && teacherId) {
             availableClasses = fullData.classes.filter(c => c.teachers.some(t => t.id === teacherId));
             const allTeachers = fullData.classes.flatMap(c => c.teachers);
             const teacher = allTeachers.find(t => t.id === teacherId);

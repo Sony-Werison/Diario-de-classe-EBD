@@ -1,7 +1,7 @@
 
 "use client";
 
-import { Church, Shield, Eye, ArrowRight, User } from 'lucide-react';
+import { Church, Shield, Eye, ArrowRight, User, PlayCircle } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState, useContext, useEffect, useMemo } from 'react';
 import { Teacher, ClassConfig, SimulatedFullData, getInitialData } from '@/lib/data';
@@ -32,6 +32,12 @@ const profiles = [
     icon: Shield,
     description: "Acesso total para configurar classes e visualizar todos os relatórios.",
     role: "admin"
+  },
+  {
+    name: "Demonstração",
+    icon: PlayCircle,
+    description: "Faça um tour interativo por todas as funcionalidades do aplicativo.",
+    role: "demo"
   }
 ];
 
@@ -59,7 +65,7 @@ export default function ProfileSelectionPage() {
     setPassword('');
     setPasswordError('');
     
-    if (role === 'viewer') {
+    if (role === 'demo') {
       sessionStorage.setItem('isDemo', 'true');
       router.push('/calendar');
       return;
@@ -70,6 +76,16 @@ export default function ProfileSelectionPage() {
 
   const handlePasswordSubmit = () => {
     if (!selectedRole || !passwords) return;
+
+    // The 'viewer' role doesn't have a password, it's direct access
+    if (selectedRole === 'viewer') {
+        sessionStorage.removeItem('isDemo');
+        sessionStorage.setItem('userRole', 'viewer');
+        sessionStorage.removeItem('teacherId');
+        setSelectedRole(null);
+        router.push('/calendar');
+        return;
+    }
 
     const correctPassword = passwords[selectedRole as keyof typeof passwords];
     if (password === correctPassword) {
@@ -134,11 +150,11 @@ export default function ProfileSelectionPage() {
               key={profile.name}
               onClick={() => handleProfileSelect(profile.role)}
               className="w-full bg-card border border-border rounded-lg p-4 text-left transition-colors hover:bg-secondary disabled:opacity-50"
-              disabled={!passwords && profile.role !== 'viewer'}
+              disabled={!passwords && profile.role !== 'viewer' && profile.role !== 'demo'}
             >
               <div className="flex items-center justify-between mb-2">
                 <div className="p-2 bg-slate-800 border border-slate-700 rounded-md">
-                    <Icon size={20} className="text-primary" />
+                    <Icon size={20} className={cn("text-primary", profile.role === 'demo' && "text-green-400")} />
                 </div>
                  <ArrowRight size={18} className="text-slate-600" />
               </div>
@@ -179,32 +195,41 @@ export default function ProfileSelectionPage() {
         </DialogContent>
       </Dialog>
       
-      <Dialog open={!!selectedRole && selectedRole !== 'viewer'} onOpenChange={(isOpen) => !isOpen && setSelectedRole(null)}>
+      <Dialog open={!!selectedRole && selectedRole !== 'demo'} onOpenChange={(isOpen) => !isOpen && setSelectedRole(null)}>
         <DialogContent className="bg-card border-border text-white">
           <DialogHeader>
             <DialogTitle>Acesso Restrito</DialogTitle>
             <DialogDescription>
-              Por favor, insira a senha para o perfil de {profiles.find(p => p.role === selectedRole)?.name}.
+              {selectedRole === 'viewer' ? "Acesso somente leitura. Nenhuma senha é necessária." : `Por favor, insira a senha para o perfil de ${profiles.find(p => p.role === selectedRole)?.name}.`}
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="password">Senha</Label>
-              <Input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handlePasswordSubmit()}
-                className="bg-input border-border"
-              />
+          {selectedRole !== 'viewer' ? (
+              <>
+                <div className="space-y-4 py-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="password">Senha</Label>
+                    <Input
+                      id="password"
+                      type="password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && handlePasswordSubmit()}
+                      className="bg-input border-border"
+                    />
+                  </div>
+                  {passwordError && <p className="text-sm text-destructive">{passwordError}</p>}
+                </div>
+                <div className="flex justify-end gap-2">
+                  <Button variant="outline" onClick={() => setSelectedRole(null)}>Cancelar</Button>
+                  <Button onClick={handlePasswordSubmit}>Continuar</Button>
+                </div>
+              </>
+          ) : (
+             <div className="flex justify-end gap-2 pt-4">
+                <Button variant="outline" onClick={() => setSelectedRole(null)}>Cancelar</Button>
+                <Button onClick={handlePasswordSubmit}>Entrar</Button>
             </div>
-            {passwordError && <p className="text-sm text-destructive">{passwordError}</p>}
-          </div>
-          <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={() => setSelectedRole(null)}>Cancelar</Button>
-            <Button onClick={handlePasswordSubmit}>Continuar</Button>
-          </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>
