@@ -47,6 +47,7 @@ interface AppHeaderProps {
   onSave: () => void;
   onOpenDeleteAlert: () => void;
   onOpenCancelDialog: () => void;
+  isReadOnly: boolean;
 }
 
 export function AppHeader({
@@ -61,6 +62,7 @@ export function AppHeader({
   onSave,
   onOpenDeleteAlert,
   onOpenCancelDialog,
+  isReadOnly,
 }: AppHeaderProps) {
   const formattedDate = format(currentDate, "EEEE, dd 'de' MMMM", { locale: ptBR });
   const teacherName = currentClass.teachers.find(
@@ -75,15 +77,15 @@ export function AppHeader({
             <Church size={20} />
           </div>
           <DropdownMenu>
-            <DropdownMenuTrigger asChild>
+            <DropdownMenuTrigger asChild disabled={classes.length <= 1}>
               <Button
                 variant="ghost"
-                className="p-0 h-auto font-bold text-base text-white tracking-wide hover:bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 -ml-1"
+                className="p-0 h-auto font-bold text-base text-white tracking-wide hover:bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 -ml-1 disabled:opacity-100"
               >
                 <span className="truncate max-w-28 sm:max-w-xs">
                   {currentClass.name}
                 </span>
-                <ChevronDown size={16} className="text-slate-500 ml-1 shrink-0" />
+                {classes.length > 1 && <ChevronDown size={16} className="text-slate-500 ml-1 shrink-0" />}
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent className="bg-card border-border text-white">
@@ -149,7 +151,7 @@ export function AppHeader({
             <p className="text-xs text-slate-400 mt-1">{dailyLesson.cancellationReason}</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 w-full">
+          <fieldset disabled={isReadOnly} className="grid grid-cols-1 sm:grid-cols-3 gap-3 w-full disabled:opacity-75">
             <div className="w-full sm:col-span-1">
               <Label htmlFor="lesson-teacher" className="sr-only">Professor</Label>
               <Select
@@ -178,10 +180,10 @@ export function AppHeader({
                 onChange={(e) => onLessonDetailChange('title', e.target.value)}
               />
             </div>
-          </div>
+          </fieldset>
         )}
-
-         <div className="flex gap-2 w-full md:w-auto">
+        
+        {!isReadOnly && <div className="flex gap-2 w-full md:w-auto">
             {dailyLesson?.status !== 'cancelled' ? (
               <>
                 <Button onClick={onSave} className="bg-primary text-primary-foreground hover:bg-primary/90 w-full md:w-auto">
@@ -201,7 +203,7 @@ export function AppHeader({
                 <Trash2 size={16}/>
                 <span className="sr-only">Excluir</span>
               </Button>
-         </div>
+         </div>}
 
       </div>
     </header>

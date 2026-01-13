@@ -52,12 +52,17 @@ export function StudentDashboard({ initialDate, classId: initialClassId }: { ini
   const [isDeleteAlertOpen, setIsDeleteAlertOpen] = useState(false);
   const [isCancelDialogOpen, setIsCancelDialogOpen] = useState(false);
   const [cancellationReason, setCancellationReason] = useState("");
+  const [userRole, setUserRole] = useState<string>('admin');
+  const isViewer = userRole === 'viewer';
   
   // These states hold the current data for the dashboard
   const [dailyLesson, setDailyLesson] = useState<DailyLesson | undefined>();
   const [dailyStudentChecks, setDailyStudentChecks] = useState<Record<string, StudentChecks>>({});
 
   useEffect(() => {
+    const role = sessionStorage.getItem('userRole') || 'admin';
+    setUserRole(role);
+    
     const data = getSimulatedData();
     setClasses(data.classes);
     const resolvedClassId = initialClassId || data.classes[0]?.id;
@@ -119,6 +124,7 @@ export function StudentDashboard({ initialDate, classId: initialClassId }: { ini
 
 
   const handleToggleCheck = useCallback((studentId: string, type: CheckType | 'task') => {
+    if(isViewer) return;
     setDailyStudentChecks(prevChecks => {
         const newChecksForStudent = { ...(prevChecks[studentId] || defaultChecks) };
         (newChecksForStudent as any)[type] = !(newChecksForStudent as any)[type];
@@ -138,9 +144,10 @@ export function StudentDashboard({ initialDate, classId: initialClassId }: { ini
             [studentId]: newChecksForStudent
         };
     });
-  }, []);
+  }, [isViewer]);
 
   const handleToggleDailyTask = useCallback((studentId: string, day: keyof DailyTasks) => {
+    if(isViewer) return;
     setDailyStudentChecks(prevChecks => {
         const newChecksForStudent = { ...(prevChecks[studentId] || defaultChecks) };
         const newDailyTasks = { ...(newChecksForStudent.dailyTasks || {}) };
@@ -158,15 +165,15 @@ export function StudentDashboard({ initialDate, classId: initialClassId }: { ini
             }
         };
     });
-  }, []);
+  }, [isViewer]);
 
   const handleLessonDetailChange = useCallback((field: keyof DailyLesson, value: string) => {
-    if(!currentClass) return;
+    if(!currentClass || isViewer) return;
     setDailyLesson(prev => ({
       ...(prev || { teacherId: currentClass.teachers[0]?.id || "", title: "", status: 'held', cancellationReason: '' }),
       [field]: value,
     }) as DailyLesson);
-  }, [currentClass]);
+  }, [currentClass, isViewer]);
   
   const handleSundayNavigation = (direction: 'prev' | 'next') => {
     const newDate = new Date(currentDate);
@@ -177,7 +184,7 @@ export function StudentDashboard({ initialDate, classId: initialClassId }: { ini
   }
 
   const handleSave = () => {
-    if (!currentDate || !currentClass) return;
+    if (!currentDate || !currentClass || isViewer) return;
     
     const data = getSimulatedData();
     
@@ -207,7 +214,7 @@ export function StudentDashboard({ initialDate, classId: initialClassId }: { ini
   }
 
   const handleDeleteLesson = () => {
-    if (!currentDate || !currentClassId) return;
+    if (!currentDate || !currentClassId || isViewer) return;
   
     const data = getSimulatedData();
     
@@ -234,7 +241,7 @@ export function StudentDashboard({ initialDate, classId: initialClassId }: { ini
         toast({ title: "O motivo é obrigatório", variant: "destructive" });
         return;
       }
-      if(!currentClass) return;
+      if(!currentClass || isViewer) return;
       
       const updatedLesson: DailyLesson = {
           ...(dailyLesson || { teacherId: currentClass.teachers[0]?.id || "", title: "", status: 'held' }),
@@ -378,6 +385,7 @@ export function StudentDashboard({ initialDate, classId: initialClassId }: { ini
                 setCancellationReason(dailyLesson?.cancellationReason || "");
                 setIsCancelDialogOpen(true);
             }}
+            isReadOnly={isViewer}
         />
         <main className="flex-1 p-3 sm:p-4 md:p-6 bg-background">
           <div className="bg-card rounded-t-xl">
@@ -394,6 +402,7 @@ export function StudentDashboard({ initialDate, classId: initialClassId }: { ini
                 trackedItems={trackedItems}
                 taskMode={currentClass.taskMode}
                 isLessonCancelled={dailyLesson.status === 'cancelled'}
+                isReadOnly={isViewer}
               />
             ))}
              {studentsWithScores.length === 0 && (
@@ -472,19 +481,21 @@ export function StudentDashboard({ initialDate, classId: initialClassId }: { ini
                 <DialogHeader>
                     <DialogTitle>Marcar aula como não realizada</DialogTitle>
                 </DialogHeader>
-                <div className="space-y-4">
-                    <Label htmlFor="cancellation-reason">Motivo (Obrigatório)</Label>
-                    <Textarea 
-                        id="cancellation-reason"
-                        value={cancellationReason}
-                        onChange={(e) => setCancellationReason(e.target.value)}
-                        placeholder="Ex: Feriado, evento especial na igreja, etc."
-                    />
-                </div>
-                <div className="flex justify-end gap-2 pt-4">
-                    <Button variant="ghost" onClick={() => setIsCancelDialogOpen(false)}>Cancelar</Button>
-                    <Button onClick={handleConfirmCancelLesson} className="bg-primary text-primary-foreground hover:bg-primary/90">Confirmar</Button>
-                </div>
+                <fieldset disabled={isViewer}>
+                    <div className="space-y-4">
+                        <Label htmlFor="cancellation-reason">Motivo (Obrigatório)</Label>
+                        <Textarea 
+                            id="cancellation-reason"
+                            value={cancellationReason}
+                            onChange={(e) => setCancellationReason(e.target.value)}
+                            placeholder="Ex: Feriado, evento especial na igreja, etc."
+                        />
+                    </div>
+                    {!isViewer && <div className="flex justify-end gap-2 pt-4">
+                        <Button variant="ghost" onClick={() => setIsCancelDialogOpen(false)}>Cancelar</Button>
+                        <Button onClick={handleConfirmCancelLesson} className="bg-primary text-primary-foreground hover:bg-primary/90">Confirmar</Button>
+                    </div>}
+                </fieldset>
             </DialogContent>
         </Dialog>
       </div>

@@ -19,6 +19,7 @@ interface StudentRowProps {
   trackedItems: Record<CheckType | 'task', boolean>;
   taskMode: 'unique' | 'daily';
   isLessonCancelled: boolean;
+  isReadOnly: boolean;
 }
 
 const checkConfig: Record<CheckType | 'task', { Icon: React.ElementType; activeClass: string; inactiveClass: string; label: string; }> = {
@@ -39,7 +40,7 @@ const weekDays: { key: keyof DailyTasks, label: string }[] = [
     { key: 'sat', label: 'S' },
 ];
 
-export function StudentRow({ student, onToggleCheck, onToggleDailyTask, trackedItems, taskMode, isLessonCancelled }: StudentRowProps) {
+export function StudentRow({ student, onToggleCheck, onToggleDailyTask, trackedItems, taskMode, isLessonCancelled, isReadOnly }: StudentRowProps) {
   const { id, name, checks, age, completionPercent, checkedItemsCount, totalTrackedItems } = student;
   
   const isComplete = completionPercent === 100;
@@ -54,12 +55,12 @@ export function StudentRow({ student, onToggleCheck, onToggleDailyTask, trackedI
             </div>
              <div className="flex flex-col justify-center">
                 <div className="flex justify-between text-xs mb-0.5">
-                <span className={cn("font-bold", isComplete ? "text-primary" : "text-yellow-400")}>
+                <span className={cn("font-bold", !isComplete ? "text-yellow-400" : "text-primary")}>
                     {Math.round(completionPercent)}%
                 </span>
                 <span className="text-slate-500">{checkedItemsCount}/{totalTrackedItems}</span>
                 </div>
-                <Progress value={completionPercent} className="h-1 bg-slate-900 border border-slate-700" indicatorClassName={cn(isComplete ? "bg-primary" : "bg-gradient-to-r from-yellow-400 to-yellow-600")} />
+                <Progress value={completionPercent} className="h-1 bg-slate-900 border border-slate-700" indicatorClassName={cn(!isComplete ? "bg-gradient-to-r from-yellow-400 to-yellow-600" : "bg-primary")} />
             </div>
         </div>
 
@@ -71,6 +72,7 @@ export function StudentRow({ student, onToggleCheck, onToggleDailyTask, trackedI
                     let isDisabled = !checks.presence && ['material', 'verse', 'behavior', 'inClassTask'].includes(type);
                     if (isLessonCancelled) isDisabled = false;
                      if(type === 'task') isDisabled = false;
+                     if (isReadOnly) isDisabled = true;
 
                     const CheckIcon = checkConfig[type].Icon;
                     return (
@@ -80,7 +82,7 @@ export function StudentRow({ student, onToggleCheck, onToggleDailyTask, trackedI
                             className={cn(
                                 "w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200 border",
                                 checks[type] ? checkConfig[type].activeClass : checkConfig[type].inactiveClass,
-                                isDisabled ? 'opacity-50 cursor-not-allowed' : '',
+                                isDisabled ? 'opacity-50 cursor-not-allowed' : 'hover:opacity-80',
                             )}
                             aria-label={`Marcar ${type} para ${name}`}
                             disabled={isDisabled}
@@ -100,9 +102,11 @@ export function StudentRow({ student, onToggleCheck, onToggleDailyTask, trackedI
                             <button
                                 key={day.key}
                                 onClick={() => onToggleDailyTask(id, day.key)}
+                                disabled={isReadOnly}
                                 className={cn(
                                     "w-5 h-6 rounded-md flex items-center justify-center transition-all duration-200 text-[10px] font-bold",
-                                    checks.dailyTasks?.[day.key] ? checkConfig.task.activeClass : 'text-slate-400 bg-slate-700/50'
+                                    checks.dailyTasks?.[day.key] ? checkConfig.task.activeClass : 'text-slate-400 bg-slate-700/50',
+                                    isReadOnly ? 'cursor-not-allowed' : 'hover:opacity-80',
                                 )}
                                 aria-label={`Marcar tarefa de ${day.label} para ${name}`}
                                 >

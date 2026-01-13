@@ -21,7 +21,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { PlusCircle, Trash2, Edit, ChevronDown, Check, Upload, Download } from "lucide-react";
+import { PlusCircle, Trash2, Edit, ChevronDown, Check, Upload, Download, User } from "lucide-react";
 import { getSimulatedData, saveSimulatedData, CheckType, Student, ClassConfig, TaskMode, Teacher, SimulatedFullData } from "@/lib/data";
 import {
   DropdownMenu,
@@ -75,15 +75,26 @@ export function ClassSettings() {
   const [editingClass, setEditingClass] = useState<ClassConfig | null>(null);
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [userRole, setUserRole] = useState<string>('admin');
+  const isViewer = userRole === 'viewer';
 
 
   useEffect(() => {
     // This effect runs once on the client to load data from localStorage
     // and prevent hydration mismatch.
+    const role = sessionStorage.getItem('userRole') || 'admin';
+    setUserRole(role);
     const savedData = getSimulatedData();
     setData(savedData);
-    if(savedData.classes.length > 0) {
-      setCurrentClassId(savedData.classes[0].id);
+    
+    let availableClasses = savedData.classes;
+    if (role === 'teacher') {
+      const teacherId = sessionStorage.getItem('teacherId');
+      availableClasses = savedData.classes.filter(c => c.teachers.some(t => t.id === teacherId));
+    }
+
+    if(availableClasses.length > 0 && (!currentClassId || !availableClasses.find(c => c.id === currentClassId))) {
+      setCurrentClassId(availableClasses[0].id);
     }
     
     const handleStorageChange = () => {
@@ -93,7 +104,18 @@ export function ClassSettings() {
     return () => {
       window.removeEventListener('storage', handleStorageChange);
     };
-  }, []);
+  }, [currentClassId]);
+  
+  const availableClasses = useMemo(() => {
+    if (!data) return [];
+    if (userRole === 'admin' || userRole === 'viewer') return data.classes;
+    if (userRole === 'teacher') {
+      const teacherId = sessionStorage.getItem('teacherId');
+      return data.classes.filter(c => c.teachers.some(t => t.id === teacherId));
+    }
+    return [];
+  }, [data, userRole]);
+
 
   const updateAndSaveData = (updater: (prev: typeof data) => typeof data) => {
     const newData = updater(data!);
@@ -103,7 +125,7 @@ export function ClassSettings() {
   };
 
   const handleTrackedItemToggle = (item: CheckType | 'task') => {
-    if (!currentClass) return;
+    if (!currentClass || isViewer) return;
     updateAndSaveData(prev => ({
         ...prev!,
         classes: prev!.classes.map(c =>
@@ -115,6 +137,7 @@ export function ClassSettings() {
   };
   
     const handleTaskModeChange = (mode: TaskMode) => {
+        if(isViewer) return;
         updateAndSaveData(prev => ({
             ...prev!,
             classes: prev!.classes.map(c =>
@@ -125,6 +148,7 @@ export function ClassSettings() {
 
   const handleSaveStudent = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    if(isViewer) return;
     const formData = new FormData(e.currentTarget);
     const name = formData.get("name") as string;
     const birthDate = formData.get("birthDate") as string;
@@ -156,11 +180,13 @@ export function ClassSettings() {
   };
   
   const handleEditStudent = (student: Student) => {
+    if(isViewer) return;
     setEditingStudent(student);
     setIsStudentDialogOpen(true);
   }
 
   const handleDeleteStudent = (studentId: string) => {
+    if(isViewer) return;
     updateAndSaveData(prev => ({
         ...prev!,
         classes: prev!.classes.map(c =>
@@ -172,13 +198,14 @@ export function ClassSettings() {
   }
   
   const openNewStudentDialog = () => {
+    if(isViewer) return;
     setEditingStudent(null);
     setIsStudentDialogOpen(true);
   }
 
   const handleSaveClass = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!editingClass) return;
+    if (!editingClass || isViewer) return;
 
     const formData = new FormData(e.currentTarget);
     const name = formData.get("name") as string;
@@ -215,6 +242,7 @@ export function ClassSettings() {
   }
 
   const openNewClassDialog = () => {
+    if(isViewer) return;
     setEditingClass({
         id: '', // Empty ID signifies a new class
         name: '',
@@ -228,12 +256,13 @@ export function ClassSettings() {
   }
 
   const openEditClassDialog = () => {
-    if(!currentClass) return;
+    if(!currentClass || isViewer) return;
     setEditingClass(currentClass);
     setIsClassDialogOpen(true);
   }
   
   const addTeacher = () => {
+    if(isViewer) return;
     setEditingClass(prev => {
         if (!prev) return null;
         return {
@@ -244,6 +273,7 @@ export function ClassSettings() {
   }
 
   const removeTeacher = (teacherId: string) => {
+     if(isViewer) return;
      setEditingClass(prev => {
         if (!prev) return null;
         const newTeachers = prev.teachers.filter(t => t.id !== teacherId);
@@ -272,12 +302,13 @@ export function ClassSettings() {
   };
 
   const handleImportClick = () => {
+    if(isViewer) return;
     fileInputRef.current?.click();
   };
 
   const handleImportData = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (!file) return;
+    if (!file || isViewer) return;
 
     const reader = new FileReader();
     reader.onload = (e) => {
@@ -310,19 +341,23 @@ export function ClassSettings() {
     return null; // Render nothing on the server until client is ready
   }
 
-  const { classes } = data;
-  const currentClass = classes.find(c => c.id === currentClassId);
+  const currentClass = availableClasses.find(c => c.id === currentClassId);
 
   if (!currentClass) {
      return (
         <div className="p-4 sm:p-6 text-white flex flex-col items-center justify-center h-full">
             <div className="text-center">
-                <h1 className="text-2xl font-bold mb-4">Bem-vindo!</h1>
-                <p className="text-slate-400 mb-6">Parece que você ainda não tem nenhuma classe. Crie uma para começar.</p>
-                <Button onClick={openNewClassDialog} className="bg-primary hover:bg-primary/90 text-white">
-                    <PlusCircle size={16} className="mr-2" />
-                    Criar Primeira Classe
-                </Button>
+                <User size={48} className="text-slate-500 mb-4" />
+                <h1 className="text-2xl font-bold mb-4">Nenhuma classe encontrada</h1>
+                <p className="text-slate-400 mb-6 max-w-sm">
+                    {userRole === 'teacher' ? 'Parece que você ainda não está atribuído a nenhuma classe.' : 'Parece que você ainda não tem nenhuma classe. Crie uma para começar.'}
+                </p>
+                {userRole === 'admin' && (
+                    <Button onClick={openNewClassDialog} className="bg-primary hover:bg-primary/90 text-white">
+                        <PlusCircle size={16} className="mr-2" />
+                        Criar Primeira Classe
+                    </Button>
+                )}
             </div>
             <Dialog open={isClassDialogOpen} onOpenChange={setIsClassDialogOpen}>
             <DialogContent className="bg-card border-border text-white">
@@ -331,62 +366,64 @@ export function ClassSettings() {
             </DialogHeader>
             {editingClass && (
                 <form onSubmit={handleSaveClass} className="space-y-4">
-                    <div>
-                    <Label htmlFor="class-name">Nome da Classe</Label>
-                    <Input id="class-name" name="name" defaultValue={editingClass.name} className="bg-input border-border" required placeholder="Ex: Primários" />
-                    </div>
-                    <div>
-                        <Label>Professor(es)</Label>
-                        <div className="space-y-2">
-                            {editingClass.teachers.map((teacher, index) => (
-                                <div key={teacher.id} className="flex items-center gap-2">
-                                    <Input 
-                                        name={`teacher-${teacher.id}`} 
-                                        defaultValue={teacher.name} 
-                                        className="bg-input border-border" 
-                                        placeholder={`Nome do Professor ${index + 1}`} 
-                                    />
-                                    <Button type="button" variant="ghost" size="icon" className="h-9 w-9 text-red-500 hover:text-red-400 shrink-0" onClick={() => removeTeacher(teacher.id)}>
-                                        <Trash2 size={16} />
-                                    </Button>
+                    <fieldset disabled={isViewer}>
+                        <div>
+                        <Label htmlFor="class-name">Nome da Classe</Label>
+                        <Input id="class-name" name="name" defaultValue={editingClass.name} className="bg-input border-border" required placeholder="Ex: Primários" />
+                        </div>
+                        <div>
+                            <Label>Professor(es)</Label>
+                            <div className="space-y-2">
+                                {editingClass.teachers.map((teacher, index) => (
+                                    <div key={teacher.id} className="flex items-center gap-2">
+                                        <Input 
+                                            name={`teacher-${teacher.id}`} 
+                                            defaultValue={teacher.name} 
+                                            className="bg-input border-border" 
+                                            placeholder={`Nome do Professor ${index + 1}`} 
+                                        />
+                                        <Button type="button" variant="ghost" size="icon" className="h-9 w-9 text-red-500 hover:text-red-400 shrink-0" onClick={() => removeTeacher(teacher.id)}>
+                                            <Trash2 size={16} />
+                                        </Button>
+                                    </div>
+                                ))}
+                            </div>
+                            <Button type="button" size="sm" variant="outline" onClick={addTeacher} className="mt-2">
+                                <PlusCircle size={16} className="mr-2" /> Adicionar Professor
+                            </Button>
+                        </div>
+                        <div>
+                            <Label>Modo de Tarefa de Casa</Label>
+                            <RadioGroup name="taskMode" defaultValue={editingClass.taskMode} className="mt-2 space-y-2">
+                                <div className="flex items-center space-x-2">
+                                    <RadioGroupItem value="unique" id="edit-unique" />
+                                    <Label htmlFor="edit-unique">Tarefa Única</Label>
                                 </div>
-                            ))}
+                                <div className="flex items-center space-x-2">
+                                    <RadioGroupItem value="daily" id="edit-daily" />
+                                    <Label htmlFor="edit-daily">Tarefa Diária</Label>
+                                </div>
+                            </RadioGroup>
                         </div>
-                        <Button type="button" size="sm" variant="outline" onClick={addTeacher} className="mt-2">
-                            <PlusCircle size={16} className="mr-2" /> Adicionar Professor
-                        </Button>
-                    </div>
-                    <div>
-                        <Label>Modo de Tarefa de Casa</Label>
-                        <RadioGroup name="taskMode" defaultValue={editingClass.taskMode} className="mt-2 space-y-2">
-                            <div className="flex items-center space-x-2">
-                                <RadioGroupItem value="unique" id="edit-unique" />
-                                <Label htmlFor="edit-unique">Tarefa Única</Label>
+                        <div>
+                            <Label>Cor da Classe</Label>
+                            <div className="flex items-center gap-2 mt-2">
+                                {colorPresets.map(color => (
+                                    <button
+                                        key={color}
+                                        type="button"
+                                        className={cn("w-7 h-7 rounded-full border-2 transition-all", editingClass.color === color ? 'border-white ring-2 ring-white/50' : 'border-transparent hover:border-white/50')}
+                                        style={{backgroundColor: color}}
+                                        onClick={() => setEditingClass(prev => prev ? {...prev, color} : null)}
+                                    />
+                                ))}
                             </div>
-                            <div className="flex items-center space-x-2">
-                                <RadioGroupItem value="daily" id="edit-daily" />
-                                <Label htmlFor="edit-daily">Tarefa Diária</Label>
-                            </div>
-                        </RadioGroup>
-                    </div>
-                    <div>
-                        <Label>Cor da Classe</Label>
-                        <div className="flex items-center gap-2 mt-2">
-                            {colorPresets.map(color => (
-                                <button
-                                    key={color}
-                                    type="button"
-                                    className={cn("w-7 h-7 rounded-full border-2 transition-all", editingClass.color === color ? 'border-white ring-2 ring-white/50' : 'border-transparent hover:border-white/50')}
-                                    style={{backgroundColor: color}}
-                                    onClick={() => setEditingClass(prev => prev ? {...prev, color} : null)}
-                                />
-                            ))}
                         </div>
-                    </div>
-                    <div className="flex justify-end gap-2 pt-4">
-                        <Button type="button" variant="secondary" onClick={() => setIsClassDialogOpen(false)}>Cancelar</Button>
-                        <Button type="submit" className="bg-primary hover:bg-primary/90">{editingClass.id ? "Salvar Alterações" : "Criar Classe"}</Button>
-                    </div>
+                        {!isViewer && <div className="flex justify-end gap-2 pt-4">
+                            <Button type="button" variant="secondary" onClick={() => setIsClassDialogOpen(false)}>Cancelar</Button>
+                            <Button type="submit" className="bg-primary hover:bg-primary/90">{editingClass.id ? "Salvar Alterações" : "Criar Classe"}</Button>
+                        </div>}
+                    </fieldset>
                 </form>
             )}
             </DialogContent>
@@ -416,7 +453,7 @@ export function ClassSettings() {
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent className="w-full sm:w-72 bg-card border-border text-white">
-            {classes.map(c => (
+            {availableClasses.map(c => (
               <DropdownMenuItem key={c.id} onSelect={() => setCurrentClassId(c.id)} className="cursor-pointer focus:bg-secondary">
                  <Check size={16} className={cn("mr-2", currentClassId === c.id ? 'opacity-100' : 'opacity-0')} />
                  <div className="w-3 h-3 rounded-full mr-2" style={{backgroundColor: c.color}} />
@@ -425,16 +462,16 @@ export function ClassSettings() {
             ))}
           </DropdownMenuContent>
         </DropdownMenu>
-        <div className="flex gap-2 w-full sm:w-auto">
-            <Button onClick={openNewClassDialog} className="bg-primary hover:bg-primary/90 text-white">
+        {userRole === 'admin' && <div className="flex gap-2 w-full sm:w-auto">
+            <Button onClick={openNewClassDialog} className="bg-primary hover:bg-primary/90 text-white" disabled={isViewer}>
                 <PlusCircle size={16} className="mr-2" />
                 Criar Classe
             </Button>
-            <Button variant="secondary" onClick={openEditClassDialog} className="w-full sm:w-auto">
+            <Button variant="secondary" onClick={openEditClassDialog} className="w-full sm:w-auto" disabled={isViewer}>
                 <Edit size={16} className="mr-2" />
                 Editar Classe
             </Button>
-        </div>
+        </div>}
       </div>
 
 
@@ -443,10 +480,10 @@ export function ClassSettings() {
           <Card className="bg-card border-border">
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle>Alunos da Classe "{currentClass.name}"</CardTitle>
-               <Button size="sm" onClick={openNewStudentDialog} className="bg-primary hover:bg-primary/90 text-white">
+              {!isViewer && <Button size="sm" onClick={openNewStudentDialog} className="bg-primary hover:bg-primary/90 text-white">
                 <PlusCircle size={16} className="mr-2" />
                 Adicionar Aluno
-              </Button>
+              </Button>}
             </CardHeader>
             <CardContent>
               <div className="border border-border rounded-lg overflow-hidden">
@@ -473,10 +510,10 @@ export function ClassSettings() {
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex gap-2 justify-end">
-                            <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-white" onClick={() => handleEditStudent(student)}>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-white" onClick={() => handleEditStudent(student)} disabled={isViewer}>
                                 <Edit size={16}/>
                             </Button>
-                            <Button variant="ghost" size="icon" className="h-8 w-8 text-red-500 hover:text-red-400" onClick={() => handleDeleteStudent(student.id)}>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-red-500 hover:text-red-400" onClick={() => handleDeleteStudent(student.id)} disabled={isViewer}>
                                 <Trash2 size={16}/>
                             </Button>
                           </div>
@@ -516,6 +553,7 @@ export function ClassSettings() {
                       checked={currentClass.trackedItems[item]}
                       onCheckedChange={() => handleTrackedItemToggle(item)}
                       className="data-[state=checked]:bg-primary"
+                      disabled={isViewer}
                     />
                   </div>
                 ))}
@@ -529,7 +567,7 @@ export function ClassSettings() {
                     <CardTitle>Modo de Tarefa de Casa</CardTitle>
                 </CardHeader>
                 <CardContent>
-                    <RadioGroup value={currentClass.taskMode} onValueChange={handleTaskModeChange}>
+                    <RadioGroup value={currentClass.taskMode} onValueChange={handleTaskModeChange} disabled={isViewer}>
                         <div className="flex items-center space-x-2">
                             <RadioGroupItem value="unique" id="unique" />
                             <Label htmlFor="unique">Tarefa Única</Label>
@@ -557,7 +595,7 @@ export function ClassSettings() {
                     <Download size={16} className="mr-2"/>
                     Exportar Backup
                   </Button>
-                  <Button onClick={handleImportClick} variant="outline" className="w-full">
+                  <Button onClick={handleImportClick} variant="outline" className="w-full" disabled={isViewer}>
                     <Upload size={16} className="mr-2"/>
                     Importar Backup
                   </Button>
@@ -567,6 +605,7 @@ export function ClassSettings() {
                     className="hidden"
                     accept=".json"
                     onChange={handleImportData}
+                    disabled={isViewer}
                   />
                </div>
             </CardContent>
@@ -581,18 +620,20 @@ export function ClassSettings() {
             <DialogTitle>{editingStudent ? "Editar Aluno" : "Adicionar Novo Aluno"}</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleSaveStudent} className="space-y-4">
-            <div>
-              <Label htmlFor="name">Nome do Aluno</Label>
-              <Input id="name" name="name" defaultValue={editingStudent?.name} className="bg-input border-border" required />
-            </div>
-            <div>
-              <Label htmlFor="birthDate">Data de Nascimento</Label>
-              <Input id="birthDate" name="birthDate" type="date" defaultValue={editingStudent?.birthDate} className="bg-input border-border" required />
-            </div>
-            <div className="flex justify-end gap-2 pt-4">
-                 <Button type="button" variant="secondary" onClick={() => setIsStudentDialogOpen(false)}>Cancelar</Button>
-                 <Button type="submit" className="bg-primary hover:bg-primary/90">{editingStudent ? "Salvar Alterações" : "Adicionar Aluno"}</Button>
-            </div>
+             <fieldset disabled={isViewer}>
+                <div>
+                  <Label htmlFor="name">Nome do Aluno</Label>
+                  <Input id="name" name="name" defaultValue={editingStudent?.name} className="bg-input border-border" required />
+                </div>
+                <div>
+                  <Label htmlFor="birthDate">Data de Nascimento</Label>
+                  <Input id="birthDate" name="birthDate" type="date" defaultValue={editingStudent?.birthDate} className="bg-input border-border" required />
+                </div>
+                {!isViewer && <div className="flex justify-end gap-2 pt-4">
+                     <Button type="button" variant="secondary" onClick={() => setIsStudentDialogOpen(false)}>Cancelar</Button>
+                     <Button type="submit" className="bg-primary hover:bg-primary/90">{editingStudent ? "Salvar Alterações" : "Adicionar Aluno"}</Button>
+                </div>}
+            </fieldset>
           </form>
         </DialogContent>
       </Dialog>
@@ -604,62 +645,64 @@ export function ClassSettings() {
           </DialogHeader>
           {editingClass && (
             <form onSubmit={handleSaveClass} className="space-y-4">
-                <div>
-                <Label htmlFor="class-name">Nome da Classe</Label>
-                <Input id="class-name" name="name" defaultValue={editingClass.name} className="bg-input border-border" required placeholder="Ex: Primários" />
-                </div>
-                <div>
-                    <Label>Professor(es)</Label>
-                    <div className="space-y-2">
-                        {editingClass.teachers.map((teacher, index) => (
-                             <div key={teacher.id} className="flex items-center gap-2">
-                                <Input 
-                                    name={`teacher-${teacher.id}`} 
-                                    defaultValue={teacher.name} 
-                                    className="bg-input border-border" 
-                                    placeholder={`Nome do Professor ${index + 1}`} 
-                                />
-                                <Button type="button" variant="ghost" size="icon" className="h-9 w-9 text-red-500 hover:text-red-400 shrink-0" onClick={() => removeTeacher(teacher.id)}>
-                                    <Trash2 size={16} />
-                                </Button>
+                <fieldset disabled={isViewer}>
+                    <div>
+                    <Label htmlFor="class-name">Nome da Classe</Label>
+                    <Input id="class-name" name="name" defaultValue={editingClass.name} className="bg-input border-border" required placeholder="Ex: Primários" />
+                    </div>
+                    <div>
+                        <Label>Professor(es)</Label>
+                        <div className="space-y-2">
+                            {editingClass.teachers.map((teacher, index) => (
+                                 <div key={teacher.id} className="flex items-center gap-2">
+                                    <Input 
+                                        name={`teacher-${teacher.id}`} 
+                                        defaultValue={teacher.name} 
+                                        className="bg-input border-border" 
+                                        placeholder={`Nome do Professor ${index + 1}`} 
+                                    />
+                                    <Button type="button" variant="ghost" size="icon" className="h-9 w-9 text-red-500 hover:text-red-400 shrink-0" onClick={() => removeTeacher(teacher.id)}>
+                                        <Trash2 size={16} />
+                                    </Button>
+                                </div>
+                            ))}
+                        </div>
+                        <Button type="button" size="sm" variant="outline" onClick={addTeacher} className="mt-2">
+                            <PlusCircle size={16} className="mr-2" /> Adicionar Professor
+                        </Button>
+                    </div>
+                     <div>
+                        <Label>Modo de Tarefa de Casa</Label>
+                        <RadioGroup name="taskMode" defaultValue={editingClass.taskMode} className="mt-2 space-y-2">
+                            <div className="flex items-center space-x-2">
+                                <RadioGroupItem value="unique" id="edit-unique" />
+                                <Label htmlFor="edit-unique">Tarefa Única</Label>
                             </div>
-                        ))}
+                            <div className="flex items-center space-x-2">
+                                <RadioGroupItem value="daily" id="edit-daily" />
+                                <Label htmlFor="edit-daily">Tarefa Diária</Label>
+                            </div>
+                        </RadioGroup>
                     </div>
-                    <Button type="button" size="sm" variant="outline" onClick={addTeacher} className="mt-2">
-                        <PlusCircle size={16} className="mr-2" /> Adicionar Professor
-                    </Button>
-                </div>
-                 <div>
-                    <Label>Modo de Tarefa de Casa</Label>
-                    <RadioGroup name="taskMode" defaultValue={editingClass.taskMode} className="mt-2 space-y-2">
-                        <div className="flex items-center space-x-2">
-                            <RadioGroupItem value="unique" id="edit-unique" />
-                            <Label htmlFor="edit-unique">Tarefa Única</Label>
+                    <div>
+                        <Label>Cor da Classe</Label>
+                        <div className="flex items-center gap-2 mt-2">
+                            {colorPresets.map(color => (
+                                <button
+                                    key={color}
+                                    type="button"
+                                    className={cn("w-7 h-7 rounded-full border-2 transition-all", editingClass.color === color ? 'border-white ring-2 ring-white/50' : 'border-transparent hover:border-white/50')}
+                                    style={{backgroundColor: color}}
+                                    onClick={() => setEditingClass(prev => prev ? {...prev, color} : null)}
+                                />
+                            ))}
                         </div>
-                        <div className="flex items-center space-x-2">
-                            <RadioGroupItem value="daily" id="edit-daily" />
-                            <Label htmlFor="edit-daily">Tarefa Diária</Label>
-                        </div>
-                    </RadioGroup>
-                </div>
-                <div>
-                    <Label>Cor da Classe</Label>
-                    <div className="flex items-center gap-2 mt-2">
-                        {colorPresets.map(color => (
-                            <button
-                                key={color}
-                                type="button"
-                                className={cn("w-7 h-7 rounded-full border-2 transition-all", editingClass.color === color ? 'border-white ring-2 ring-white/50' : 'border-transparent hover:border-white/50')}
-                                style={{backgroundColor: color}}
-                                onClick={() => setEditingClass(prev => prev ? {...prev, color} : null)}
-                            />
-                        ))}
                     </div>
-                </div>
-                <div className="flex justify-end gap-2 pt-4">
-                    <Button type="button" variant="secondary" onClick={() => setIsClassDialogOpen(false)}>Cancelar</Button>
-                    <Button type="submit" className="bg-primary hover:bg-primary/90">{editingClass.id ? "Salvar Alterações" : "Criar Classe"}</Button>
-                </div>
+                    {!isViewer && <div className="flex justify-end gap-2 pt-4">
+                        <Button type="button" variant="secondary" onClick={() => setIsClassDialogOpen(false)}>Cancelar</Button>
+                        <Button type="submit" className="bg-primary hover:bg-primary/90">{editingClass.id ? "Salvar Alterações" : "Criar Classe"}</Button>
+                    </div>}
+                </fieldset>
             </form>
           )}
         </DialogContent>

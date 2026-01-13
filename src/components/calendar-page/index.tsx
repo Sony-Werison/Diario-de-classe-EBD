@@ -13,7 +13,7 @@ import {
   getDay,
 } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { ChevronLeft, ChevronRight, Church, Ban, CheckCircle, ChevronDown, Check } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Church, Ban, CheckCircle, ChevronDown, Check, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { getSimulatedData, DailyLesson, ClassConfig, saveSimulatedData } from '@/lib/data';
 import { Button } from '@/components/ui/button';
@@ -25,16 +25,24 @@ export function CalendarPage() {
   const [fullData, setFullData] = useState(getSimulatedData());
   const [isClient, setIsClient] = useState(false);
   const [currentClassId, setCurrentClassId] = useState<string>("");
-
-  const { classes, lessons: allLessons } = fullData;
-
-  const currentClass = useMemo(() => classes.find(c => c.id === currentClassId) || classes[0], [classes, currentClassId]);
+  const [userRole, setUserRole] = useState<string>('admin');
 
   useEffect(() => {
     setIsClient(true);
-    if (classes.length > 0 && !currentClassId) {
-        setCurrentClassId(classes[0].id);
+    const role = sessionStorage.getItem('userRole') || 'admin';
+    setUserRole(role);
+    
+    const teacherId = sessionStorage.getItem('teacherId');
+    let availableClasses = fullData.classes;
+
+    if (role === 'teacher' && teacherId) {
+        availableClasses = fullData.classes.filter(c => c.teachers.some(t => t.id === teacherId));
     }
+    
+    if (availableClasses.length > 0 && (!currentClassId || !availableClasses.find(c => c.id === currentClassId))) {
+        setCurrentClassId(availableClasses[0].id);
+    }
+    
     const handleStorageChange = () => {
       const data = getSimulatedData();
       setFullData(data);
@@ -43,8 +51,21 @@ export function CalendarPage() {
     return () => {
       window.removeEventListener('storage', handleStorageChange);
     };
-  }, [classes, currentClassId]);
+  }, [fullData.classes, currentClassId]);
   
+  const { classes: allSystemClasses, lessons: allLessons } = fullData;
+
+  const availableClasses = useMemo(() => {
+    if (userRole === 'admin' || userRole === 'viewer') return allSystemClasses;
+    if (userRole === 'teacher') {
+      const teacherId = sessionStorage.getItem('teacherId');
+      return allSystemClasses.filter(c => c.teachers.some(t => t.id === teacherId));
+    }
+    return [];
+  }, [allSystemClasses, userRole]);
+
+  const currentClass = useMemo(() => availableClasses.find(c => c.id === currentClassId), [availableClasses, currentClassId]);
+
   const sundays = useMemo(() => {
     const monthStart = startOfMonth(currentMonth);
     const monthEnd = endOfMonth(currentMonth);
@@ -60,13 +81,21 @@ export function CalendarPage() {
     setCurrentMonth(addMonths(currentMonth, 1));
   };
   
-  const getTeacherName = (teacherId: string, currentClass: ClassConfig): string => {
-    if (!currentClass) return "Professor(a) não definido";
-    return currentClass.teachers.find(t => t.id === teacherId)?.name || "Professor(a) não definido";
+  const getTeacherName = (teacherId: string, classConfig: ClassConfig): string => {
+    if (!classConfig) return "Professor(a) não definido";
+    return classConfig.teachers.find(t => t.id === teacherId)?.name || "Professor(a) não definido";
   }
 
   if (!isClient || !currentClass) {
-    return null; // Or a loading skeleton
+     return (
+       <div className="p-4 sm:p-6 text-white flex-1 flex flex-col items-center justify-center">
+            <User size={48} className="text-slate-500 mb-4" />
+            <h2 className="text-xl font-bold text-slate-300">Nenhuma turma atribuída</h2>
+            <p className="text-slate-500 max-w-sm text-center mt-2">
+                Parece que seu perfil de professor não está associado a nenhuma turma. Por favor, entre em contato com o administrador.
+            </p>
+        </div>
+     );
   }
 
   return (
@@ -92,7 +121,7 @@ export function CalendarPage() {
                 </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent className="w-full sm:w-60 bg-card border-border text-white">
-                {classes.map((c) => (
+                {availableClasses.map((c) => (
                 <DropdownMenuItem
                     key={c.id}
                     onSelect={() => setCurrentClassId(c.id)}

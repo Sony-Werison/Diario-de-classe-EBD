@@ -8,13 +8,13 @@ const profiles = [
   {
     name: "Professor",
     icon: Church,
-    description: "Acesso total para registrar aulas e gerenciar classes.",
+    description: "Acesso para registrar aulas e gerenciar as turmas atribuídas.",
     role: "teacher"
   },
   {
     name: "Administrativo",
     icon: Shield,
-    description: "Acesso para configurar classes e visualizar todos os relatórios.",
+    description: "Acesso total para configurar classes e visualizar todos os relatórios.",
     role: "admin"
   },
   {
@@ -29,8 +29,14 @@ export default function ProfileSelectionPage() {
   const router = useRouter();
 
   const handleProfileSelect = (role: string) => {
-    // For now, all profiles redirect to the same page.
-    // This can be expanded later with actual role-based logic.
+    // Store role in sessionStorage to persist across page loads but not sessions
+    sessionStorage.setItem('userRole', role);
+    // For teacher profile, let's assume teacher-3 for demonstration
+    if (role === 'teacher') {
+        sessionStorage.setItem('teacherId', 'teacher-3');
+    } else {
+        sessionStorage.removeItem('teacherId');
+    }
     router.push('/calendar');
   };
 

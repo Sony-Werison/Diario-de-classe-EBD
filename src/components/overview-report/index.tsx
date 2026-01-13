@@ -174,10 +174,15 @@ const calculateClassStats = (classConfig: ClassConfig, studentRecords: Simulated
     };
 };
 
-const RateDisplay = ({ rate }: { rate: number }) => (
-    <div className="flex items-center gap-2 justify-end">
-        <span className="font-semibold text-white w-8 text-right">{rate.toFixed(0)}%</span>
-        <Progress value={rate} className="h-1.5 w-10 bg-slate-700" indicatorClassName="bg-primary/50" />
+const RateDisplay: React.FC<{ rate: number, label: string }> = ({ rate, label }) => (
+    <div className="grid grid-cols-[1fr_auto] items-center text-sm gap-2">
+        <div className="flex items-center gap-2">
+            <span className="text-slate-300">{label}</span>
+        </div>
+        <div className="flex items-center gap-2 justify-end">
+            <span className="font-semibold text-white w-8 text-right">{rate.toFixed(0)}%</span>
+            <Progress value={rate} className="h-1.5 w-10 bg-slate-700" indicatorClassName="bg-primary/50" />
+        </div>
     </div>
 );
 
@@ -265,10 +270,12 @@ export function OverviewReport() {
                                     <div key={student.name} className="grid grid-cols-[auto_1fr_auto] items-center text-sm gap-2">
                                         <div className="flex items-center gap-2">
                                             <Crown size={14} className={rankColors[index]} />
-                                            <span className="text-slate-300 truncate max-w-40">{student.name}</span>
                                         </div>
-                                        <Progress value={student.avgScore} className="h-1.5 bg-slate-700" indicatorClassName="bg-primary/50" />
-                                        <span className="font-semibold text-white w-8 text-right">{student.avgScore.toFixed(0)}%</span>
+                                        <span className="text-slate-300 truncate max-w-40">{student.name}</span>
+                                        <div className="flex items-center gap-2 justify-end">
+                                            <span className="font-semibold text-white w-8 text-right">{student.avgScore.toFixed(0)}%</span>
+                                            <Progress value={student.avgScore} className="h-1.5 w-10 bg-slate-700" indicatorClassName="bg-primary/50" />
+                                        </div>
                                     </div>
                                 )) : (
                                     <p className="text-xs text-slate-500 text-center py-2">Sem dados de avaliação no mês.</p>
@@ -296,12 +303,15 @@ export function OverviewReport() {
                                     }
 
                                     return (
-                                        <div key={itemKey} className="grid grid-cols-[1fr_auto] items-center text-sm gap-2">
+                                        <div key={itemKey} className="grid grid-cols-[auto_1fr] items-center text-sm gap-2">
                                             <div className="flex items-center gap-2">
                                                 <Icon size={14} className="text-slate-400" />
                                                 <span className="text-slate-300">{label}</span>
                                             </div>
-                                            <RateDisplay rate={monthlyRate} />
+                                            <div className="flex items-center gap-2 justify-end">
+                                                <span className="font-semibold text-white w-8 text-right">{monthlyRate.toFixed(0)}%</span>
+                                                <Progress value={monthlyRate} className="h-1.5 w-10 bg-slate-700" indicatorClassName="bg-primary/50" />
+                                            </div>
                                         </div>
                                     )
                             })}
