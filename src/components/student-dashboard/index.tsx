@@ -30,10 +30,10 @@ const calculateAge = (birthDateString: string) => {
     return age;
 }
 
-export function StudentDashboard({ initialDate }: { initialDate?: string }) {
+export function StudentDashboard({ initialDate, classId: initialClassId }: { initialDate?: string, classId?: string }) {
   const router = useRouter();
   const [classes, setClasses] = useState<ClassConfig[]>(initialClasses);
-  const [currentClassId, setCurrentClassId] = useState<string>(initialClasses[0].id);
+  const [currentClassId, setCurrentClassId] = useState<string>(initialClassId || initialClasses[0].id);
   const [currentDate, setCurrentDate] = useState<Date>(() => initialDate ? startOfDay(parseISO(initialDate)) : startOfDay(new Date()));
   const [sortKey, setSortKey] = useState<SortKey>("name");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
@@ -53,12 +53,15 @@ export function StudentDashboard({ initialDate }: { initialDate?: string }) {
   useEffect(() => {
     const data = getSimulatedData();
     setClasses(data.classes);
+    if(initialClassId) {
+      setCurrentClassId(initialClassId);
+    }
     setIsClient(true);
-  }, []);
+  }, [initialClassId]);
 
   useEffect(() => {
     // On mount or date change, load data from our central source
-    if (initialDate) {
+    if (initialDate && currentClass) {
         const dateFromUrl = parseISO(initialDate);
         setCurrentDate(startOfDay(dateFromUrl));
         
@@ -75,13 +78,22 @@ export function StudentDashboard({ initialDate }: { initialDate?: string }) {
 
         setDailyLesson(lesson as DailyLesson);
         setDailyStudentChecks(checks);
-    } else {
+        setCancellationReason(lesson.cancellationReason || "");
+    } else if (!initialDate) {
       router.push('/calendar');
     }
-  }, [initialDate, currentClass.teachers, currentClassId, router]);
+  }, [initialDate, currentClass, currentClassId, router]);
 
 
   const dateKey = useMemo(() => currentDate ? format(currentDate, "yyyy-MM-dd") : '', [currentDate]);
+
+  const handleClassChange = (newClassId: string) => {
+    setCurrentClassId(newClassId);
+    if (currentDate) {
+      const newDateKey = format(currentDate, 'yyyy-MM-dd');
+      router.push(`/dashboard/${newDateKey}?classId=${newClassId}`);
+    }
+  };
 
 
   const handleToggleCheck = useCallback((studentId: string, type: CheckType) => {
@@ -115,7 +127,7 @@ export function StudentDashboard({ initialDate }: { initialDate?: string }) {
     const offset = direction === 'next' ? 7 : -7;
     newDate.setDate(newDate.getDate() + offset);
     const newDateKey = format(newDate, 'yyyy-MM-dd');
-    router.push(`/dashboard/${newDateKey}`);
+    router.push(`/dashboard/${newDateKey}?classId=${currentClassId}`);
   }
 
   const handleSave = () => {
@@ -123,8 +135,7 @@ export function StudentDashboard({ initialDate }: { initialDate?: string }) {
     
     const data = getSimulatedData();
     
-    // Ensure lesson is marked as 'held' unless already cancelled
-    const finalLesson = { ...dailyLesson, status: dailyLesson?.status === 'cancelled' ? 'cancelled' : 'held' };
+    const finalLesson = { ...dailyLesson, status: dailyLesson?.status === 'cancelled' ? 'cancelled' : 'held', cancellationReason: dailyLesson?.status === 'cancelled' ? cancellationReason : "" };
 
     data.lessons[dateKey] = finalLesson as DailyLesson;
     if (!data.studentRecords[currentClassId]) {
@@ -144,7 +155,6 @@ export function StudentDashboard({ initialDate }: { initialDate?: string }) {
     setIsDeleteAlertOpen(false);
     if (!currentDate) return;
   
-    // Perform data mutation
     const data = getSimulatedData();
     delete data.lessons[dateKey];
     if (data.studentRecords[currentClassId]) {
@@ -152,7 +162,6 @@ export function StudentDashboard({ initialDate }: { initialDate?: string }) {
     }
     saveSimulatedData(data);
   
-    // Redirect after mutation, which will re-load data
     router.push('/calendar');
     
     toast({
@@ -162,12 +171,11 @@ export function StudentDashboard({ initialDate }: { initialDate?: string }) {
     });
   }
   
-  const handleCancelLesson = () => {
+  const handleConfirmCancelLesson = () => {
       if(!cancellationReason.trim()) {
         setIsCancelDialogVali(false);
         return;
       }
-      setIsCancelDialogOpen(false);
       
       const updatedLesson: DailyLesson = {
           ...(dailyLesson || { teacherId: currentClass.teachers[0]?.id || "", title: "" }),
@@ -175,15 +183,15 @@ export function StudentDashboard({ initialDate }: { initialDate?: string }) {
           cancellationReason: cancellationReason,
       };
 
-      // Update data source
+      setDailyLesson(updatedLesson);
+
+      // Save to trigger re-render on calendar
       const data = getSimulatedData();
       data.lessons[dateKey] = updatedLesson;
       saveSimulatedData(data);
       
-      // Update local state immediately for UI feedback
-      setDailyLesson(updatedLesson); 
-      setCancellationReason("");
-
+      setIsCancelDialogOpen(false);
+      
       toast({
         title: "Aula cancelada",
         description: "A aula foi marcada como não realizada.",
@@ -294,7 +302,7 @@ export function StudentDashboard({ initialDate }: { initialDate?: string }) {
             onNextSunday={() => handleSundayNavigation('next')}
             classes={classes}
             currentClass={currentClass}
-            onClassChange={setCurrentClassId}
+            onClassChange={handleClassChange}
             dailyLesson={dailyLesson}
             onLessonDetailChange={handleLessonDetailChange}
             onSave={handleSave}
@@ -305,7 +313,7 @@ export function StudentDashboard({ initialDate }: { initialDate?: string }) {
             }}
         />
         <main className="flex-1 p-3 sm:p-4 md:p-6 bg-background">
-          <div className="bg-slate-800/50 rounded-t-xl">
+          <div className="bg-card rounded-t-xl">
              <StudentListHeader 
                 trackedItems={trackedItems}
                 onSort={handleSort}
@@ -314,7 +322,7 @@ export function StudentDashboard({ initialDate }: { initialDate?: string }) {
              />
           </div>
          
-          <div className="space-y-px bg-slate-800/50 rounded-b-xl overflow-hidden">
+          <div className="space-y-px bg-card rounded-b-xl overflow-hidden">
             {studentsWithScores.map(student => (
               <StudentRow
                 key={student.id}
@@ -324,7 +332,7 @@ export function StudentDashboard({ initialDate }: { initialDate?: string }) {
               />
             ))}
              {studentsWithScores.length === 0 && (
-                <div className="text-center py-16 text-slate-500 bg-slate-800">
+                <div className="text-center py-16 text-slate-500 bg-card">
                     <Users size={40} className="mx-auto mb-2" />
                     <h3 className="font-bold">Nenhum aluno nesta classe</h3>
                     <p className="text-sm">Vá para as configurações para adicionar alunos.</p>
@@ -416,7 +424,7 @@ export function StudentDashboard({ initialDate }: { initialDate?: string }) {
                 </div>
                 <div className="flex justify-end gap-2 pt-4">
                     <Button variant="ghost" onClick={() => setIsCancelDialogOpen(false)}>Cancelar</Button>
-                    <Button onClick={handleCancelLesson}>Confirmar</Button>
+                    <Button onClick={handleConfirmCancelLesson}>Confirmar</Button>
                 </div>
             </DialogContent>
         </Dialog>
