@@ -120,7 +120,7 @@ export const initialClasses: ClassConfig[] = [
 ];
 
 // --- SIMULATED DATA GENERATION ---
-const SIMULATED_DATA_KEY = 'ebd-junior-tracker-data';
+const SIMULATED_DATA_KEY = 'ebd-junior-tracker-data-v2';
 
 export type SimulatedDayData = {
   date: Date;
@@ -324,3 +324,5 @@ export const saveSimulatedData = (data: SimulatedFullData) => {
     console.error("Failed to save to localStorage", error);
   }
 };
+
+    
