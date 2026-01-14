@@ -55,6 +55,13 @@ export default function ProfileSelectionPage() {
   }, []);
 
   const handleProfileSelect = async (role: string) => {
+    if (role === 'viewer') {
+      sessionStorage.setItem('userRole', 'viewer');
+      sessionStorage.removeItem('teacherId');
+      router.push('/calendar');
+      return;
+    }
+
     setPassword('');
     setPasswordError('');
     setSelectedRole(role);
@@ -62,15 +69,6 @@ export default function ProfileSelectionPage() {
 
   const handlePasswordSubmit = () => {
     if (!selectedRole || !passwords) return;
-
-    // The 'viewer' role doesn't have a password, it's direct access
-    if (selectedRole === 'viewer') {
-        sessionStorage.setItem('userRole', 'viewer');
-        sessionStorage.removeItem('teacherId');
-        setSelectedRole(null);
-        router.push('/calendar');
-        return;
-    }
 
     const correctPassword = passwords[selectedRole as keyof typeof passwords];
     if (password === correctPassword) {
@@ -182,36 +180,27 @@ export default function ProfileSelectionPage() {
           <DialogHeader>
             <DialogTitle>Acesso Restrito</DialogTitle>
             <DialogDescription>
-              {selectedRole === 'viewer' ? "Acesso somente leitura. Nenhuma senha é necessária." : `Por favor, insira a senha para o perfil de ${profiles.find(p => p.role === selectedRole)?.name}.`}
+              {`Por favor, insira a senha para o perfil de ${profiles.find(p => p.role === selectedRole)?.name}.`}
             </DialogDescription>
           </DialogHeader>
-          {selectedRole !== 'viewer' ? (
-              <>
-                <div className="space-y-4 py-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="password">Senha</Label>
-                    <Input
-                      id="password"
-                      type="password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      onKeyDown={(e) => e.key === 'Enter' && handlePasswordSubmit()}
-                      className="bg-input border-border"
-                    />
-                  </div>
-                  {passwordError && <p className="text-sm text-destructive">{passwordError}</p>}
-                </div>
-                <div className="flex justify-end gap-2">
-                  <Button variant="outline" onClick={() => setSelectedRole(null)}>Cancelar</Button>
-                  <Button onClick={handlePasswordSubmit}>Continuar</Button>
-                </div>
-              </>
-          ) : (
-             <div className="flex justify-end gap-2 pt-4">
-                <Button variant="outline" onClick={() => setSelectedRole(null)}>Cancelar</Button>
-                <Button onClick={handlePasswordSubmit}>Entrar</Button>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="password">Senha</Label>
+              <Input
+                id="password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handlePasswordSubmit()}
+                className="bg-input border-border"
+              />
             </div>
-          )}
+            {passwordError && <p className="text-sm text-destructive">{passwordError}</p>}
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setSelectedRole(null)}>Cancelar</Button>
+            <Button onClick={handlePasswordSubmit}>Continuar</Button>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
