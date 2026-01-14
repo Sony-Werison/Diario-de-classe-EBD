@@ -422,10 +422,12 @@ export function ClassSettings() {
      );
   }
 
+  const sortedTeachers = [...currentClass.teachers].sort((a, b) => a.name.localeCompare(b.name));
+
   return (
     <div className="p-4 sm:p-6 text-white" style={{'--class-color': currentClass.color} as React.CSSProperties}>
       <header className="mb-6">
-        <h1 className="text-2xl font-bold">Cadastro</h1>
+        <h1 className="text-2xl font-bold">Turmas</h1>
       </header>
       
       <div className="mb-6 flex flex-col sm:flex-row gap-4 items-start sm:items-center">
@@ -442,11 +444,11 @@ export function ClassSettings() {
           <DropdownMenuContent className="w-full sm:w-72 bg-card border-border text-white">
             {availableClasses.map(c => (
               <DropdownMenuItem key={c.id} onSelect={() => setCurrentClassId(c.id)} className="cursor-pointer focus:bg-secondary flex items-center gap-2">
-                 <Check size={16} className={cn(currentClassId === c.id ? 'opacity-100' : 'opacity-0')} />
-                 <div className="flex-1 flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-full" style={{backgroundColor: c.color}} />
-                    {c.name}
+                 <div className="w-4 flex items-center">
+                   <Check size={16} className={cn(currentClassId === c.id ? 'opacity-100' : 'opacity-0')} />
                  </div>
+                 <div className="w-3 h-3 rounded-full" style={{backgroundColor: c.color}} />
+                 <div className="flex-1">{c.name}</div>
               </DropdownMenuItem>
             ))}
           </DropdownMenuContent>
@@ -482,7 +484,7 @@ export function ClassSettings() {
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {currentClass.teachers.map((teacher) => (
+                                {sortedTeachers.map((teacher) => (
                                     <TableRow key={teacher.id} className="border-border hover:bg-transparent">
                                         <TableCell className="font-medium">{teacher.name}</TableCell>
                                         <TableCell className="text-right">
@@ -728,5 +730,3 @@ export function ClassSettings() {
     </div>
   );
 }
-
-    

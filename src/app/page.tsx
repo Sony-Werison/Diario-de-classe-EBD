@@ -91,7 +91,9 @@ export default function ProfileSelectionPage() {
 
     const map = new Map<string, TeacherWithClass[]>();
     fullData.classes.forEach(c => {
-        const teachersWithClass = c.teachers.map(t => ({...t, className: c.name}));
+        const teachersWithClass = c.teachers
+          .map(t => ({...t, className: c.name}))
+          .sort((a, b) => a.name.localeCompare(b.name));
         map.set(c.name, teachersWithClass);
     });
     return map;
@@ -117,7 +119,7 @@ export default function ProfileSelectionPage() {
         "bg-gradient-to-br from-slate-900 via-background to-background"
     )}>
       <div className="text-center mb-8">
-         <Image src="/logo.png" alt="Logo" width={64} height={64} className="mx-auto mb-4" />
+         <Image src="/logo.png" alt="Logo" width={80} height={80} className="mx-auto mb-4" />
         <h1 className="text-2xl font-bold text-white">Diário de classe EBD</h1>
         <p className="text-slate-400 mt-1">Selecione seu perfil para continuar</p>
       </div>
