@@ -191,7 +191,12 @@ export default function ProfileSelectionPage() {
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handlePasswordSubmit()}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    handlePasswordSubmit();
+                  }
+                }}
                 className="bg-input border-border"
               />
             </div>
