@@ -1,5 +1,5 @@
 
-import { put, list, del, head } from '@vercel/blob';
+import { put, head } from '@vercel/blob';
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { getInitialData } from '@/lib/data';

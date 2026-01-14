@@ -88,14 +88,32 @@ export const getSimulatedData = async (): Promise<SimulatedFullData> => {
     if (!response.ok) {
         throw new Error(`Failed to fetch data: ${response.statusText}`);
     }
-    const data: SimulatedFullData = await response.json();
-    if (data && Array.isArray(data.classes) && data.lessons && data.studentRecords && data.passwords) {
-      return data;
+    const data = await response.json();
+    
+    // Check for a valid structure. If not, start fresh.
+    if (!data || typeof data !== 'object') {
+        console.warn("Loaded data is not an object, returning initial data.");
+        return getInitialData();
     }
-    console.warn("Loaded data is invalid, returning initial data.");
-    return getInitialData();
+    
+    // Merge loaded data with initial data to ensure all keys exist
+    const initialData = getInitialData();
+    const mergedData: SimulatedFullData = {
+        classes: Array.isArray(data.classes) ? data.classes : initialData.classes,
+        lessons: data.lessons && typeof data.lessons === 'object' ? data.lessons : initialData.lessons,
+        studentRecords: data.studentRecords && typeof data.studentRecords === 'object' ? data.studentRecords : initialData.studentRecords,
+        passwords: data.passwords && typeof data.passwords === 'object' ? data.passwords : initialData.passwords,
+    };
+    
+    // Specifically check for core properties. If they don't exist, it's safer to start over.
+    if (!Array.isArray(mergedData.classes)) {
+        console.warn("Loaded data is invalid (classes is not an array), returning initial data.");
+        return getInitialData();
+    }
+    
+    return mergedData;
   } catch (error) {
-    console.error("Failed to fetch from API", error);
+    console.error("Failed to fetch from API, returning initial data. Error:", error);
     const initialData = getInitialData();
     await saveSimulatedData(initialData);
     return initialData;
