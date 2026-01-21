@@ -46,7 +46,6 @@ interface AppHeaderProps {
   onClassChange: (classId: string) => void;
   dailyLesson: DailyLesson | undefined;
   onLessonDetailChange: (field: keyof DailyLesson, value: string) => void;
-  onSave: () => void;
   onOpenDeleteAlert: () => void;
   onOpenCancelDialog: () => void;
   isReadOnly: boolean;
@@ -62,7 +61,6 @@ export function AppHeader({
   onClassChange,
   dailyLesson,
   onLessonDetailChange,
-  onSave,
   onOpenDeleteAlert,
   onOpenCancelDialog,
   isReadOnly,
@@ -185,6 +183,7 @@ export function AppHeader({
                 className="bg-card-foreground/5 border-border"
                 value={dailyLesson?.title || ""}
                 onChange={(e) => onLessonDetailChange('title', e.target.value)}
+                required
               />
             </div>
           </fieldset>
@@ -193,10 +192,6 @@ export function AppHeader({
         {!isReadOnly && <div className="flex gap-2 w-full md:w-auto">
             {dailyLesson?.status !== 'cancelled' ? (
               <>
-                <Button onClick={onSave} className="bg-primary text-primary-foreground hover:bg-primary/90 w-full md:w-auto">
-                  <Save size={16} className="mr-2" />
-                  Salvar
-                </Button>
                 <Button variant="outline" size="sm" onClick={onOpenCancelDialog}>
                   <Ban size={14} className="mr-2"/> Não realizada
                 </Button>
